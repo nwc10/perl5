@@ -5087,6 +5087,9 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
                      * form qr/ ^ LC_ [A-Z]+ = /x, except LC_ALL which was
                      * already handled above.  These are assumed to be locale
                      * settings.  Output them and their values. */
+
+                    ENV_READ_LOCK;
+
                     for (e = environ; *e; e++) {
                         const STRLEN prefix_len = sizeof("LC_") - 1;
                         STRLEN uppers_len;
@@ -5102,6 +5105,8 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
                                 *e + prefix_len + uppers_len + 1);
                         }
                     }
+
+                    ENV_READ_UNLOCK;
                 }
 
 #  else
