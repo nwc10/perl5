@@ -7177,6 +7177,12 @@ cannot have changed since the precalculation.
 #  define GETENV_UNLOCK   NOOP
 #endif
 
+/* Some critical sections care only that no one else is writing either the
+ * locale nor the environment.  XXX This is for the future; in the meantime
+ * just use an exclusive lock */
+#define ENVr_LOCALEr_LOCK     gwENVr_LOCALEr_LOCK
+#define ENVr_LOCALEr_UNLOCK   gwENVr_LOCALEr_UNLOCK
+
 #ifndef PERL_NO_INLINE_FUNCTIONS
 /* Static inline funcs that depend on includes and declarations above.
    Some of these reference functions in the perl object files, and some
@@ -7197,12 +7203,6 @@ START_EXTERN_C
 END_EXTERN_C
 
 #endif
-
-/* Some critical sections care only that no one else is writing either the
- * locale nor the environment.  XXX This is for the future; in the meantime
- * just use an exclusive lock */
-#define ENVr_LOCALEr_LOCK     gwENVr_LOCALEr_LOCK
-#define ENVr_LOCALEr_UNLOCK   gwENVr_LOCALEr_UNLOCK
 
 #define Atof				my_atof
 
