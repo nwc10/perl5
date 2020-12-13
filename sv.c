@@ -15657,6 +15657,7 @@ perl_clone_using(PerlInterpreter *proto_perl, UV flags,
     PL_utf8locale             = proto_perl->Iutf8locale;
     PL_in_utf8_CTYPE_locale   = proto_perl->Iin_utf8_CTYPE_locale;
     PL_in_utf8_turkic_locale  = proto_perl->Iin_utf8_turkic_locale;
+    Copy(proto_perl->Ifold_locale, PL_fold_locale, 256, U8);
 #endif
 
 #ifdef USE_LOCALE_COLLATE
