@@ -607,32 +607,31 @@ Assuming the contents of static memory pointed to by the return values
 of Perl wrappers for C library functions doesn't change.  Many C library
 functions return pointers to static storage that can be overwritten by
 subsequent calls to the same or related functions.  Perl has
-light-weight wrappers for some of these functions, and which don't make
-copies of the static memory.  A good example is the interface to the
-environment variables that are in effect for the program.  Perl has
-C<PerlEnv_getenv> to get values from the environment.  But the return is
-a pointer to static memory in the C library.  If you are using the value
-to immediately test for something, that's fine, but if you save the
-value and expect it to be unchanged by later processing, you would be
-wrong, but perhaps you wouldn't know it because different C library
-implementations behave differently, and the one on the platform you're
-testing on might work for your situation.  But on some platforms, a
-subsequent call to C<PerlEnv_getenv> or related function WILL overwrite
-the memory that your first call points to.  This has led to some
-hard-to-debug problems.  Do a L<perlapi/savepv> to make a copy, thus
-avoiding these problems.  You will have to free the copy when you're
-done to avoid memory leaks.  If you don't have control over when it gets
-freed, you'll need to make the copy in a mortal scalar, like so:
+light-weight wrappers for some of these functions, and which propagate
+this issue on to the caller, you.  You'll have to save or finish using
+the result before calling the function again.  In some cases they aren't
+thread safe, and you'll need to save or use the value before any other
+thread can call that function.  You don't generally have control over
+when such a thread might want to use that function, so this can cause a
+race.  L<perlxs/Thread-aware system interfaces> has some information on
+such functions, and ways to cope.  But it may come down to not using a
+problematic function at all, or protecting its use with a mutex, and
+being sure that any other applications that might be running in another
+thread also use that mutex.  Until Perl 5.32, C<PerlEnv_getenv> was such
+a function, but now it returns a mortalized copy of the result.  But
+again, if someone is writing to the environment without using the mutext
+that C<> expects, they can memory in the C library, which could be
+overwritten at any time by another thread accessing the environment in
+some way, or on some platforms, by a subsequent C<PerlEnv_getenv> call.
 
- if ((s = PerlEnv_getenv("foo") == NULL) {
-    ... /* handle NULL case */
- }
- else {
-     s = SvPVX(sv_2mortal(newSVpv(s, 0)));
- }
+the interface to the
 
-The above example works only if C<"s"> is C<NUL>-terminated; otherwise
-you have to pass its length to C<newSVpv>.
+environment variables that are in effect for the program.  Prior to Perl
+5.32, C<PerlEnv_getenv>, to get values from the environment, also was
+such a function.  But starting in that release, the return is a mortal
+copy of what is in the environment, so is safe to use in the remainder
+of the calling function, but needs to be copied if you want a stable
+value beyond that.
 
 =back
 
