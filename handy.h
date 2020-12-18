@@ -1885,13 +1885,6 @@ END_EXTERN_C
                         generic_LC_base_(c,utf8_locale_classnum,               \
                                          non_utf8_func( (LC_CAST_) (c)))
 
-/* For internal core Perl use only: like generic_LC_, but also returns TRUE if
- * 'c' is the platform's native underscore character */
-#define generic_LC_underscore_(c,utf8_locale_classnum,non_utf8_func)           \
-                        generic_LC_base_(c, utf8_locale_classnum,              \
-                                         (non_utf8_func( (LC_CAST_) (c))       \
-                                          || (char)(c) == '_'))
-
 /* These next three are also for internal core Perl use only: case-change
  * helper macros.  The reason for using the PL_latin arrays is in case the
  * system function is defective; it ensures uniform results that conform to the
@@ -1992,13 +1985,13 @@ END_EXTERN_C
 #  define isCNTRL_LC(c)    generic_LC_(c, _CC_CNTRL, iscntrl)
 #  define isDIGIT_LC(c)    generic_LC_(c, _CC_DIGIT, isdigit)
 #  define isGRAPH_LC(c)    generic_LC_(c, _CC_GRAPH, isgraph)
-#  define isIDFIRST_LC(c)  generic_LC_underscore_(c, _CC_IDFIRST, isalpha)
+#  define isIDFIRST_LC(c)  ((c) == '_' || generic_LC_(c, _CC_IDFIRST, isalpha))
 #  define isLOWER_LC(c)    generic_LC_(c, _CC_LOWER, islower)
 #  define isPRINT_LC(c)    generic_LC_(c, _CC_PRINT, isprint)
 #  define isPUNCT_LC(c)    generic_LC_(c, _CC_PUNCT, ispunct)
 #  define isSPACE_LC(c)    generic_LC_(c, _CC_SPACE, isspace)
 #  define isUPPER_LC(c)    generic_LC_(c, _CC_UPPER, isupper)
-#  define isWORDCHAR_LC(c) generic_LC_underscore_(c, _CC_WORDCHAR, isalnum)
+#  define isWORDCHAR_LC(c) ((c) == '_' || generic_LC_(c, _CC_WORDCHAR, isalnum))
 #  define isXDIGIT_LC(c)   generic_LC_(c, _CC_XDIGIT, isxdigit)
 
 
