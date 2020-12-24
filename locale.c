@@ -379,9 +379,9 @@ S_category_name(const int category)
                                 ((const char *) setlocale(cat, locale))
 #endif
 
-/* In contrast, the do_setlocale() macros are our added layers upon the base
- * setlocale.  These are used to present a uniform API to the rest of the code
- * in this file in spite of the disparate underlying implementations. */
+/* The next many lines form a layer above the close-to-the-metal 'porcelain'
+ * macros.  They are used to present a uniform API to the rest of the code in
+ * this file in spite of the disparate underlying implementations. */
 
 #ifndef USE_POSIX_2008_LOCALE
 
@@ -390,9 +390,17 @@ S_category_name(const int category)
  * layer just calls the base-level functions.  See the introductory comments in
  * this file for the meaning of the suffixes '_c', '_r', '_i'. */
 
-#  define do_setlocale_c(cat, locale)  porcelain_setlocale(cat, locale)
-#  define do_setlocale_i(i, locale)  do_setlocale_c(categories[i], locale)
-#  define do_setlocale_r(cat, locale)   do_setlocale_c(cat, locale)
+#  define setlocale_c(cat, locale)      porcelain_setlocale(cat, locale)
+#  define setlocale_i(i, locale)      setlocale_c(categories[i], locale)
+#  define setlocale_r(cat, locale)              setlocale_c(cat, locale)
+
+#  define void_setlocale_c(cat, locale) ((void) setlocale_c(cat, locale))
+#  define void_setlocale_i(i, locale)   ((void) setlocale_i(i    locale))
+#  define void_setlocale_r(cat, locale) ((void) setlocale_r(cat, locale))
+
+#  define bool_setlocale_c(cat, locale)   cBOOL(setlocale_c(cat, locale))
+#  define bool_setlocale_i(i, locale)     cBOOL(setlocale_i(i,   locale))
+#  define bool_setlocale_r(cat, locale)   cBOOL(setlocale_r(cat, locale))
 
 #  define querylocale_c(cat)        porcelain_setlocale(cat, NULL)
 #  define querylocale_r(cat)        querylocale_c(cat)
@@ -408,11 +416,20 @@ S_category_name(const int category)
  * are equivalents, like LC_NUMERIC_MASK, which we use instead, converting to
  * by using get_category_index() followed by table lookup. */
 
-#  define do_setlocale_i(i, locale)  emulate_setlocale_i(i, locale)
-#  define do_setlocale_c(cat, locale)                                       \
-                                       do_setlocale_i(cat##_INDEX_, locale)
-#  define do_setlocale_r(cat, locale)                                       \
-                    do_setlocale_i(get_category_index(cat, locale), locale)
+#  define setlocale_i(i, locale)          emulate_setlocale_i(i, locale)
+#  define setlocale_c(cat, locale)     setlocale_i(cat##_INDEX_, locale)
+#  define setlocale_r(cat, locale)                                          \
+                    setlocale_i(get_category_index(cat, locale), locale)
+
+#  define void_setlocale_i(i, locale)     ((void) setlocale_i(i, locale))
+#  define void_setlocale_c(cat, locale)                                     \
+                                  void_setlocale_i(cat##_INDEX_, locale)
+#  define void_setlocale_r(cat, locale) ((void) setlocale_r(cat, locale))
+
+#  define bool_setlocale_i(i, locale)       cBOOL(setlocale_i(i, locale))
+#  define bool_setlocale_c(cat, locale)                                     \
+                                  bool_setlocale_i(cat##_INDEX_, locale)
+#  define bool_setlocale_r(cat, locale)   cBOOL(setlocale_r(cat, locale))
 
 #  define querylocale_i(i)      my_querylocale_i(i)
 #  define querylocale_c(cat)    querylocale_i(cat##_INDEX_)
@@ -1081,8 +1098,8 @@ S_emulate_setlocale_i(pTHX_ const unsigned int index, const char * locale)
     return locale;
 }
 
-#endif   /* End of the various implementations of the do_setlocale and
-            my_querylocale macros used in the remainder of this program */
+#endif   /* End of the various implementations of the setlocale and
+            querylocale macros used in the remainder of this program */
 
 #ifdef USE_LOCALE
 
@@ -1302,7 +1319,7 @@ Perl_set_numeric_standard(pTHX)
     DEBUG_L(PerlIO_printf(Perl_debug_log,
                                   "Setting LC_NUMERIC locale to standard C\n"));
 
-    do_setlocale_c(LC_NUMERIC, "C");
+    void_setlocale_c(LC_NUMERIC, "C");
     PL_numeric_standard = TRUE;
     PL_numeric_underlying = PL_numeric_underlying_is_standard;
     set_numeric_radix(0);
@@ -1328,7 +1345,7 @@ Perl_set_numeric_underlying(pTHX)
     DEBUG_L(PerlIO_printf(Perl_debug_log, "Setting LC_NUMERIC locale to %s\n",
                                           PL_numeric_name));
 
-    do_setlocale_c(LC_NUMERIC, PL_numeric_name);
+    void_setlocale_c(LC_NUMERIC, PL_numeric_name);
     PL_numeric_standard = PL_numeric_underlying_is_standard;
     PL_numeric_underlying = TRUE;
     set_numeric_radix(! PL_numeric_standard);
@@ -2134,7 +2151,7 @@ Perl_setlocale(const int category, const char * locale)
 
 #endif
 
-    retval = save_to_buffer(do_setlocale_r(category, locale),
+    retval = save_to_buffer(setlocale_r(category, locale),
                             &PL_setlocale_buf, &PL_setlocale_bufsize, 0);
     SAVE_ERRNO;
 
@@ -2613,7 +2630,7 @@ S_my_nl_langinfo(const int item, bool toggle)
         save_thread = savepv(querylocale_c(LC_ALL));
                 _configthreadlocale(_DISABLE_PER_THREAD_LOCALE);
         save_global= savepv(querylocale_c(LC_ALL));
-        do_setlocale_c(LC_ALL, save_thread);
+        void_setlocale_c(LC_ALL, save_thread);
 
 #    endif
 
@@ -2645,9 +2662,9 @@ S_my_nl_langinfo(const int item, bool toggle)
 
 #    ifdef TS_W32_BROKEN_LOCALECONV
 
-        do_setlocale_c(LC_ALL, save_global);
+        void_setlocale_c(LC_ALL, save_global);
                 _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
-        do_setlocale_c(LC_ALL, save_thread);
+        void_setlocale_c(LC_ALL, save_thread);
                 Safefree(save_global);
                 Safefree(save_thread);
 
@@ -2739,7 +2756,7 @@ S_my_nl_langinfo(const int item, bool toggle)
         save_thread = savepv(querylocale_c(LC_ALL));
                 _configthreadlocale(_DISABLE_PER_THREAD_LOCALE);
         save_global = savepv(querylocale_c(LC_ALL));
-        do_setlocale_c(LC_ALL, save_thread);
+        void_setlocale_c(LC_ALL, save_thread);
 #      if 0
                 /* This is the start of code that for broken Windows replaces
                  * the above and below code, and instead calls
@@ -2774,9 +2791,9 @@ S_my_nl_langinfo(const int item, bool toggle)
 
 #    ifdef TS_W32_BROKEN_LOCALECONV
 
-        do_setlocale_c(LC_ALL, save_global);
+        void_setlocale_c(LC_ALL, save_global);
                 _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
-        do_setlocale_c(LC_ALL, save_thread);
+        void_setlocale_c(LC_ALL, save_thread);
                 Safefree(save_global);
                 Safefree(save_thread);
 
@@ -3335,7 +3352,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
 #  ifdef USE_PL_CURLOCALES
 
     /* Initialize our records.  If we have POSIX 2008, we have LC_ALL */
-    do_setlocale_c(LC_ALL, porcelain_setlocale(LC_ALL, NULL));
+    void_setlocale_c(LC_ALL, porcelain_setlocale(LC_ALL, NULL));
 
 #  endif
 #  ifdef LOCALE_ENVIRON_REQUIRED
@@ -3352,7 +3369,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
     {
         bool done = FALSE;
         if (lang) {
-            sl_result[LC_ALL_INDEX_] = do_setlocale_c(LC_ALL, setlocale_init);
+            sl_result[LC_ALL_INDEX_] = setlocale_c(LC_ALL, setlocale_init);
             DEBUG_LOCALE_INIT(LC_ALL_INDEX_, setlocale_init,
                                              sl_result[LC_ALL_INDEX_]);
             if (sl_result[LC_ALL_INDEX_])
@@ -3367,7 +3384,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
                                 && (lang || PerlEnv_getenv(category_names[i])))
                             ? setlocale_init
                             : NULL;
-                sl_result[i] = do_setlocale_r(categories[i], locale_param);
+                sl_result[i] = setlocale_i(i, locale_param);
                 if (! sl_result[i]) {
                     setlocale_failure = TRUE;
                 }
@@ -3406,7 +3423,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
 
                 /* Note that this may change the locale, but we are going to do
                  * that anyway just below */
-                system_default_locale = do_setlocale_c(LC_ALL, "");
+                system_default_locale = setlocale_c(LC_ALL, "");
                 DEBUG_LOCALE_INIT(LC_ALL_INDEX_, "", system_default_locale);
 
                 /* Skip if invalid or if it's already on the list of locales to
@@ -3431,7 +3448,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
 
 #  ifdef LC_ALL
 
-        sl_result[LC_ALL_INDEX_] = do_setlocale_c(LC_ALL, trial_locale);
+        sl_result[LC_ALL_INDEX_] = setlocale_c(LC_ALL, trial_locale);
         DEBUG_LOCALE_INIT(LC_ALL_INDEX_, trial_locale, sl_result[LC_ALL_INDEX_]);
         if (! sl_result[LC_ALL_INDEX_]) {
             setlocale_failure = TRUE;
@@ -3452,7 +3469,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
         if (! setlocale_failure) {
             unsigned int j;
             for (j = 0; j < NOMINAL_LC_ALL_INDEX; j++) {
-                curlocales[j] = do_setlocale_i(j, trial_locale);
+                curlocales[j] = setlocale_i(j, trial_locale);
                 if (! curlocales[j]) {
                     setlocale_failure = TRUE;
                 }
@@ -4380,7 +4397,7 @@ S_switch_category_locale_to_template(pTHX_ const int switch_category,
     }
 
     /* Finally, change the locale to the template one */
-    if (! do_setlocale_r(switch_category, template_locale)) {
+    if (! bool_setlocale_r(switch_category, template_locale)) {
         Perl_croak(aTHX_
          "panic: %s: %d: Could not change %s locale to %s, errno=%d\n",
                             __FILE__, __LINE__, category_name(switch_category),
@@ -4405,7 +4422,7 @@ S_restore_switched_locale(pTHX_ const int category,
         return;
     }
 
-    if (! do_setlocale_r(category, original_locale)) {
+    if (! bool_setlocale_r(category, original_locale)) {
         Perl_croak(aTHX_
              "panic: %s: %d: setlocale %s restore to %s failed, errno=%d\n",
                  __FILE__, __LINE__,
@@ -5089,9 +5106,9 @@ Perl_my_strerror(pTHX_ const int errnum)
     else {
         const char * save_locale = savepv(querylocale_c(LC_MESSAGES));
 
-        do_setlocale_c(LC_MESSAGES, "C");
+        void_setlocale_c(LC_MESSAGES, "C");
         errstr = savepv(strerror(errnum));
-        do_setlocale_c(LC_MESSAGES, save_locale);
+        void_setlocale_c(LC_MESSAGES, save_locale);
         Safefree(save_locale);
     }
 
@@ -5171,7 +5188,7 @@ Perl_my_strerror(pTHX_ const int errnum)
                 /* The setlocale() just below likely will zap 'save_locale', so
                  * create a copy.  */
                 save_locale = savepv(save_locale);
-                if (! do_setlocale_c(LC_MESSAGES, "C")) {
+                if (! bool_setlocale_c(LC_MESSAGES, "C")) {
 
                     /* If, for some reason, the locale change failed, we
                      * soldier on as best as possible under the circumstances,
@@ -5198,7 +5215,7 @@ Perl_my_strerror(pTHX_ const int errnum)
 
     if (! within_locale_scope) {
         if (save_locale && ! locale_is_C) {
-            if (! do_setlocale_c(LC_MESSAGES, save_locale)) {
+            if (! bool_setlocale_c(LC_MESSAGES, save_locale)) {
                 SETLOCALE_UNLOCK;
                 Perl_croak(aTHX_
                      "panic: %s: %d: setlocale restore to '%s' failed, errno=%d\n",
@@ -5366,7 +5383,7 @@ Perl_sync_locale()
         /* We can't trust that we can read the LC_ALL format on the
          * platform, so do them individually */
         for (i = 0; i < LC_ALL_INDEX_; i++) {
-            do_setlocale_r(categories[i], querylocale_i(i));
+            void_setlocale_i(i, querylocale_i(i));
         }
 
 #    endif
