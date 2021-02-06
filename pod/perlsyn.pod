@@ -636,12 +636,13 @@ If no exception was thrown then the C<catch> block does not happen. In either
 case, execution will then continue from the following statement - in this
 example the C<print>.
 
-The C<catch> keyword is immediately followed by a variable declaration in
-parentheses, which introduces a new variable visible to the body of the
-subsequent block. Inside the block this variable will contain the exception
-value that was thrown by the code in the C<try> block. It is not necessary
-to use the C<my> keyword to declare this variable; this is implied (similar
-as it is for function signatures).
+The C<catch> keyword must be immediately followed by a variable declaration
+in parentheses, which introduces a new variable visible to the body of the
+subsequent block. (If you don't declare this variable, you will get a syntax
+error.)  Inside the block this variable will contain the exception value
+that was thrown by the code in the C<try> block. It is not necessary to use
+the C<my> keyword to declare this variable; this is implied (similar as it
+is for function signatures).
 
 This syntax is currently experimental and must be enabled with
 C<use feature 'try'>. It emits a warning in the C<experimental::try> category.

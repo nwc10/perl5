@@ -151,4 +151,18 @@ no warnings 'experimental::try';
     }
 }
 
+{
+    local $@;
+    my $x;
+    eval q|{
+        try {
+            $x .= "try";
+        }
+        catch () {
+            $x .= "catch";
+        }
+    }|;
+    like($@, qr/syntax error/, "Syntax error captured: $@");
+}
+
 done_testing;
