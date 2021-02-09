@@ -162,25 +162,26 @@ wide_to_utf8(const wchar_t *wbuf)
 {
     char *buf;
     int wlen = 0;
-    char *oldlocale;
+    const char *oldlocale;
+    dTHX;
 
     /* Here and elsewhere in this file, we have a critical section to prevent
      * another thread from changing the locale out from under us.  XXX But why
      * not just use uvchr_to_utf8? */
-    SETLOCALE_LOCK;
-
-    oldlocale = setlocale(LC_CTYPE, NULL);
-    setlocale(LC_CTYPE, "utf-8");
+    oldlocale = Perl_setlocale(LC_CTYPE, NULL);
+    Perl_setlocale(LC_CTYPE, "utf-8");
 
     /* uvchr_to_utf8(buf, chr) or Encoding::_bytes_to_utf8(sv, "UCS-2BE"); */
+    LC_CTYPE_LOCK;
     wlen = wcsrtombs(NULL, (const wchar_t **)&wbuf, wlen, NULL);
+    LC_CTYPE_UNLOCK;
     buf = (char *) safemalloc(wlen+1);
+    LC_CTYPE_LOCK;
     wcsrtombs(buf, (const wchar_t **)&wbuf, wlen, NULL);
+    LC_CTYPE_UNLOCK;
 
-    if (oldlocale) setlocale(LC_CTYPE, oldlocale);
-    else setlocale(LC_CTYPE, "C");
-
-    SETLOCALE_UNLOCK;
+    if (oldlocale) Perl_setlocale(LC_CTYPE, oldlocale);
+    else Perl_setlocale(LC_CTYPE, "C");
 
     return buf;
 }
@@ -190,22 +191,21 @@ utf8_to_wide(const char *buf)
 {
     wchar_t *wbuf;
     mbstate_t mbs;
-    char *oldlocale;
+    const char *oldlocale;
     int wlen = sizeof(wchar_t)*strlen(buf);
+    dTHX;
 
-    SETLOCALE_LOCK;
+    oldlocale = Perl_setlocale(LC_CTYPE, NULL);
 
-    oldlocale = setlocale(LC_CTYPE, NULL);
-
-    setlocale(LC_CTYPE, "utf-8");
+    Perl_setlocale(LC_CTYPE, "utf-8");
     wbuf = (wchar_t *) safemalloc(wlen);
     /* utf8_to_uvchr_buf(pathname, pathname + wlen, wpath) or Encoding::_utf8_to_bytes(sv, "UCS-2BE"); */
+    LC_CTYPE_LOCK;
     wlen = mbsrtowcs(wbuf, (const char**)&buf, wlen, &mbs);
+    LC_CTYPE_UNLOCK;
 
-    if (oldlocale) setlocale(LC_CTYPE, oldlocale);
-    else setlocale(LC_CTYPE, "C");
-
-    SETLOCALE_UNLOCK;
+    if (oldlocale) Perl_setlocale(LC_CTYPE, oldlocale);
+    else Perl_setlocale(LC_CTYPE, "C");
 
     return wbuf;
 }
@@ -305,20 +305,20 @@ XS(XS_Cygwin_win_to_posix_path)
         wchar_t *wbuf = (wchar_t *) safemalloc(wlen);
         if (!IN_BYTES) {
             mbstate_t mbs;
-            char *oldlocale;
+            const char *oldlocale;
+            dTHX;
 
-            SETLOCALE_LOCK;
-
-            oldlocale = setlocale(LC_CTYPE, NULL);
-            setlocale(LC_CTYPE, "utf-8");
+            oldlocale = Perl_setlocale(LC_CTYPE, NULL);
+            Perl_setlocale(LC_CTYPE, "utf-8");
             /* utf8_to_uvchr_buf(src_path, src_path + wlen, wpath) or Encoding::_utf8_to_bytes(sv, "UCS-2BE"); */
+            LC_CTYPE_LOCK;
             wlen = mbsrtowcs(wpath, (const char**)&src_path, wlen, &mbs);
+            LC_CTYPE_UNLOCK;
             if (wlen > 0)
                 err = cygwin_conv_path(what, wpath, wbuf, wlen);
-            if (oldlocale) setlocale(LC_CTYPE, oldlocale);
-            else setlocale(LC_CTYPE, "C");
+            if (oldlocale) Perl_setlocale(LC_CTYPE, oldlocale);
+            else Perl_setlocale(LC_CTYPE, "C");
 
-            SETLOCALE_UNLOCK;
         } else { /* use bytes; assume already ucs-2 encoded bytestream */
             err = cygwin_conv_path(what, src_path, wbuf, wlen);
         }
@@ -396,16 +396,17 @@ XS(XS_Cygwin_posix_to_win_path)
         int wlen = sizeof(wchar_t)*(len + 260 + 1001);
         wchar_t *wpath = (wchar_t *) safemalloc(sizeof(wchar_t)*len);
         wchar_t *wbuf = (wchar_t *) safemalloc(wlen);
-        char *oldlocale;
+        const char *oldlocale;
+        dTHX;
 
-        SETLOCALE_LOCK;
-
-        oldlocale = setlocale(LC_CTYPE, NULL);
-        setlocale(LC_CTYPE, "utf-8");
+        oldlocale = Perl_setlocale(LC_CTYPE, NULL);
+        Perl_setlocale(LC_CTYPE, "utf-8");
         if (!IN_BYTES) {
             mbstate_t mbs;
             /* utf8_to_uvchr_buf(src_path, src_path + wlen, wpath) or Encoding::_utf8_to_bytes(sv, "UCS-2BE"); */
+            LC_CTYPE_LOCK;
             wlen = mbsrtowcs(wpath, (const char**)&src_path, wlen, &mbs);
+            LC_CTYPE_UNLOCK;
             if (wlen > 0)
                 err = cygwin_conv_path(what, wpath, wbuf, wlen);
         } else { /* use bytes; assume already ucs-2 encoded bytestream */
@@ -418,13 +419,15 @@ XS(XS_Cygwin_posix_to_win_path)
             wlen = newlen;
         }
         /* also see utf8.c: Perl_utf16_to_utf8() or Encoding::_bytes_to_utf8(sv, "UCS-2BE"); */
+        LC_CTYPE_LOCK;
         wlen = wcsrtombs(NULL, (const wchar_t **)&wbuf, wlen, NULL);
+        LC_CTYPE_UNLOCK;
         win_path = (char *) safemalloc(wlen+1);
+        LC_CTYPE_LOCK;
         wcsrtombs(win_path, (const wchar_t **)&wbuf, wlen, NULL);
-        if (oldlocale) setlocale(LC_CTYPE, oldlocale);
-        else setlocale(LC_CTYPE, "C");
-
-        SETLOCALE_UNLOCK;
+        LC_CTYPE_UNLOCK;
+        if (oldlocale) Perl_setlocale(LC_CTYPE, oldlocale);
+        else Perl_setlocale(LC_CTYPE, "C");
     } else {
         int what = absolute_flag ? CCP_POSIX_TO_WIN_A : CCP_POSIX_TO_WIN_A | CCP_RELATIVE;
         win_path = (char *) safemalloc(len + 260 + 1001);
