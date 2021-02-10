@@ -2331,6 +2331,25 @@ Perl_cx_pusheval(pTHX_ PERL_CONTEXT *cx, OP *retop, SV *namesv)
     cx->blk_u16 = (PL_in_eval & 0x3F) | ((U16)PL_op->op_type << 7);
 }
 
+PERL_STATIC_INLINE void
+Perl_cx_pushtry(pTHX_ PERL_CONTEXT *cx, OP *retop, SV *namesv)
+{
+    PERL_ARGS_ASSERT_CX_PUSHTRY;
+
+    /* just so it's restored by the common eval finished code */
+    cx->blk_eval.old_cxsubix   = PL_curstackinfo->si_cxsubix;
+    cx->blk_eval.retop         = retop;
+    cx->blk_eval.old_namesv    = namesv;
+    cx->blk_eval.old_eval_root = PL_eval_root;
+    cx->blk_eval.cur_text      = PL_parser ? PL_parser->linestr : NULL;
+    cx->blk_eval.cv            = NULL; /* later set by doeval_compile() */
+    cx->blk_eval.cur_top_env   = PL_top_env;
+
+    assert(!(PL_in_eval     & ~ 0x3F));
+    assert(!(PL_op->op_type & ~0x1FF));
+    cx->blk_u16 = (PL_in_eval & 0x3F) | ((U16)PL_op->op_type << 7);
+}
+
 
 PERL_STATIC_INLINE void
 Perl_cx_popeval(pTHX_ PERL_CONTEXT *cx)
