@@ -1076,6 +1076,9 @@ Example usage:
 /* XXX The next few defines are unfortunately duplicated in makedef.pl, and
  * changes here MUST also be made there */
 
+#  if defined(USE_ITHREADS) && ! defined(NO_LOCALE_THREADS)
+#    define USE_LOCALE_THREADS
+#  endif
 #  if ! defined(HAS_SETLOCALE) && defined(HAS_POSIX_2008_LOCALE)
 #      define USE_POSIX_2008_LOCALE
 #      ifndef USE_THREAD_SAFE_LOCALE
@@ -1084,7 +1087,7 @@ Example usage:
                                    /* If compiled with
                                     * -DUSE_THREAD_SAFE_LOCALE, will do so even
                                     * on unthreaded builds */
-#  elif   (defined(USE_ITHREADS) || defined(USE_THREAD_SAFE_LOCALE))         \
+#  elif   (defined(USE_LOCALE_THREADS) || defined(USE_THREAD_SAFE_LOCALE))   \
        && (    defined(HAS_POSIX_2008_LOCALE)                                \
            || (defined(WIN32) && defined(_MSC_VER) && _MSC_VER >= 1400))     \
        && ! defined(NO_THREAD_SAFE_LOCALE)
@@ -6629,7 +6632,7 @@ the plain locale pragma without a parameter (S<C<use locale>>) is in effect.
 
 /* Locale/thread synchronization macros. */
 #if ! (   defined(USE_LOCALE)                                               \
-       &&    defined(USE_ITHREADS)                                          \
+       &&    defined(USE_LOCALE_THREADS)                                    \
        && (  ! defined(USE_THREAD_SAFE_LOCALE)                              \
            || (   defined(HAS_LOCALECONV)                                   \
                && (  ! defined(HAS_LOCALECONV_L)                            \
@@ -7151,7 +7154,7 @@ cannot have changed since the precalculation.
 
 #endif /* !USE_LOCALE_NUMERIC */
 
-#ifdef USE_ITHREADS
+#ifdef USE_LOCALE_THREADS
 #  define ENV_LOCK            PERL_WRITE_LOCK(&PL_env_mutex)
 #  define ENV_UNLOCK          PERL_WRITE_UNLOCK(&PL_env_mutex)
 #  define ENV_READ_LOCK       PERL_READ_LOCK(&PL_env_mutex)
