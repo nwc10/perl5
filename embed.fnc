@@ -679,7 +679,7 @@ ApR	|I32	|my_chsize	|int fd|Off_t length
 p	|const COP*|closest_cop	|NN const COP *cop|NULLOK const OP *o \
 				|NULLOK const OP *curop|bool opnext
 : Used in perly.y
-ApdR	|OP*	|op_convert_list	|I32 optype|I32 flags|NULLOK OP* o
+ApdR	|OP*	|op_convert_list	|I32 optype|U32 flags|NULLOK OP* o
 : Used in op.c and perl.c
 px	|void	|create_eval_scope|NULLOK OP *retop|U32 flags
 Aprd	|void	|croak_sv	|NN SV *baseex
@@ -916,7 +916,7 @@ i	|OP*	|op_std_init	|NN OP *o
 #if defined(USE_ITHREADS)
 i	|void	|op_relocate_sv	|NN SV** svp|NN PADOFFSET* targp
 #endif
-i	|OP*	|newMETHOP_internal	|I32 type|I32 flags|NULLOK OP* dynamic_meth \
+i	|OP*	|newMETHOP_internal	|I32 type|U32 flags|NULLOK OP* dynamic_meth \
 					|NULLOK SV* const_meth
 : FIXME
 S	|OP*	|fold_constants	|NN OP * const o
@@ -1422,28 +1422,28 @@ CbDTPR	|UV	|ASCII_TO_NEED	|const UV enc|const UV ch
 ApR	|OP*	|newANONLIST	|NULLOK OP* o
 ApR	|OP*	|newANONHASH	|NULLOK OP* o
 Ap	|OP*	|newANONSUB	|I32 floor|NULLOK OP* proto|NULLOK OP* block
-ApdR	|OP*	|newASSIGNOP	|I32 flags|NULLOK OP* left|I32 optype|NULLOK OP* right
-ApdR	|OP*	|newCONDOP	|I32 flags|NN OP* first|NULLOK OP* trueop|NULLOK OP* falseop
+ApdR	|OP*	|newASSIGNOP	|U32 flags|NULLOK OP* left|I32 optype|NULLOK OP* right
+ApdR	|OP*	|newCONDOP	|U32 flags|NN OP* first|NULLOK OP* trueop|NULLOK OP* falseop
 Apd	|CV*	|newCONSTSUB	|NULLOK HV* stash|NULLOK const char* name|NULLOK SV* sv
 Apd	|CV*	|newCONSTSUB_flags|NULLOK HV* stash \
 				  |NULLOK const char* name|STRLEN len \
 				  |U32 flags|NULLOK SV* sv
 Ap	|void	|newFORM	|I32 floor|NULLOK OP* o|NULLOK OP* block
-ApdR	|OP*	|newFOROP	|I32 flags|NULLOK OP* sv|NN OP* expr|NULLOK OP* block|NULLOK OP* cont
+ApdR	|OP*	|newFOROP	|U32 flags|NULLOK OP* sv|NN OP* expr|NULLOK OP* block|NULLOK OP* cont
 ApdR	|OP*	|newGIVENOP	|NN OP* cond|NN OP* block|PADOFFSET defsv_off
-ApdR	|OP*	|newLOGOP	|I32 optype|I32 flags|NN OP *first|NN OP *other
+ApdR	|OP*	|newLOGOP	|I32 optype|U32 flags|NN OP *first|NN OP *other
 px	|LOGOP*	|alloc_LOGOP	|I32 type|NULLOK OP *first|NULLOK OP *other
 ApdR	|OP*	|newLOOPEX	|I32 type|NN OP* label
-ApdR	|OP*	|newLOOPOP	|I32 flags|I32 debuggable|NULLOK OP* expr|NULLOK OP* block
+ApdR	|OP*	|newLOOPOP	|U32 flags|I32 debuggable|NULLOK OP* expr|NULLOK OP* block
 ApdR	|OP*	|newNULLLIST
-ApdR	|OP*	|newOP		|I32 optype|I32 flags
+ApdR	|OP*	|newOP		|I32 optype|U32 flags
 Ap	|void	|newPROG	|NN OP* o
-ApdR	|OP*	|newRANGE	|I32 flags|NN OP* left|NN OP* right
-ApdR	|OP*	|newSLICEOP	|I32 flags|NULLOK OP* subscript|NULLOK OP* listop
-ApdR	|OP*	|newSTATEOP	|I32 flags|NULLOK char* label|NULLOK OP* o
+ApdR	|OP*	|newRANGE	|U32 flags|NN OP* left|NN OP* right
+ApdR	|OP*	|newSLICEOP	|U32 flags|NULLOK OP* subscript|NULLOK OP* listop
+ApdR	|OP*	|newSTATEOP	|U32 flags|NULLOK char* label|NULLOK OP* o
 AdpbM	|CV*	|newSUB		|I32 floor|NULLOK OP* o|NULLOK OP* proto \
 				|NULLOK OP* block
-ApdRx	|OP*	|newTRYCATCHOP	|I32 flags|NN OP* tryblock|NN OP *catchvar|NN OP* catchblock
+ApdRx	|OP*	|newTRYCATCHOP	|U32 flags|NN OP* tryblock|NN OP *catchvar|NN OP* catchblock
 pd	|CV *	|newXS_len_flags|NULLOK const char *name|STRLEN len \
 				|NN XSUBADDR_t subaddr\
 				|NULLOK const char *const filename \
@@ -1457,9 +1457,9 @@ ApdU	|CV*	|newXS		|NULLOK const char *name|NN XSUBADDR_t subaddr\
 				|NN const char *filename
 ApMdbR	|AV*	|newAV
 ApR	|OP*	|newAVREF	|NN OP* o
-ApdR	|OP*	|newBINOP	|I32 type|I32 flags|NULLOK OP* first|NULLOK OP* last
-ApR	|OP*	|newCVREF	|I32 flags|NULLOK OP* o
-ApdR	|OP*	|newGVOP	|I32 type|I32 flags|NN GV* gv
+ApdR	|OP*	|newBINOP	|I32 type|U32 flags|NULLOK OP* first|NULLOK OP* last
+ApR	|OP*	|newCVREF	|U32 flags|NULLOK OP* o
+ApdR	|OP*	|newGVOP	|I32 type|U32 flags|NN GV* gv
 Am	|GV*	|newGVgen	|NN const char* pack
 ApR	|GV*	|newGVgen_flags	|NN const char* pack|U32 flags
 ApR	|OP*	|newGVREF	|I32 type|NULLOK OP* o
@@ -1467,20 +1467,20 @@ ApR	|OP*	|newHVREF	|NN OP* o
 ApMdbR	|HV*	|newHV
 ApR	|HV*	|newHVhv	|NULLOK HV *hv
 ApRbM	|IO*	|newIO
-ApdR	|OP*	|newLISTOP	|I32 type|I32 flags|NULLOK OP* first|NULLOK OP* last
+ApdR	|OP*	|newLISTOP	|I32 type|U32 flags|NULLOK OP* first|NULLOK OP* last
 AxpdRT	|PADNAME *|newPADNAMEouter|NN PADNAME *outer
 AxpdRT	|PADNAME *|newPADNAMEpvn|NN const char *s|STRLEN len
 AxpdRT	|PADNAMELIST *|newPADNAMELIST|size_t max
 #ifdef USE_ITHREADS
-ApdR	|OP*	|newPADOP	|I32 type|I32 flags|NN SV* sv
+ApdR	|OP*	|newPADOP	|I32 type|U32 flags|NN SV* sv
 #endif
-ApdR	|OP*	|newPMOP	|I32 type|I32 flags
-ApdR	|OP*	|newPVOP	|I32 type|I32 flags|NULLOK char* pv
+ApdR	|OP*	|newPMOP	|I32 type|U32 flags
+ApdR	|OP*	|newPVOP	|I32 type|U32 flags|NULLOK char* pv
 ApdR	|SV*	|newRV		|NN SV *const sv
 ApdR	|SV*	|newRV_noinc	|NN SV *const tmpRef
 ApdR	|SV*	|newSV		|const STRLEN len
 ApR	|OP*	|newSVREF	|NN OP* o
-ApdR	|OP*	|newSVOP	|I32 type|I32 flags|NN SV* sv
+ApdR	|OP*	|newSVOP	|I32 type|U32 flags|NN SV* sv
 ApdR	|OP*	|newDEFSVOP
 pR	|SV*	|newSVavdefelem	|NN AV *av|SSize_t ix|bool extendible
 ApdR	|SV*	|newSViv	|const IV i
@@ -1499,15 +1499,15 @@ ApMbdR	|SV*	|newSVsv	|NULLOK SV *const old
 AmdR	|SV*	|newSVsv_nomg	|NULLOK SV *const old
 AdpR	|SV*	|newSVsv_flags	|NULLOK SV *const old|I32 flags
 ApdR	|SV*	|newSV_type	|const svtype type
-ApdR	|OP*	|newUNOP	|I32 type|I32 flags|NULLOK OP* first
-ApdR	|OP*	|newUNOP_AUX	|I32 type|I32 flags|NULLOK OP* first \
+ApdR	|OP*	|newUNOP	|I32 type|U32 flags|NULLOK OP* first
+ApdR	|OP*	|newUNOP_AUX	|I32 type|U32 flags|NULLOK OP* first \
 				|NULLOK UNOP_AUX_item *aux
 ApdR	|OP*	|newWHENOP	|NULLOK OP* cond|NN OP* block
-ApdR	|OP*	|newWHILEOP	|I32 flags|I32 debuggable|NULLOK LOOP* loop \
+ApdR	|OP*	|newWHILEOP	|U32 flags|I32 debuggable|NULLOK LOOP* loop \
 				|NULLOK OP* expr|NULLOK OP* block|NULLOK OP* cont \
 				|I32 has_my
-ApdR	|OP*	|newMETHOP	|I32 type|I32 flags|NN OP* dynamic_meth
-ApdR	|OP*	|newMETHOP_named|I32 type|I32 flags|NN SV* const_meth
+ApdR	|OP*	|newMETHOP	|I32 type|U32 flags|NN OP* dynamic_meth
+ApdR	|OP*	|newMETHOP_named|I32 type|U32 flags|NN SV* const_meth
 Apd	|CV*	|rv2cv_op_cv	|NN OP *cvop|U32 flags
 Apd	|OP*	|ck_entersub_args_list|NN OP *entersubop
 Apd	|OP*	|ck_entersub_args_proto|NN OP *entersubop|NN GV *namegv|NN SV *protosv
@@ -2874,7 +2874,7 @@ S	|void	|cop_free	|NN COP *cop
 S	|OP*	|modkids	|NULLOK OP *o|I32 type
 S	|OP*	|scalarboolean	|NN OP *o
 SR	|OP*	|search_const	|NN OP *o
-SR	|OP*	|new_logop	|I32 type|I32 flags|NN OP **firstp|NN OP **otherp
+SR	|OP*	|new_logop	|I32 type|U32 flags|NN OP **firstp|NN OP **otherp
 S	|void	|simplify_sort	|NN OP *o
 SRT	|bool	|scalar_mod_type|NULLOK const OP *o|I32 type
 S	|OP *	|my_kid		|NULLOK OP *o|NULLOK OP *attrs|NN OP **imopsp

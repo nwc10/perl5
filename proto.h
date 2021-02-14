@@ -2220,7 +2220,7 @@ PERL_CALLCONV OP*	Perl_newANONLIST(pTHX_ OP* o)
 
 PERL_CALLCONV OP*	Perl_newANONSUB(pTHX_ I32 floor, OP* proto, OP* block);
 #define PERL_ARGS_ASSERT_NEWANONSUB
-PERL_CALLCONV OP*	Perl_newASSIGNOP(pTHX_ I32 flags, OP* left, I32 optype, OP* right)
+PERL_CALLCONV OP*	Perl_newASSIGNOP(pTHX_ U32 flags, OP* left, I32 optype, OP* right)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWASSIGNOP
 
@@ -2239,11 +2239,11 @@ PERL_CALLCONV OP*	Perl_newAVREF(pTHX_ OP* o)
 #define PERL_ARGS_ASSERT_NEWAVREF	\
 	assert(o)
 
-PERL_CALLCONV OP*	Perl_newBINOP(pTHX_ I32 type, I32 flags, OP* first, OP* last)
+PERL_CALLCONV OP*	Perl_newBINOP(pTHX_ I32 type, U32 flags, OP* first, OP* last)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWBINOP
 
-PERL_CALLCONV OP*	Perl_newCONDOP(pTHX_ I32 flags, OP* first, OP* trueop, OP* falseop)
+PERL_CALLCONV OP*	Perl_newCONDOP(pTHX_ U32 flags, OP* first, OP* trueop, OP* falseop)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWCONDOP	\
 	assert(first)
@@ -2252,7 +2252,7 @@ PERL_CALLCONV CV*	Perl_newCONSTSUB(pTHX_ HV* stash, const char* name, SV* sv);
 #define PERL_ARGS_ASSERT_NEWCONSTSUB
 PERL_CALLCONV CV*	Perl_newCONSTSUB_flags(pTHX_ HV* stash, const char* name, STRLEN len, U32 flags, SV* sv);
 #define PERL_ARGS_ASSERT_NEWCONSTSUB_FLAGS
-PERL_CALLCONV OP*	Perl_newCVREF(pTHX_ I32 flags, OP* o)
+PERL_CALLCONV OP*	Perl_newCVREF(pTHX_ U32 flags, OP* o)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWCVREF
 
@@ -2262,7 +2262,7 @@ PERL_CALLCONV OP*	Perl_newDEFSVOP(pTHX)
 
 PERL_CALLCONV void	Perl_newFORM(pTHX_ I32 floor, OP* o, OP* block);
 #define PERL_ARGS_ASSERT_NEWFORM
-PERL_CALLCONV OP*	Perl_newFOROP(pTHX_ I32 flags, OP* sv, OP* expr, OP* block, OP* cont)
+PERL_CALLCONV OP*	Perl_newFOROP(pTHX_ U32 flags, OP* sv, OP* expr, OP* block, OP* cont)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWFOROP	\
 	assert(expr)
@@ -2275,7 +2275,7 @@ PERL_CALLCONV OP*	Perl_newGIVENOP(pTHX_ OP* cond, OP* block, PADOFFSET defsv_off
 PERL_CALLCONV GP *	Perl_newGP(pTHX_ GV *const gv);
 #define PERL_ARGS_ASSERT_NEWGP	\
 	assert(gv)
-PERL_CALLCONV OP*	Perl_newGVOP(pTHX_ I32 type, I32 flags, GV* gv)
+PERL_CALLCONV OP*	Perl_newGVOP(pTHX_ I32 type, U32 flags, GV* gv)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWGVOP	\
 	assert(gv)
@@ -2312,11 +2312,11 @@ PERL_CALLCONV IO*	Perl_newIO(pTHX)
 #define PERL_ARGS_ASSERT_NEWIO
 #endif
 
-PERL_CALLCONV OP*	Perl_newLISTOP(pTHX_ I32 type, I32 flags, OP* first, OP* last)
+PERL_CALLCONV OP*	Perl_newLISTOP(pTHX_ I32 type, U32 flags, OP* first, OP* last)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWLISTOP
 
-PERL_CALLCONV OP*	Perl_newLOGOP(pTHX_ I32 optype, I32 flags, OP *first, OP *other)
+PERL_CALLCONV OP*	Perl_newLOGOP(pTHX_ I32 optype, U32 flags, OP *first, OP *other)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWLOGOP	\
 	assert(first); assert(other)
@@ -2326,16 +2326,16 @@ PERL_CALLCONV OP*	Perl_newLOOPEX(pTHX_ I32 type, OP* label)
 #define PERL_ARGS_ASSERT_NEWLOOPEX	\
 	assert(label)
 
-PERL_CALLCONV OP*	Perl_newLOOPOP(pTHX_ I32 flags, I32 debuggable, OP* expr, OP* block)
+PERL_CALLCONV OP*	Perl_newLOOPOP(pTHX_ U32 flags, I32 debuggable, OP* expr, OP* block)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWLOOPOP
 
-PERL_CALLCONV OP*	Perl_newMETHOP(pTHX_ I32 type, I32 flags, OP* dynamic_meth)
+PERL_CALLCONV OP*	Perl_newMETHOP(pTHX_ I32 type, U32 flags, OP* dynamic_meth)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWMETHOP	\
 	assert(dynamic_meth)
 
-PERL_CALLCONV OP*	Perl_newMETHOP_named(pTHX_ I32 type, I32 flags, SV* const_meth)
+PERL_CALLCONV OP*	Perl_newMETHOP_named(pTHX_ I32 type, U32 flags, SV* const_meth)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWMETHOP_NAMED	\
 	assert(const_meth)
@@ -2347,7 +2347,7 @@ PERL_CALLCONV OP*	Perl_newNULLLIST(pTHX)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWNULLLIST
 
-PERL_CALLCONV OP*	Perl_newOP(pTHX_ I32 optype, I32 flags)
+PERL_CALLCONV OP*	Perl_newOP(pTHX_ I32 optype, U32 flags)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWOP
 
@@ -2365,18 +2365,18 @@ PERL_CALLCONV PADNAME *	Perl_newPADNAMEpvn(const char *s, STRLEN len)
 #define PERL_ARGS_ASSERT_NEWPADNAMEPVN	\
 	assert(s)
 
-PERL_CALLCONV OP*	Perl_newPMOP(pTHX_ I32 type, I32 flags)
+PERL_CALLCONV OP*	Perl_newPMOP(pTHX_ I32 type, U32 flags)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWPMOP
 
 PERL_CALLCONV void	Perl_newPROG(pTHX_ OP* o);
 #define PERL_ARGS_ASSERT_NEWPROG	\
 	assert(o)
-PERL_CALLCONV OP*	Perl_newPVOP(pTHX_ I32 type, I32 flags, char* pv)
+PERL_CALLCONV OP*	Perl_newPVOP(pTHX_ I32 type, U32 flags, char* pv)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWPVOP
 
-PERL_CALLCONV OP*	Perl_newRANGE(pTHX_ I32 flags, OP* left, OP* right)
+PERL_CALLCONV OP*	Perl_newRANGE(pTHX_ U32 flags, OP* left, OP* right)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWRANGE	\
 	assert(left); assert(right)
@@ -2391,11 +2391,11 @@ PERL_CALLCONV SV*	Perl_newRV_noinc(pTHX_ SV *const tmpRef)
 #define PERL_ARGS_ASSERT_NEWRV_NOINC	\
 	assert(tmpRef)
 
-PERL_CALLCONV OP*	Perl_newSLICEOP(pTHX_ I32 flags, OP* subscript, OP* listop)
+PERL_CALLCONV OP*	Perl_newSLICEOP(pTHX_ U32 flags, OP* subscript, OP* listop)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSLICEOP
 
-PERL_CALLCONV OP*	Perl_newSTATEOP(pTHX_ I32 flags, char* label, OP* o)
+PERL_CALLCONV OP*	Perl_newSTATEOP(pTHX_ U32 flags, char* label, OP* o)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSTATEOP
 
@@ -2410,7 +2410,7 @@ PERL_CALLCONV SV*	Perl_newSV(pTHX_ const STRLEN len)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSV
 
-PERL_CALLCONV OP*	Perl_newSVOP(pTHX_ I32 type, I32 flags, SV* sv)
+PERL_CALLCONV OP*	Perl_newSVOP(pTHX_ I32 type, U32 flags, SV* sv)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVOP	\
 	assert(sv)
@@ -2488,16 +2488,16 @@ PERL_CALLCONV SV*	Perl_newSVuv(pTHX_ const UV u)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVUV
 
-PERL_CALLCONV OP*	Perl_newTRYCATCHOP(pTHX_ I32 flags, OP* tryblock, OP *catchvar, OP* catchblock)
+PERL_CALLCONV OP*	Perl_newTRYCATCHOP(pTHX_ U32 flags, OP* tryblock, OP *catchvar, OP* catchblock)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWTRYCATCHOP	\
 	assert(tryblock); assert(catchvar); assert(catchblock)
 
-PERL_CALLCONV OP*	Perl_newUNOP(pTHX_ I32 type, I32 flags, OP* first)
+PERL_CALLCONV OP*	Perl_newUNOP(pTHX_ I32 type, U32 flags, OP* first)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWUNOP
 
-PERL_CALLCONV OP*	Perl_newUNOP_AUX(pTHX_ I32 type, I32 flags, OP* first, UNOP_AUX_item *aux)
+PERL_CALLCONV OP*	Perl_newUNOP_AUX(pTHX_ I32 type, U32 flags, OP* first, UNOP_AUX_item *aux)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWUNOP_AUX
 
@@ -2506,7 +2506,7 @@ PERL_CALLCONV OP*	Perl_newWHENOP(pTHX_ OP* cond, OP* block)
 #define PERL_ARGS_ASSERT_NEWWHENOP	\
 	assert(block)
 
-PERL_CALLCONV OP*	Perl_newWHILEOP(pTHX_ I32 flags, I32 debuggable, LOOP* loop, OP* expr, OP* block, OP* cont, I32 has_my)
+PERL_CALLCONV OP*	Perl_newWHILEOP(pTHX_ U32 flags, I32 debuggable, LOOP* loop, OP* expr, OP* block, OP* cont, I32 has_my)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWWHILEOP
 
@@ -2578,7 +2578,7 @@ PERL_CALLCONV void	Perl_op_clear(pTHX_ OP* o);
 PERL_CALLCONV OP*	Perl_op_contextualize(pTHX_ OP* o, I32 context);
 #define PERL_ARGS_ASSERT_OP_CONTEXTUALIZE	\
 	assert(o)
-PERL_CALLCONV OP*	Perl_op_convert_list(pTHX_ I32 optype, I32 flags, OP* o)
+PERL_CALLCONV OP*	Perl_op_convert_list(pTHX_ I32 optype, U32 flags, OP* o)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_OP_CONVERT_LIST
 
@@ -5264,10 +5264,10 @@ STATIC OP*	S_newGIVWHENOP(pTHX_ OP* cond, OP *block, I32 enter_opcode, I32 leave
 #define PERL_ARGS_ASSERT_NEWGIVWHENOP	\
 	assert(block)
 #ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE OP*	S_newMETHOP_internal(pTHX_ I32 type, I32 flags, OP* dynamic_meth, SV* const_meth);
+PERL_STATIC_INLINE OP*	S_newMETHOP_internal(pTHX_ I32 type, U32 flags, OP* dynamic_meth, SV* const_meth);
 #define PERL_ARGS_ASSERT_NEWMETHOP_INTERNAL
 #endif
-STATIC OP*	S_new_logop(pTHX_ I32 type, I32 flags, OP **firstp, OP **otherp)
+STATIC OP*	S_new_logop(pTHX_ I32 type, U32 flags, OP **firstp, OP **otherp)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEW_LOGOP	\
 	assert(firstp); assert(otherp)
@@ -6756,7 +6756,7 @@ PERL_CALLCONV MAGIC*	Perl_mg_dup(pTHX_ MAGIC *mg, CLONE_PARAMS *const param)
 PERL_CALLCONV struct mro_meta*	Perl_mro_meta_dup(pTHX_ struct mro_meta* smeta, CLONE_PARAMS* param);
 #define PERL_ARGS_ASSERT_MRO_META_DUP	\
 	assert(smeta); assert(param)
-PERL_CALLCONV OP*	Perl_newPADOP(pTHX_ I32 type, I32 flags, SV* sv)
+PERL_CALLCONV OP*	Perl_newPADOP(pTHX_ I32 type, U32 flags, SV* sv)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWPADOP	\
 	assert(sv)

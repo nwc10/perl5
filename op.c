@@ -1621,7 +1621,7 @@ Perl_op_parent(OP *o)
  */
 
 STATIC OP *
-S_op_sibling_newUNOP(pTHX_ OP *parent, OP *start, I32 type, I32 flags)
+S_op_sibling_newUNOP(pTHX_ OP *parent, OP *start, I32 type, U32 flags)
 {
     OP *kid, *newop;
 
@@ -6478,7 +6478,7 @@ C<op_convert_list> to make it the right type.
 */
 
 OP *
-Perl_op_convert_list(pTHX_ I32 type, I32 flags, OP *o)
+Perl_op_convert_list(pTHX_ I32 type, U32 flags, OP *o)
 {
     if (type < 0) type = -type, flags |= OPf_SPECIAL;
     if (!o || o->op_type != OP_LIST)
@@ -6589,7 +6589,7 @@ See L</op_convert_list> for more information.
 */
 
 OP *
-Perl_newLISTOP(pTHX_ I32 type, I32 flags, OP *first, OP *last)
+Perl_newLISTOP(pTHX_ I32 type, U32 flags, OP *first, OP *last)
 {
     LISTOP *listop;
     /* Note that allocating an OP_PUSHMARK can die under Safe.pm if
@@ -6640,7 +6640,7 @@ of C<op_private>.
 */
 
 OP *
-Perl_newOP(pTHX_ I32 type, I32 flags)
+Perl_newOP(pTHX_ I32 type, U32 flags)
 {
     OP *o;
 
@@ -6684,7 +6684,7 @@ of the constructed op tree.
 */
 
 OP *
-Perl_newUNOP(pTHX_ I32 type, I32 flags, OP *first)
+Perl_newUNOP(pTHX_ I32 type, U32 flags, OP *first)
 {
     UNOP *unop;
 
@@ -6734,7 +6734,7 @@ initialised to C<aux>
 */
 
 OP *
-Perl_newUNOP_AUX(pTHX_ I32 type, I32 flags, OP *first, UNOP_AUX_item *aux)
+Perl_newUNOP_AUX(pTHX_ I32 type, U32 flags, OP *first, UNOP_AUX_item *aux)
 {
     UNOP_AUX *unop;
 
@@ -6773,7 +6773,7 @@ Supported optypes: C<OP_METHOD>.
 */
 
 static OP*
-S_newMETHOP_internal(pTHX_ I32 type, I32 flags, OP* dynamic_meth, SV* const_meth) {
+S_newMETHOP_internal(pTHX_ I32 type, U32 flags, OP* dynamic_meth, SV* const_meth) {
     METHOP *methop;
 
     assert((PL_opargs[type] & OA_CLASS_MASK) == OA_METHOP
@@ -6808,7 +6808,7 @@ S_newMETHOP_internal(pTHX_ I32 type, I32 flags, OP* dynamic_meth, SV* const_meth
 }
 
 OP *
-Perl_newMETHOP (pTHX_ I32 type, I32 flags, OP* dynamic_meth) {
+Perl_newMETHOP (pTHX_ I32 type, U32 flags, OP* dynamic_meth) {
     PERL_ARGS_ASSERT_NEWMETHOP;
     return newMETHOP_internal(type, flags, dynamic_meth, NULL);
 }
@@ -6827,7 +6827,7 @@ Supported optypes: C<OP_METHOD_NAMED>.
 */
 
 OP *
-Perl_newMETHOP_named (pTHX_ I32 type, I32 flags, SV* const_meth) {
+Perl_newMETHOP_named (pTHX_ I32 type, U32 flags, SV* const_meth) {
     PERL_ARGS_ASSERT_NEWMETHOP_NAMED;
     return newMETHOP_internal(type, flags, NULL, const_meth);
 }
@@ -6847,7 +6847,7 @@ by this function and become part of the constructed op tree.
 */
 
 OP *
-Perl_newBINOP(pTHX_ I32 type, I32 flags, OP *first, OP *last)
+Perl_newBINOP(pTHX_ I32 type, U32 flags, OP *first, OP *last)
 {
     BINOP *binop;
 
@@ -8100,7 +8100,7 @@ and, shifted up eight bits, the eight bits of C<op_private>.
 */
 
 OP *
-Perl_newPMOP(pTHX_ I32 type, I32 flags)
+Perl_newPMOP(pTHX_ I32 type, U32 flags)
 {
     PMOP *pmop;
 
@@ -8586,7 +8586,7 @@ takes ownership of one reference to it.
 */
 
 OP *
-Perl_newSVOP(pTHX_ I32 type, I32 flags, SV *sv)
+Perl_newSVOP(pTHX_ I32 type, U32 flags, SV *sv)
 {
     SVOP *svop;
 
@@ -8641,7 +8641,7 @@ This function only exists if Perl has been compiled to use ithreads.
 */
 
 OP *
-Perl_newPADOP(pTHX_ I32 type, I32 flags, SV *sv)
+Perl_newPADOP(pTHX_ I32 type, U32 flags, SV *sv)
 {
     PADOP *padop;
 
@@ -8683,7 +8683,7 @@ reference to it.
 */
 
 OP *
-Perl_newGVOP(pTHX_ I32 type, I32 flags, GV *gv)
+Perl_newGVOP(pTHX_ I32 type, U32 flags, GV *gv)
 {
     PERL_ARGS_ASSERT_NEWGVOP;
 
@@ -8708,7 +8708,7 @@ have been allocated using C<PerlMemShared_malloc>.
 */
 
 OP *
-Perl_newPVOP(pTHX_ I32 type, I32 flags, char *pv)
+Perl_newPVOP(pTHX_ I32 type, U32 flags, char *pv)
 {
     const bool utf8 = cBOOL(flags & SVf_UTF8);
     PVOP *pvop;
@@ -9055,7 +9055,7 @@ constructed op tree.
 */
 
 OP *
-Perl_newSLICEOP(pTHX_ I32 flags, OP *subscript, OP *listval)
+Perl_newSLICEOP(pTHX_ U32 flags, OP *subscript, OP *listval)
 {
     return newBINOP(OP_LSLICE, flags,
 	    list(force_list(subscript, 1)),
@@ -9184,7 +9184,7 @@ set as required.
 */
 
 OP *
-Perl_newASSIGNOP(pTHX_ I32 flags, OP *left, I32 optype, OP *right)
+Perl_newASSIGNOP(pTHX_ U32 flags, OP *left, I32 optype, OP *right)
 {
     OP *o;
     I32 assign_type;
@@ -9396,7 +9396,7 @@ is consumed by this function and becomes part of the returned op tree.
 */
 
 OP *
-Perl_newSTATEOP(pTHX_ I32 flags, char *label, OP *o)
+Perl_newSTATEOP(pTHX_ U32 flags, char *label, OP *o)
 {
     const U32 seq = intro_my();
     const U32 utf8 = flags & SVf_UTF8;
@@ -9482,7 +9482,7 @@ consumed by this function and become part of the constructed op tree.
 */
 
 OP *
-Perl_newLOGOP(pTHX_ I32 type, I32 flags, OP *first, OP *other)
+Perl_newLOGOP(pTHX_ I32 type, U32 flags, OP *first, OP *other)
 {
     PERL_ARGS_ASSERT_NEWLOGOP;
 
@@ -9546,7 +9546,7 @@ S_search_const(pTHX_ OP *o)
 
 
 STATIC OP *
-S_new_logop(pTHX_ I32 type, I32 flags, OP** firstp, OP** otherp)
+S_new_logop(pTHX_ I32 type, U32 flags, OP** firstp, OP** otherp)
 {
     LOGOP *logop;
     OP *o;
@@ -9757,7 +9757,7 @@ this function and become part of the constructed op tree.
 */
 
 OP *
-Perl_newCONDOP(pTHX_ I32 flags, OP *first, OP *trueop, OP *falseop)
+Perl_newCONDOP(pTHX_ U32 flags, OP *first, OP *trueop, OP *falseop)
 {
     LOGOP *logop;
     OP *start;
@@ -9833,7 +9833,7 @@ The C<flags> argument is currently ignored.
  */
 
 OP *
-Perl_newTRYCATCHOP(pTHX_ I32 flags, OP *tryblock, OP *catchvar, OP *catchblock)
+Perl_newTRYCATCHOP(pTHX_ U32 flags, OP *tryblock, OP *catchvar, OP *catchblock)
 {
     OP *o, *catchop;
 
@@ -9888,7 +9888,7 @@ and become part of the constructed op tree.
 */
 
 OP *
-Perl_newRANGE(pTHX_ I32 flags, OP *left, OP *right)
+Perl_newRANGE(pTHX_ U32 flags, OP *left, OP *right)
 {
     LOGOP *range;
     OP *flip;
@@ -9957,7 +9957,7 @@ unused and should always be 1.
 */
 
 OP *
-Perl_newLOOPOP(pTHX_ I32 flags, I32 debuggable, OP *expr, OP *block)
+Perl_newLOOPOP(pTHX_ U32 flags, I32 debuggable, OP *expr, OP *block)
 {
     OP* listop;
     OP* o;
@@ -10066,7 +10066,7 @@ loop body to be enclosed in its own scope.
 */
 
 OP *
-Perl_newWHILEOP(pTHX_ I32 flags, I32 debuggable, LOOP *loop,
+Perl_newWHILEOP(pTHX_ U32 flags, I32 debuggable, LOOP *loop,
 	OP *expr, OP *block, OP *cont, I32 has_my)
 {
     OP *redo;
@@ -10190,7 +10190,7 @@ automatically.
 */
 
 OP *
-Perl_newFOROP(pTHX_ I32 flags, OP *sv, OP *expr, OP *block, OP *cont)
+Perl_newFOROP(pTHX_ U32 flags, OP *sv, OP *expr, OP *block, OP *cont)
 {
     LOOP *loop;
     OP *wop;
@@ -12412,7 +12412,7 @@ Perl_newHVREF(pTHX_ OP *o)
 }
 
 OP *
-Perl_newCVREF(pTHX_ I32 flags, OP *o)
+Perl_newCVREF(pTHX_ U32 flags, OP *o)
 {
     if (o->op_type == OP_PADANY) {
         OpTYPE_set(o, OP_PADCV);
