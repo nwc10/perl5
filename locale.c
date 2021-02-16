@@ -2336,7 +2336,7 @@ Perl_setlocale(const int category, const char * locale)
 }
 
 PERL_STATIC_INLINE const char *
-S_save_to_buffer(const char * string, char **buf, Size_t *buf_size,
+S_save_to_buffer(const char * string, const char **buf, Size_t *buf_size,
                  const Size_t offset)
 {
     /* Copy the NUL-terminated 'string' to 'buf' + 'offset'.  'buf' has size
