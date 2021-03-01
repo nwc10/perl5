@@ -1504,7 +1504,9 @@
 #  endif
 #  if !(defined(HAS_NL_LANGINFO))
 #    if defined(PERL_IN_LOCALE_C)
+#      if defined(USE_LOCALE)
 #define my_nl_langinfo		S_my_nl_langinfo
+#      endif
 #    endif
 #  endif
 #  if !(defined(PERL_DEFAULT_DO_EXEC3_IMPLEMENTATION))
@@ -1612,7 +1614,9 @@
 #  endif
 #  if defined(HAS_NL_LANGINFO)
 #    if defined(PERL_IN_LOCALE_C)
+#      if defined(USE_LOCALE)
 #define my_nl_langinfo		S_my_nl_langinfo
+#      endif
 #    endif
 #  endif
 #  if defined(HAS_PIPE)
@@ -1705,7 +1709,6 @@
 #define unshare_hek_or_pvn(a,b,c,d)	S_unshare_hek_or_pvn(aTHX_ a,b,c,d)
 #  endif
 #  if defined(PERL_IN_LOCALE_C)
-#define save_to_buffer		S_save_to_buffer
 #    if defined(USE_LOCALE)
 #define category_name		S_category_name
 #define get_category_index	S_get_category_index
@@ -1714,6 +1717,7 @@
 #define new_ctype(a)		S_new_ctype(aTHX_ a)
 #define new_numeric(a)		S_new_numeric(aTHX_ a)
 #define restore_switched_locale(a,b)	S_restore_switched_locale(aTHX_ a,b)
+#define save_to_buffer		S_save_to_buffer
 #define set_numeric_radix(a)	S_set_numeric_radix(aTHX_ a)
 #define setlocale_failure_panic_i(a,b,c,d,e)	S_setlocale_failure_panic_i(aTHX_ a,b,c,d,e)
 #define stdize_locale(a,b,c,d)	S_stdize_locale(aTHX_ a,b,c,d)
