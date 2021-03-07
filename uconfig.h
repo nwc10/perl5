@@ -490,12 +490,6 @@
  */
 #define HAS_STRTOL	/**/
 
-/* HAS_STRXFRM:
- *	This symbol, if defined, indicates that the strxfrm() routine is
- *	available to transform strings.
- */
-/*#define HAS_STRXFRM	/ **/
-
 /* HAS_SYMLINK:
  *	This symbol, if defined, indicates that the symlink routine is available
  *	to create symbolic links.
@@ -3419,6 +3413,17 @@
  */
 /*#define HAS_STRTOUQ		/ **/
 
+/* HAS_STRXFRM:
+ *	This symbol, if defined, indicates that the strxfrm() routine is
+ *	available to transform strings.
+ */
+/* HAS_STRXFRM_L:
+ *	This symbol, if defined, indicates that the strxfrm_l() routine is
+ *	available to transform strings.
+ */
+/*#define HAS_STRXFRM	/ **/
+/*#define HAS_STRXFRM_L	/ **/
+
 /* HAS_SYSCALL_PROTO:
  *	This symbol, if defined, indicates that the system provides
  *	a prototype for the syscall() function.  Otherwise, it is up
@@ -5282,6 +5287,6 @@
 #endif
 
 /* Generated from:
- * 6edd641b187b02d0daa8cb53f5d22f2dcca115a0d3e744f51b0292d2db484ca5 config_h.SH
- * b53784d20c0f250807f47a3130cdc8e01a92da948e6747af87ebc24f11904722 uconfig.sh
+ * b6be0cdf42911de6ab39996d890a9de03291cff8c16c83228fc551310ef299f9 config_h.SH
+ * 3702f490ec6fcb2ef710170631dc4b16653519d6b6b25ee7e6a3537da8d16037 uconfig.sh
  * ex: set ro: */

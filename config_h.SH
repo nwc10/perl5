@@ -525,12 +525,6 @@ sed <<!GROK!THIS! >$CONFIG_H -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un
  */
 #$d_strtol HAS_STRTOL	/**/
 
-/* HAS_STRXFRM:
- *	This symbol, if defined, indicates that the strxfrm() routine is
- *	available to transform strings.
- */
-#$d_strxfrm HAS_STRXFRM	/**/
-
 /* HAS_SYMLINK:
  *	This symbol, if defined, indicates that the symlink routine is available
  *	to create symbolic links.
@@ -3453,6 +3447,17 @@ sed <<!GROK!THIS! >$CONFIG_H -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un
  *	available to convert strings to unsigned long longs (quads).
  */
 #$d_strtouq HAS_STRTOUQ		/**/
+
+/* HAS_STRXFRM:
+ *	This symbol, if defined, indicates that the strxfrm() routine is
+ *	available to transform strings.
+ */
+/* HAS_STRXFRM_L:
+ *	This symbol, if defined, indicates that the strxfrm_l() routine is
+ *	available to transform strings.
+ */
+#$d_strxfrm HAS_STRXFRM	/**/
+#$d_strxfrm_l HAS_STRXFRM_L	/**/
 
 /* HAS_SYSCALL_PROTO:
  *	This symbol, if defined, indicates that the system provides

@@ -889,6 +889,7 @@ d_strtoul=''
 d_strtoull=''
 d_strtouq=''
 d_strxfrm=''
+d_strxfrm_l=''
 d_symlink=''
 d_syscall=''
 d_syscallproto=''
@@ -19470,6 +19471,10 @@ esac
 set strxfrm d_strxfrm
 eval $inlibc
 
+: see if strxfrm_l exists
+set strxfrm_l d_strxfrm_l
+eval $inlibc
+
 : see if symlink exists
 set symlink d_symlink
 eval $inlibc
@@ -24694,6 +24699,7 @@ d_strtoul='$d_strtoul'
 d_strtoull='$d_strtoull'
 d_strtouq='$d_strtouq'
 d_strxfrm='$d_strxfrm'
+d_strxfrm_l='$d_strxfrm_l'
 d_suidsafe='$d_suidsafe'
 d_symlink='$d_symlink'
 d_syscall='$d_syscall'
