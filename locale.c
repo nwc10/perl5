@@ -3857,9 +3857,9 @@ S_my_langinfo_i(pTHX_
             orig_switched_locale = toggle_locale_i(cat_index, locale);
         }
 
-        NL_LANGINFO_LOCK;
+        gwLOCALE_LOCK;
         retval = save_to_buffer(nl_langinfo(item), retbufp, retbuf_sizep);
-        NL_LANGINFO_UNLOCK;
+        gwLOCALE_UNLOCK;
 
             restore_toggled_locale_i(cat_index, orig_switched_locale);
 
