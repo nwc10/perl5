@@ -111,6 +111,14 @@
  * its locale information before the first fork, and be stable thereafter.  But
  * perl toggles LC_NUMERIC if the locale's radix character isn't a dot, as do
  * the other toggles, which are less common.
+
+perllocale needs to be updated.  Apparently this isn't a problem with querying what locale we are in
+we could just return false for utf8 locales
+
+ <  * The locale names returned by these macros are per-thread, and stable until
+ <  * setlocale() is called again.  You may need to savepv() them, if the locale
+ <  * is being changed.
+
  */
 
 /* If the environment says to, we can output debugging information during
