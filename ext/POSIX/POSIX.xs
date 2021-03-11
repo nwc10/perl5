@@ -1762,7 +1762,12 @@ my_tzset(pTHX)
 #endif
         fix_win32_tzenv();
 #endif
+    TZSET_LOCK;
     tzset();
+    TZSET_UNLOCK;
+    /* After the unlock, another thread could change things, but this is a
+     * problem with the Posix API generally, not Perl; and the result will be
+     * self-consistent */
 }
 
 MODULE = SigSet		PACKAGE = POSIX::SigSet		PREFIX = sig
@@ -3478,7 +3483,10 @@ asctime(sec, min, hour, mday, mon, year, wday = 0, yday = 0, isdst = -1)
 	    mytm.tm_yday = yday;
 	    mytm.tm_isdst = isdst;
 	    if (ix) {
-	        const time_t result = mktime(&mytm);
+	        time_t result;
+                MKTIME_LOCK;
+	        result = mktime(&mytm);
+                MKTIME_UNLOCK;
 		if (result == (time_t)-1)
 		    SvOK_off(TARG);
 		else if (result == 0)
@@ -3486,7 +3494,9 @@ asctime(sec, min, hour, mday, mon, year, wday = 0, yday = 0, isdst = -1)
 		else
 		    sv_setiv(TARG, (IV)result);
 	    } else {
+                ASCTIME_LOCK;
 		sv_setpv(TARG, asctime(&mytm));
+                ASCTIME_UNLOCK;
 	    }
 	    ST(0) = TARG;
 	    XSRETURN(1);
@@ -3573,8 +3583,12 @@ void
 tzname()
     PPCODE:
 	EXTEND(SP,2);
+        /* It is undefined behavior if another thread is changing this while
+         * its being read */
+        ENVr_LOCALEr_LOCK;
 	PUSHs(newSVpvn_flags(tzname[0], strlen(tzname[0]), SVs_TEMP));
 	PUSHs(newSVpvn_flags(tzname[1], strlen(tzname[1]), SVs_TEMP));
+        ENVr_LOCALEr_UNLOCK;
 
 char *
 ctermid(s = 0)
