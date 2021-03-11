@@ -1459,10 +1459,20 @@ S_new_ctype(pTHX_ const char *newctype)
      * POSIX::setlocale() */
 
     unsigned int i;
+    bool maybe_utf8_turkic = FALSE;
+
+#ifdef WIN32
+
+    /* Windows will have lots of problems because it doesn't adhere to the
+     * POSIX standard.  Macros in handy.h try to compensate */
+    bool check_for_problems = FALSE;
+
+#else
 
     /* Don't check for problems if we are suppressing the warnings */
     bool check_for_problems = ckWARN_d(WARN_LOCALE) || UNLIKELY(DEBUG_L_TEST);
-    bool maybe_utf8_turkic = FALSE;
+
+#endif
 
     PERL_ARGS_ASSERT_NEW_CTYPE;
 
