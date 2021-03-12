@@ -6916,6 +6916,9 @@ PERL_CALLCONV char*	Perl_mem_collxfrm(pTHX_ const char* input_string, STRLEN len
 	assert(input_string); assert(xlen)
 #endif
 
+PERL_CALLCONV SV *	Perl_strxfrm(pTHX_ SV * src);
+#define PERL_ARGS_ASSERT_STRXFRM	\
+	assert(src)
 #ifndef NO_MATHOMS
 PERL_CALLCONV char*	Perl_sv_collxfrm(pTHX_ SV *const sv, STRLEN *const nxp);
 #define PERL_ARGS_ASSERT_SV_COLLXFRM	\
