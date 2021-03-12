@@ -1089,7 +1089,7 @@ Perl_mem_collxfrm(pTHX_ const char *input_string, STRLEN len, STRLEN *xlen)
 
     PERL_ARGS_ASSERT_MEM_COLLXFRM;
 
-    return _mem_collxfrm(input_string, len, xlen, FALSE);
+    return mem_collxfrm_(input_string, len, xlen, FALSE);
 }
 
 #endif
