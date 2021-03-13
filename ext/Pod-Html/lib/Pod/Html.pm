@@ -17,6 +17,7 @@ use Getopt::Long;
 use Pod::Simple::Search;
 use Pod::Simple::SimpleTree ();
 use Text::Tabs;
+use Data::Dumper;
 use locale; # make \w work right in non-ASCII lands
 
 =head1 NAME
@@ -580,16 +581,24 @@ sub parse_command_line {
 }
 
 my $Saved_Cache_Key;
+my (%ha, %hb);
 
 sub get_cache {
     my($dircache, $podpath, $podroot, $recurse) = @_;
     my @cache_key_args = @_;
+    %ha = (
+        dircache => $dircache,
+        podpath => $podpath,
+        podroot => $podroot,
+        recurse => $recurse,
+    );
 
     # A first-level cache:
     # Don't bother reading the cache files if they still apply
     # and haven't changed since we last read them.
 
     my $this_cache_key = cache_key(@cache_key_args);
+print STDERR "XXX: ", compare(\%ha, \%hb), "\n";
     return 1 if $Saved_Cache_Key and $this_cache_key eq $Saved_Cache_Key;
     $Saved_Cache_Key = $this_cache_key;
 
@@ -606,6 +615,12 @@ sub get_cache {
 
 sub cache_key {
     my($dircache, $podpath, $podroot, $recurse) = @_;
+    %hb = (
+        dircache => $dircache,
+        podpath => $podpath,
+        podroot => $podroot,
+        recurse => $recurse,
+    );
     return join('!',$dircache,$recurse,@$podpath,$podroot,stat($dircache));
 }
 
@@ -864,6 +879,14 @@ sub trim_leading_whitespace {
     }
 
     return;
+}
+
+sub compare {
+    my ($ha, $hb) = @_;
+    local $Data::Dumper::Terse  = 1;
+    local $Data::Dumper::Indent = 0;
+    local $Data::Dumper::Sortkeys = 1;
+    return (Dumper($ha) eq Dumper($hb)) ? 1 : 0;
 }
 
 1;
