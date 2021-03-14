@@ -376,8 +376,6 @@ unless ($define{'USE_ITHREADS'}) {
 		    PL_hints_mutex
 		    PL_locale_mutex
 		    PL_locale_mutex_depth
-		    PL_lc_numeric_mutex
-		    PL_lc_numeric_mutex_depth
 		    PL_my_ctx_mutex
 		    PL_perlio_mutex
 		    PL_stashpad
@@ -449,11 +447,6 @@ unless ($define{'PERL_IMPLICIT_CONTEXT'}) {
 		    Perl_my_cxt_init
 		    Perl_my_cxt_index
 			 );
-}
-
-if ($define{USE_THREAD_SAFE_LOCALE}) {
-    ++$skip{PL_lc_numeric_mutex};
-    ++$skip{PL_lc_numeric_mutex_depth};
 }
 
 unless ($define{'USE_DTRACE'}) {
