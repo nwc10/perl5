@@ -3318,9 +3318,10 @@ pTC	|char *	|Win_wstring_to_utf8_string|NULLOK const wchar_t * wstring
 #    endif
 #    ifdef DEBUGGING
 S	|void	|print_collxfrm_input_and_return		\
-			    |NN const char * const s		\
-			    |NN const char * const e		\
-			    |NULLOK const STRLEN * const xlen	\
+			    |NN const char * s			\
+			    |NN const char * e			\
+			    |NULLOK const char * xbuf		\
+			    |const STRLEN xlen			\
 			    |const bool is_utf8
 STR	|char *	|setlocale_debug_string_i|const unsigned cat_index	    \
 					|NULLOK const char* const locale    \
