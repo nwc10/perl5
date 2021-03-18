@@ -1887,23 +1887,27 @@ END_EXTERN_C
 
 /* Use the libc versions for these if available. */
 #if defined(HAS_ISASCII)
-#   define isASCII_LC(c) (FITS_IN_8_BITS(c) && isascii( (U8) (c)))
+#   define isU8_ASCII_LC(c) isascii((U8) (c))
 #else
-#   define isASCII_LC(c) isASCII(c)
+#   define isU8_ASCII_LC(c) isASCII(c)
 #endif
 
 #if defined(HAS_ISBLANK)
-#   define isBLANK_LC(c) generic_LC_(c, CC_BLANK_, isblank)
-#else /* Unlike isASCII, varies if in a UTF-8 locale */
-#   define isBLANK_LC(c) ((IN_UTF8_CTYPE_LOCALE) ? isBLANK_L1(c) : isBLANK(c))
+#   define isU8_BLANK_LC(c) isblank((U8) (c))
+#else
+#   define isU8_BLANK_LC(c) isBLANK(c)
 #endif
 
-#  define isCNTRL_LC(c)     generic_LC_(c, CC_CNTRL_, iscntrl)
-#  define isSPACE_LC(c)     generic_LC_(c, CC_SPACE_, isspace)
-#  define isIDFIRST_LC(c)  (UNLIKELY((c) == '_') || isALPHA_LC(c))
-#  define isWORDCHAR_LC(c) (UNLIKELY((c) == '_') || isALPHANUMERIC_LC(c))
+/* The next few are the same in all platforms. */
+#define isU8_CNTRL_LC(c)     iscntrl((U8) (c))
+#define isU8_SPACE_LC(c)     isspace((U8) (c))
+#define isU8_IDFIRST_LC(c)  (UNLIKELY((c) == '_') || isU8_ALPHA_LC(c))
+#define isU8_WORDCHAR_LC(c) (UNLIKELY((c) == '_') || isU8_ALPHANUMERIC_LC(c))
 
-#  ifdef WIN32
+/* The base-leve case changing macros are also the same in all platforms */
+#define toU8_LOWER_LC(c)     tolower((U8) (c))
+#define toU8_UPPER_LC(c)     toupper((U8) (c))
+#define toU8_FOLD_LC(c)      toU8_LOWER_LC(c)
 
 /* The Windows functions don't bother to follow the POSIX standard, which for
  * example says that something can't both be a printable and a control.  But
@@ -1915,40 +1919,51 @@ END_EXTERN_C
  * controls, and that \w and its subsets aren't ispunct().  Not all possible
  * weirdnesses are checked for, just ones that were detected on actual
  * Microsoft code pages */
+#ifdef WIN32
+#  define isU8_ALPHA_LC(c)    (isalpha((U8) (c)) && isU8_ALPHANUMERIC_LC(c))
+#  define isU8_ALPHANUMERIC_LC(c)  (isalnum((U8) (c)) && ! isU8_PUNCT_LC(c))
+#  define isU8_DIGIT_LC(c)   (isdigit((U8) (c)) && isU8_ALPHANUMERIC_LC(c))
+#  define isU8_GRAPH_LC(c)   (isgraph((U8) (c)) &&        isU8_PRINT_LC(c))
+#  define isU8_LOWER_LC(c)   (islower((U8) (c)) &&        isU8_ALPHA_LC(c))
+#  define isU8_PRINT_LC(c)   (isprint((U8) (c)) &&      ! isU8_CNTRL_LC(c))
+#  define isU8_PUNCT_LC(c)   (ispunct((U8) (c)) &&      ! isU8_CNTRL_LC(c))
+#  define isU8_UPPER_LC(c)   (isupper((U8) (c)) &&        isU8_ALPHA_LC(c))
+#  define isU8_XDIGIT_LC(c)  (isxdigit((U8)(c)) && isU8_ALPHANUMERIC_LC(c))
+#else
 
-#    define isALPHA_LC(c)  (generic_LC_(c, CC_ALPHA_, isalpha)               \
-                                                    && isALPHANUMERIC_LC(c))
-#    define isALPHANUMERIC_LC(c)  (generic_LC_(c, CC_ALPHANUMERIC_, isalnum) \
-                                                         && ! isPUNCT_LC(c))
-#    define isDIGIT_LC(c)  (generic_LC_(c, CC_DIGIT_, isdigit)               \
-                                                    && isALPHANUMERIC_LC(c))
-#    define isGRAPH_LC(c)  (generic_LC_(c, CC_GRAPH_, isgraph)               \
-                                                           && isPRINT_LC(c))
-#    define isLOWER_LC(c)  (generic_LC_(c, CC_LOWER_, islower)               \
-                                                           && isALPHA_LC(c))
-#    define isPRINT_LC(c)  (generic_LC_(c, CC_PRINT_, isprint)               \
-                                                         && ! isCNTRL_LC(c))
-#    define isPUNCT_LC(c)  (generic_LC_(c, CC_PUNCT_, ispunct)               \
-                                                         && ! isCNTRL_LC(c))
-#    define isUPPER_LC(c)  (generic_LC_(c, CC_UPPER_, isupper)               \
-                                                           && isALPHA_LC(c))
-#    define isXDIGIT_LC(c) (generic_LC_(c, CC_XDIGIT_, isxdigit)             \
-                                                    && isALPHANUMERIC_LC(c))
-#  else
+/* For all other platforms, as far as we know, isdigit(), etc. work sanely
+ * enough */
 
-/* For all other platforms with, as far as we know, sane locales that the
- * isdigit(), etc functions operate on */
+#  define isU8_ALPHA_LC(c)         isalpha((U8) (c))
+#  define isU8_ALPHANUMERIC_LC(c)  isalnum((U8) (c))
+#  define isU8_DIGIT_LC(c)         isdigit((U8) (c))
+#  define isU8_GRAPH_LC(c)         isgraph((U8) (c))
+#  define isU8_LOWER_LC(c)         islower((U8) (c))
+#  define isU8_PRINT_LC(c)         isprint((U8) (c))
+#  define isU8_PUNCT_LC(c)         ispunct((U8) (c))
+#  define isU8_UPPER_LC(c)         isupper((U8) (c))
+#  define isU8_XDIGIT_LC(c)        isxdigit((U8) (c))
+#endif
 
-#    define isALPHA_LC(c)         generic_LC_(c, CC_ALPHA_, isalpha)
-#    define isALPHANUMERIC_LC(c)  generic_LC_(c, CC_ALPHANUMERIC_, isalnum)
-#    define isDIGIT_LC(c)         generic_LC_(c, CC_DIGIT_, isdigit)
-#    define isGRAPH_LC(c)         generic_LC_(c, CC_GRAPH_, isgraph)
-#    define isLOWER_LC(c)         generic_LC_(c, CC_LOWER_,   islower)
-#    define isPRINT_LC(c)         generic_LC_(c, CC_PRINT_,   isprint)
-#    define isPUNCT_LC(c)         generic_LC_(c, CC_PUNCT_,   ispunct)
-#    define isUPPER_LC(c)         generic_LC_(c, CC_UPPER_,   isupper)
-#    define isXDIGIT_LC(c)        generic_LC_(c, CC_XDIGIT_,  isxdigit)
-#  endif
+/* The definitions below use the ones above to take a general input domain
+ * (though always returning false if the input doesn't fit in a byte, and to
+ * behave properly should the locale be UTF-8 */
+#define isASCII_LC(c)               (FITS_IN_8_BITS(c) && isU8_ASCII_LC(c))
+#define isALPHA_LC(c)               generic_LC_(c, CC_ALPHA_, isU8_ALPHA_LC)
+#define isALPHANUMERIC_LC(c)                                                \
+                      generic_LC_(c, CC_ALPHANUMERIC_, isU8_ALPHANUMERIC_LC)
+#define isBLANK_LC(c)               generic_LC_(c, CC_BLANK_, isU8_BLANK_LC)
+#define isCNTRL_LC(c)               generic_LC_(c, CC_CNTRL_, isU8_CNTRL_LC)
+#define isDIGIT_LC(c)               generic_LC_(c, CC_DIGIT_, isU8_DIGIT_LC)
+#define isGRAPH_LC(c)               generic_LC_(c, CC_GRAPH_, isU8_GRAPH_LC)
+#define isIDFIRST_LC(c)         generic_LC_(c, CC_IDFIRST_, isU8_IDFIRST_LC)
+#define isLOWER_LC(c)               generic_LC_(c, CC_LOWER_, isU8_LOWER_LC)
+#define isPRINT_LC(c)               generic_LC_(c, CC_PRINT_, isU8_PRINT_LC)
+#define isPUNCT_LC(c)               generic_LC_(c, CC_PUNCT_, isU8_PUNCT_LC)
+#define isSPACE_LC(c)               generic_LC_(c, CC_SPACE_, isU8_SPACE_LC)
+#define isUPPER_LC(c)               generic_LC_(c, CC_UPPER_, isU8_UPPER_LC)
+#define isWORDCHAR_LC(c)      generic_LC_(c, CC_WORDCHAR_, isU8_WORDCHAR_LC)
+#define isXDIGIT_LC(c)            generic_LC_(c, CC_XDIGIT_, isU8_XDIGIT_LC)
 
 #ifndef CTYPE256
 #  define toLOWER_LC(c)             toLOWER_A(c)
@@ -1965,7 +1980,7 @@ END_EXTERN_C
                           ? (c)                                             \
                           : ((IN_UTF8_CTYPE_LOCALE)                         \
                              ? PL_latin1_lc[ (U8) (c) ]                     \
-                             : (U8) tolower((U8) (c))))
+                             : ((U8) toU8_LOWER_LC(c))))
 
 /* In this macro, note that the result can be larger than a byte in a UTF-8
  * locale.  It returns a single value, so can't adequately return the upper
@@ -1977,7 +1992,7 @@ END_EXTERN_C
     ((! FITS_IN_8_BITS(c))                                                  \
      ? (c)                                                                  \
      : ((! IN_UTF8_CTYPE_LOCALE)                                            \
-        ? (U8) toupper((U8) (c))                                            \
+        ? ((U8) toU8_UPPER_LC(c))                                           \
         : (UNLIKELY(((U8)(c)) == MICRO_SIGN)                                \
            ? GREEK_CAPITAL_LETTER_MU                                        \
            : ((UNLIKELY(((U8) (c)) == LATIN_SMALL_LETTER_Y_WITH_DIAERESIS)  \
