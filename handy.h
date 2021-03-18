@@ -2015,7 +2015,7 @@ END_EXTERN_C
 
 #  define toLOWER_LC(c)	(isascii(c) ? tolower(c) : (c))
 #  define toUPPER_LC(c)	(isascii(c) ? toupper(c) : (c))
-#  define toFOLD_LC(c)	(isascii(c) ? tolower(c) : (c))
+#  define toFOLD_LC(c)          toLOWER_LC(c)
 
 #endif
 
