@@ -1355,6 +1355,7 @@ C<toTITLE_utf8_safe> is now just a different spelling of plain C<toTITLE_utf8>
 XXX Still undocumented isVERTWS_uvchr and _utf8; it's unclear what their names
 really should be.  Also toUPPER_LC and toFOLD_LC, which are subject to change,
 and aren't general purpose as they don't work on U+DF, and assert against that.
+and isCASED_LC, as it really is more of an internal thing.
 
 Note that these macros are repeated in Devel::PPPort, so should also be
 patched there.  The file as of this writing is cpan/Devel-PPPort/parts/inc/misc
@@ -1922,6 +1923,7 @@ END_EXTERN_C
 #ifdef WIN32
 #  define isU8_ALPHA_LC(c)   (isalpha((U8) (c))       && ! isU8_PUNCT_LC(c))
 #  define isU8_ALPHANUMERIC_LC(c)  (isalnum((U8) (c)) && ! isU8_PUNCT_LC(c))
+#  define isU8_CASED_LC(c)  ((isupper((U8) (c)) || islower((U8) (c)))           \
                                                       && ! isU8_PUNCT_LC(c))
 #  define isU8_DIGIT_LC(c)   (isdigit((U8) (c))       && ! isU8_PUNCT_LC(c))
 #  define isU8_GRAPH_LC(c)   (isgraph((U8) (c))       && ! isU8_CNTRL_LC(c))
@@ -1937,6 +1939,7 @@ END_EXTERN_C
 
 #  define isU8_ALPHA_LC(c)         isalpha((U8) (c))
 #  define isU8_ALPHANUMERIC_LC(c)  isalnum((U8) (c))
+#  define isU8_CASED_LC(c)        (islower((U8) (c)) || isupper((U8) (c)))
 #  define isU8_DIGIT_LC(c)         isdigit((U8) (c))
 #  define isU8_GRAPH_LC(c)         isgraph((U8) (c))
 #  define isU8_LOWER_LC(c)         islower((U8) (c))
@@ -1954,6 +1957,7 @@ END_EXTERN_C
 #define isALPHANUMERIC_LC(c)                                                \
                       generic_LC_(c, CC_ALPHANUMERIC_, isU8_ALPHANUMERIC_LC)
 #define isBLANK_LC(c)               generic_LC_(c, CC_BLANK_, isU8_BLANK_LC)
+#define isCASED_LC(c)               generic_LC_(c, CC_CASED_, isU8_CASED_LC)
 #define isCNTRL_LC(c)               generic_LC_(c, CC_CNTRL_, isU8_CNTRL_LC)
 #define isDIGIT_LC(c)               generic_LC_(c, CC_DIGIT_, isU8_DIGIT_LC)
 #define isGRAPH_LC(c)               generic_LC_(c, CC_GRAPH_, isU8_GRAPH_LC)
