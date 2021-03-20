@@ -1920,15 +1920,16 @@ END_EXTERN_C
  * weirdnesses are checked for, just ones that were detected on actual
  * Microsoft code pages */
 #ifdef WIN32
-#  define isU8_ALPHA_LC(c)    (isalpha((U8) (c)) && isU8_ALPHANUMERIC_LC(c))
+#  define isU8_ALPHA_LC(c)   (isalpha((U8) (c))       && ! isU8_PUNCT_LC(c))
 #  define isU8_ALPHANUMERIC_LC(c)  (isalnum((U8) (c)) && ! isU8_PUNCT_LC(c))
-#  define isU8_DIGIT_LC(c)   (isdigit((U8) (c)) && isU8_ALPHANUMERIC_LC(c))
-#  define isU8_GRAPH_LC(c)   (isgraph((U8) (c)) &&        isU8_PRINT_LC(c))
-#  define isU8_LOWER_LC(c)   (islower((U8) (c)) &&        isU8_ALPHA_LC(c))
-#  define isU8_PRINT_LC(c)   (isprint((U8) (c)) &&      ! isU8_CNTRL_LC(c))
-#  define isU8_PUNCT_LC(c)   (ispunct((U8) (c)) &&      ! isU8_CNTRL_LC(c))
-#  define isU8_UPPER_LC(c)   (isupper((U8) (c)) &&        isU8_ALPHA_LC(c))
-#  define isU8_XDIGIT_LC(c)  (isxdigit((U8)(c)) && isU8_ALPHANUMERIC_LC(c))
+                                                      && ! isU8_PUNCT_LC(c))
+#  define isU8_DIGIT_LC(c)   (isdigit((U8) (c))       && ! isU8_PUNCT_LC(c))
+#  define isU8_GRAPH_LC(c)   (isgraph((U8) (c))       && ! isU8_CNTRL_LC(c))
+#  define isU8_LOWER_LC(c)   (islower((U8) (c))       && ! isU8_PUNCT_LC(c))
+#  define isU8_PRINT_LC(c)   (isprint((U8) (c))       && ! isU8_CNTRL_LC(c))
+#  define isU8_PUNCT_LC(c)   (ispunct((U8) (c))       && ! isU8_CNTRL_LC(c))
+#  define isU8_UPPER_LC(c)   (isupper((U8) (c))       && ! isU8_PUNCT_LC(c))
+#  define isU8_XDIGIT_LC(c)  (isxdigit((U8)(c))       && ! isU8_PUNCT_LC(c))
 #else
 
 /* For all other platforms, as far as we know, isdigit(), etc. work sanely
