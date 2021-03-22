@@ -3184,7 +3184,9 @@ mblen(s, n = ~0)
                 char * string = SvPV(byte_s, len);
                 if (n < len) len = n;
 #ifdef USE_MBRLEN
+                MBRLEN_LOCK_;
                 RETVAL = (SSize_t) mbrlen(string, len, &PL_mbrlen_ps);
+                MBRLEN_UNLOCK_;
                 if (RETVAL < 0) RETVAL = -1;    /* Use mblen() ret code for
                                                    transparency */
 #else
@@ -3253,7 +3255,9 @@ wctomb(s, wchar)
 #ifdef USE_WCRTOMB
             /* The man pages khw looked at are in agreement that this works.
              * But probably memzero would too */
+            WCRTOMB_LOCK_;
             RETVAL = wcrtomb(NULL, L'\0', &PL_wcrtomb_ps);
+            WCRTOMB_UNLOCK_;
 #else
             WCTOMB_LOCK_;
             RETVAL = wctomb(NULL, L'\0');
@@ -3263,7 +3267,9 @@ wctomb(s, wchar)
         else {  /* Not resetting state */
             char buffer[MB_LEN_MAX];
 #ifdef USE_WCRTOMB
+            WCRTOMB_LOCK_;
             RETVAL = wcrtomb(buffer, wchar, &PL_wcrtomb_ps);
+            WCRTOMB_UNLOCK_;
 #else
             /* Locking prevents races, but locales can be switched out without
              * locking, so this isn't a cure all */
@@ -3282,6 +3288,12 @@ int
 strcoll(s1, s2)
 	char *		s1
 	char *		s2
+    CODE:
+        LC_COLLATE_LOCK;
+        RETVAL = strcoll(s1, s2);
+        LC_COLLATE_UNLOCK;
+    OUTPUT:
+        RETVAL
 
 void
 strtod(str)

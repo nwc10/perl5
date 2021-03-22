@@ -3104,7 +3104,9 @@ Perl_mbtowc_(pTHX_ const wchar_t * pwc, const char * s, const Size_t len)
 #  if defined(USE_MBRTOWC)
 
     SETERRNO(0, 0);
+    MBRTOWC_LOCK_;
     retval = (SSize_t) mbrtowc((wchar_t *) pwc, s, len, &PL_mbrtowc_ps);
+    MBRTOWC_UNLOCK_;
 
 #  else
 
@@ -3293,11 +3295,13 @@ S_my_localeconv(pTHX_ const int item)
 
 #    endif
 
+        LC_MONETARY_LOCK;
         gwLOCALE_LOCK;
 
         retval = copy_localeconv(aTHX_ localeconv(), numeric_locale_is_utf8,
                                                     monetary_locale_is_utf8);
         gwLOCALE_UNLOCK;
+        LC_MONETARY_UNLOCK;
 
 #    ifdef USE_LOCALE_NUMERIC
 
@@ -6324,14 +6328,19 @@ Perl_my_strerror(pTHX_ const int errnum, int * utf8ness)
     DEBUG_STRERROR_ENTER(errnum, IN_LC(categories[WHICH_LC_INDEX]));
 
     if (IN_LC(categories[WHICH_LC_INDEX])) {
+        gwLOCALE_LOCK;
         errstr = savepv(Strerror(errnum));
+        gwLOCALE_UNLOCK;
+
         *utf8ness = get_locale_string_utf8ness_i(NULL, WHICH_LC_INDEX, errstr,
                                                  UTF8NESS_UNKNOWN);
     }
     else {
         const char * orig_locale = toggle_locale_i(WHICH_LC_INDEX, "C");
 
+        gwLOCALE_LOCK;
         errstr = savepv(Strerror(errnum));
+        gwLOCALE_UNLOCK;
 
         restore_toggled_locale_i(WHICH_LC_INDEX, orig_locale);
 
@@ -6368,7 +6377,9 @@ Perl_my_strerror(pTHX_ const int errnum, int * utf8ness)
     orig_CTYPE_locale = toggle_locale_c(LC_CTYPE, desired_locale);
     orig_MESSAGES_locale = toggle_locale_c(LC_MESSAGES, desired_locale);
 
+    gwLOCALE_LOCK;
     errstr = savepv(Strerror(errnum));
+    gwLOCALE_UNLOCK;
 
     restore_toggled_locale_c(LC_MESSAGES, orig_MESSAGES_locale);
     restore_toggled_locale_c(LC_CTYPE, orig_CTYPE_locale);

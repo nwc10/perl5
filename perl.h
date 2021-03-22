@@ -6742,11 +6742,6 @@ the plain locale pragma without a parameter (S<C<use locale>>) is in effect.
 #  endif
 #endif
 
-#ifndef LOCALE_LOCK_
-#  define LOCALE_LOCK_(cond)  NOOP
-#  define LOCALE_UNLOCK_      NOOP
-#endif
-
 /* There are some locale-related functions which may need locking only because
  * they share some common space across threads, and hence there is the
  * potential for a race in accessing that space.  Most are because their return
@@ -6814,7 +6809,6 @@ the plain locale pragma without a parameter (S<C<use locale>>) is in effect.
 #  define SETLOCALE_UNLOCK              NOOP
 #endif
 
-
       /* On systems that don't have per-thread locales, even though we don't
        * think we are changing the locale ourselves, behind the scenes it does
        * get changed to whatever the thread's should be, so it has to be an
@@ -6824,48 +6818,82 @@ the plain locale pragma without a parameter (S<C<use locale>>) is in effect.
 #define LOCALE_READ_LOCK                SETLOCALE_LOCK
 #define LOCALE_READ_UNLOCK              SETLOCALE_UNLOCK
 
-#ifndef LC_NUMERIC_LOCK
-#  define LC_NUMERIC_LOCK(cond)   NOOP
-#  define LC_NUMERIC_UNLOCK       NOOP
-#endif
-
+/* Below are lock definitions for individual functions that Perl uses.  All
+ * such need to be in terms of the locale category(ies) that affect them, plus
+ * gwLOCALE_LOCK if they read/write global space.  It is best to create a
+ * definition for each function to hide those details, and allow it to be more
+ * easily maintained. */
 #ifdef LC_CTYPE_LOCK
-#  ifdef HAS_MBLEN
-#    define MBLEN_LOCK_                 LC_CTYPE_LOCK
-#    define MBLEN_UNLOCK_               LC_CTYPE_UNLOCK
-#  endif
-#  ifdef HAS_MBRLEN
-#    define MBRLEN_LOCK_                LC_CTYPE_LOCK
-#    define MBRLEN_UNLOCK_              LC_CTYPE_UNLOCK
-#  endif
-#  ifdef HAS_MBTOWC
-#    define MBTOWC_LOCK_                LC_CTYPE_LOCK
-#    define MBTOWC_UNLOCK_              LC_CTYPE_UNLOCK
-#  endif
-#  ifdef HAS_MBRTOWC
-#    define MBRTOWC_LOCK_               LC_CTYPE_LOCK
-#    define MBRTOWC_UNLOCK_             LC_CTYPE_UNLOCK
-#  endif
-#  ifdef HAS_WCTOMB
-#    define WCTOMB_LOCK_                LC_CTYPE_LOCK
-#    define WCTOMB_UNLOCK_              LC_CTYPE_UNLOCK
-#  endif
-#  ifdef HAS_WCRTOMB
-#    define WCRTOMB_LOCK_               LC_CTYPE_LOCK
-#    define WCRTOMB_UNLOCK_             LC_CTYPE_UNLOCK
-#  endif
+#  define MBLEN_LOCK_                   LC_CTYPE_LOCK
+#  define MBLEN_UNLOCK_                 LC_CTYPE_UNLOCK
+#  define MBRLEN_LOCK_                  LC_CTYPE_LOCK
+#  define MBRLEN_UNLOCK_                LC_CTYPE_UNLOCK
+#  define MBTOWC_LOCK_                  LC_CTYPE_LOCK
+#  define MBTOWC_UNLOCK_                LC_CTYPE_UNLOCK
+#  define MBRTOWC_LOCK_                 LC_CTYPE_LOCK
+#  define MBRTOWC_UNLOCK_               LC_CTYPE_UNLOCK
+#  define WCTOMB_LOCK_                  LC_CTYPE_LOCK
+#  define WCTOMB_UNLOCK_                LC_CTYPE_UNLOCK
+#  define WCRTOMB_LOCK_                 LC_CTYPE_LOCK
+#  define WCRTOMB_UNLOCK_               LC_CTYPE_UNLOCK
+#else
+
+   /* These non-reentrant versions use global space */
+#  define MBLEN_LOCK_                   gwLOCALE_LOCK
+#  define MBLEN_UNLOCK_                 gwLOCALE_UNLOCK
+#  define MBTOWC_LOCK_                  gwLOCALE_LOCK
+#  define MBTOWC_UNLOCK_                gwLOCALE_UNLOCK
+#  define WCTOMB_LOCK_                  gwLOCALE_LOCK
+#  define WCTOMB_UNLOCK_                gwLOCALE_UNLOCK
+
+   /* Whereas the reentrant versions don't (assuming they are called with a
+    * per-thread buffer; some have the capability of being called with a NULL
+    * parameter, which defeats the reentrancy) */
+#  define MBRLEN_LOCK_                  NOOP
+#  define MBRLEN_UNLOCK_                NOOP
+#  define MBRTOWC_LOCK_                 NOOP
+#  define MBRTOWC_UNLOCK_               NOOP
+#  define WCRTOMB_LOCK_                 NOOP
+#  define WCRTOMB_UNLOCK_               NOOP
+
+#  define LC_CTYPE_LOCK                 SETLOCALE_LOCK
+#  define LC_CTYPE_UNLOCK               SETLOCALE_UNLOCK
 #endif
 
-#  define MBLEN_LOCK_                gwLOCALE_LOCK
-#  define MBLEN_UNLOCK_              gwLOCALE_UNLOCK
+#if ! defined(LC_COLLATE_LOCK)
+#  define LC_COLLATE_LOCK               SETLOCALE_LOCK
+#  define LC_COLLATE_UNLOCK             SETLOCALE_UNLOCK
+#endif
 
-#  define MBTOWC_LOCK_               gwLOCALE_LOCK
-#  define MBTOWC_UNLOCK_             gwLOCALE_UNLOCK
+#if ! defined(LC_MESSAGES_LOCK)
+#  define LC_MESSAGES_LOCK              SETLOCALE_LOCK
+#  define LC_MESSAGES_UNLOCK            SETLOCALE_UNLOCK
+#endif
 
-#  define WCTOMB_LOCK_               gwLOCALE_LOCK
-#  define WCTOMB_UNLOCK_             gwLOCALE_UNLOCK
+#if ! defined(LC_MONETARY_LOCK)
+#  define LC_MONETARY_LOCK              SETLOCALE_LOCK
+#  define LC_MONETARY_UNLOCK            SETLOCALE_UNLOCK
+#endif
+
+#ifdef LC_TIME_LOCK
+#  define STRFTIME_LOCK  /* Needs one exclusive lock */                     \
+            STMT_START { LC_TIME_LOCK;     ENV_READ_LOCK; } STMT_END
+#  define STRFTIME_UNLOCK                                                   \
+            STMT_START { ENV_READ_UNLOCK; LC_TIME_UNLOCK; } STMT_END
+#else
+#  define STRFTIME_LOCK                 ENV_LOCK
+#  define STRFTIME_UNLOCK               ENV_UNLOCK
+
+#  define LC_TIME_LOCK                  SETLOCALE_LOCK
+#  define LC_TIME_UNLOCK                SETLOCALE_UNLOCK
+#endif
 
 #ifdef USE_LOCALE_NUMERIC
+#  ifndef LC_NUMERIC_LOCK
+#    define LC_NUMERIC_LOCK(cond_to_panic_if_already_locked)            \
+               LOCALE_LOCK_(cond_to_panic_if_already_locked)
+#    define LC_NUMERIC_UNLOCK  LOCALE_UNLOCK_
+#  endif
 
 /* These macros are for toggling between the underlying locale (UNDERLYING or
  * LOCAL) and the C locale (STANDARD).  (Actually we don't have to use the C
@@ -7166,6 +7194,11 @@ cannot have changed since the precalculation.
     STMT_START { block; } STMT_END
 
 #endif /* !USE_LOCALE_NUMERIC */
+
+#ifndef LC_NUMERIC_LOCK
+#  define LC_NUMERIC_LOCK(cond)     NOOP
+#  define LC_NUMERIC_UNLOCK         NOOP
+#endif
 
 #ifdef USE_LOCALE_THREADS
 #  define ENV_LOCK            PERL_WRITE_LOCK(&PL_env_mutex)
