@@ -24,9 +24,10 @@ use Config;
 my $have_strtod = $Config{d_strtod} eq 'define';
 my @locales = find_locales( [ 'LC_ALL', 'LC_CTYPE', 'LC_NUMERIC' ]);
 skip_all("no locales available") unless @locales;
-note("locales available: @locales");
+diag("locales available: @locales");
 
 my $debug = 0;
+$debug = 1 if $^O eq 'cygwin'; # or $^O eq 'MSWin32';
 my $switches = "";
 if (defined $ARGV[0] && $ARGV[0] ne "") {
     if ($ARGV[0] ne 'debug') {
@@ -128,11 +129,14 @@ EOF
 
     # try to find out a locale where LC_NUMERIC makes a difference
     my $original_locale = setlocale(LC_NUMERIC);
+    print STDERR __FILE__, ": ", __LINE__, ": $original_locale\n" if $debug;
 
     my ($base, $different, $comma, $difference, $utf8_radix);
     my $radix_encoded_as_utf8;
+    $^D = 0x04000000|0x00100000 if $debug;
     for ("C", @locales) { # prefer C for the base if available
         use locale;
+        print STDERR __FILE__, ": ", __LINE__, ": $_\n"  if $debug;
         setlocale(LC_NUMERIC, $_) or next;
         my $in = 4.2; # avoid any constant folding bugs
         if ((my $s = sprintf("%g", $in)) eq "4.2")  {
@@ -159,6 +163,7 @@ EOF
         last if $base && $different && $comma && $utf8_radix;
     }
     setlocale(LC_NUMERIC, $original_locale);
+    $^D = 0 if $debug;
 
     SKIP: {
         skip("no UTF-8 locale available where LC_NUMERIC radix isn't ASCII", 1 )
