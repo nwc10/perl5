@@ -218,7 +218,7 @@ jobs:
       - name: Configure
         run: |
           export SDK=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk
-          sh ./Configure -des -Dusedevel
+          sh ./Configure -des -Dusedevel -DDEBUGGING
       - name: Build
         run: |
           make -j2
@@ -273,13 +273,13 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           cd win32
-          nmake CCTYPE=MSVC142
+          nmake CCTYPE=MSVC142 CFG=Debug
       - name: Run Tests
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           cd win32
-          nmake CCTYPE=MSVC142 test
+          nmake CCTYPE=MSVC142 CFG=Debug test
 
   #===============================================
 
@@ -317,13 +317,13 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x86
           cd win32
-          nmake CCTYPE=MSVC100 WIN64=undef
+          nmake CCTYPE=MSVC100 WIN64=undef CFG=Debug
       - name: Run Tests
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x86
           cd win32
-          nmake CCTYPE=MSVC100 WIN64=undef test
+          nmake CCTYPE=MSVC100 WIN64=undef CFG=Debug test
 
   #===============================================
 
@@ -363,13 +363,13 @@ jobs:
         shell: cmd
         run: |
           cd win32
-          gmake CCHOME=C:\strawberry\c -f GNUMakefile -j2
+          gmake CCHOME=C:\strawberry\c CFG=Debug -f GNUMakefile -j2
       - name: Run Tests
         shell: cmd
         run: |
           cd win32
           set HARNESS_OPTIONS=j2
-          gmake CCHOME=C:\strawberry\c -f GNUMakefile test
+          gmake CCHOME=C:\strawberry\c CFG=Debug -f GNUMakefile test
 
   #===============================================
 
