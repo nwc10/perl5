@@ -1235,6 +1235,15 @@ S_emulate_setlocale_i(pTHX_
         /* Ready to create a new locale by modification of the exising one */
         new_obj = newlocale(mask, new_locale, old_obj);
 
+#    ifndef USE_PL_CURLOCALES
+        if (strNE(calculate_LC_ALL(PL_C_locale_obj), "C")) {
+            DEBUG_L(PerlIO_printf(Perl_debug_log, "%d: C==%s\n", __LINE__, calculate_LC_ALL(PL_C_locale_obj)));
+            freelocale(PL_C_locale_obj);
+            PL_C_locale_obj = newlocale(LC_ALL_MASK, "C", (locale_t) 0);
+        }
+#endif
+
+
         if (! new_obj) {
             DEBUG_L(PerlIO_printf(Perl_debug_log,
                     "(%d): emulate_setlocale_i creating new object"
