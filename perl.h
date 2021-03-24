@@ -1118,6 +1118,11 @@ Example usage:
 #    endif
 #  endif
 
+/*XXX*/
+#ifndef PERL_DARWIN
+#  undef USE_QUERYLOCALE
+#endif
+
 #  if (defined(USE_POSIX_2008_LOCALE) && ! defined(USE_QUERYLOCALE))        \
    || (defined(USE_LOCALE_THREADS) && ! defined(USE_THREAD_SAFE_LOCALE))
 #    define USE_PL_CURLOCALES
