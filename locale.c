@@ -1118,6 +1118,7 @@ S_emulate_setlocale_i(pTHX_
 
     PERL_ARGS_ASSERT_EMULATE_SETLOCALE_I;
     assert(index <= NOMINAL_LC_ALL_INDEX);
+    assert(new_locale != NULL); /* No longer do queries come through here */
 
     mask = category_masks[index];
 
@@ -1125,11 +1126,6 @@ S_emulate_setlocale_i(pTHX_
         "(%d): emulate_setlocale_i input=%d (%s), mask=0x%x, \"%s\", cat=%d\n",
         line, index, category_names[index], mask,
             new_locale, categories[index]));
-
-    /* If just querying what the existing locale is ... */
-    if (new_locale == NULL) {
-        return my_querylocale_i(index);
-    }
 
 #  ifndef USE_QUERYLOCALE
 
