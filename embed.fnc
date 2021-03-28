@@ -1625,7 +1625,7 @@ Xp	|void	|set_numeric_standard
 Xp	|bool	|_is_in_locale_category|const bool compiling|const int category
 ApdT	|void	|switch_to_global_locale
 ApdT	|bool	|sync_locale
-ApxT	|void	|thread_locale_init
+Apx	|void	|thread_locale_init
 ApxT	|void	|thread_locale_term
 ApdO	|void	|require_pv	|NN const char* pv
 AbpdD	|void	|pack_cat	|NN SV *cat|NN const char *pat|NN const char *patend \

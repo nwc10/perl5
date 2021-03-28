@@ -3914,7 +3914,7 @@ PERL_CALLCONV void	Perl_taint_env(pTHX);
 PERL_CALLCONV void	Perl_taint_proper(pTHX_ const char* f, const char *const s);
 #define PERL_ARGS_ASSERT_TAINT_PROPER	\
 	assert(s)
-PERL_CALLCONV void	Perl_thread_locale_init(void);
+PERL_CALLCONV void	Perl_thread_locale_init(pTHX);
 #define PERL_ARGS_ASSERT_THREAD_LOCALE_INIT
 PERL_CALLCONV void	Perl_thread_locale_term(void);
 #define PERL_ARGS_ASSERT_THREAD_LOCALE_TERM

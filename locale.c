@@ -6645,7 +6645,7 @@ S_setlocale_debug_string_i(const unsigned cat_index,
 #endif
 
 void
-Perl_thread_locale_init()
+Perl_thread_locale_init(pTHX)
 {
     /* Called from a thread on startup*/
 
@@ -6655,8 +6655,6 @@ Perl_thread_locale_init()
      * locales unless there is locale thread safety.  So avoid          \
      * exacerbating that */                                             \
  && defined(USE_THREAD_SAFE_LOCALE)
-
-    dTHX;
 
     DEBUG_L(PORCELAIN_SETLOCALE_LOCK;
             PerlIO_printf(Perl_debug_log,

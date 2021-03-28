@@ -720,7 +720,7 @@
 #define sync_locale		Perl_sync_locale
 #define taint_env()		Perl_taint_env(aTHX)
 #define taint_proper(a,b)	Perl_taint_proper(aTHX_ a,b)
-#define thread_locale_init	Perl_thread_locale_init
+#define thread_locale_init()	Perl_thread_locale_init(aTHX)
 #define thread_locale_term	Perl_thread_locale_term
 #define to_uni_lower(a,b,c)	Perl_to_uni_lower(aTHX_ a,b,c)
 #define to_uni_title(a,b,c)	Perl_to_uni_title(aTHX_ a,b,c)
