@@ -795,7 +795,7 @@ S_my_querylocale_i(pTHX_ const unsigned int index)
                                            category_names[index], cur_obj));
         if (cur_obj == LC_GLOBAL_LOCALE) {
         PORCELAIN_SETLOCALE_LOCK;
-        retval = porcelain_setlocale(category, NULL);
+        retval = stdized_setlocale(category, NULL);
         PORCELAIN_SETLOCALE_UNLOCK;
         }
     else {
@@ -1214,7 +1214,7 @@ S_emulate_setlocale_i(pTHX_
                 for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
                     PORCELAIN_SETLOCALE_LOCK;
                     update_PL_curlocales_i(i,
-                                           porcelain_setlocale(categories[i],
+                                           stdized_setlocale(categories[i],
                                                                NULL),
                                            LOOPING);
                     PORCELAIN_SETLOCALE_UNLOCK;
@@ -1238,7 +1238,6 @@ S_emulate_setlocale_i(pTHX_
             PL_C_locale_obj = newlocale(LC_ALL_MASK, "C", (locale_t) 0);
         }
 #endif
-
 
         if (! new_obj) {
             DEBUG_L(PerlIO_printf(Perl_debug_log,
@@ -4391,8 +4390,12 @@ S_my_langinfo_i(pTHX_
              * but is documented and has been stable for many releases */
             UINT ___lc_codepage_func(void);
 
+            LC_CTYPE_LOCK;
+
             retval = save_to_buffer(Perl_form(aTHX_ "%d", ___lc_codepage_func()),
                                     retbufp, retbuf_sizep);
+            LC_CTYPE_UNLOCK;
+
             DEBUG_Lv(PerlIO_printf(Perl_debug_log, "locale='%s' cp=%s\n",
                                                    locale, retval));
             return retval;
@@ -4980,7 +4983,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
                 unsigned int j;
 
                 /* Note that this may change the locale, but we are going to do
-                 * that anyway just below */
+                 * XXX that anyway just below */
                 system_default_locale = stdized_setlocale(LC_ALL, "");
                 DEBUG_LOCALE_INIT(LC_ALL_INDEX_, "", system_default_locale);
 
@@ -5012,7 +5015,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
             setlocale_failure = TRUE;
         }
         else {
-            /* Since LC_ALL succeeded, it should have changed all the other
+            /* XXX Since LC_ALL succeeded, it should have changed all the other
              * categories it can to its value; so we massage things so that the
              * setlocales below just return their category's current values.
              * This adequately handles the case in NetBSD where LC_COLLATE may
@@ -5265,6 +5268,13 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
      * been set. */
     for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
         (void) emulate_setlocale_i(i, curlocales[i], LOOPING, __LINE__);
+    }
+
+#  elif defined(USE_PL_CURLOCALES)
+
+    /* Similarly, in this case we need to fill in our records. */
+    for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
+        PL_curlocales[i] = savepv(curlocales[i]);
     }
 
 #  endif
@@ -5712,9 +5722,18 @@ Perl_mem_collxfrm_(pTHX_ const char *input_string,
     /* Then the transformation of the input.  We loop until successful, or we
      * give up */
     for (;;) {
+        dSAVEDERRNO;
+
+        LC_CTYPE_LOCK;
+        LC_COLLATE_LOCK;
 
         errno = 0;
         *xlen = my_strxfrm(xbuf + COLLXFRM_HDR_LEN, s, xAlloc - COLLXFRM_HDR_LEN);
+
+        SAVE_ERRNO;
+        LC_COLLATE_UNLOCK;
+        LC_CTYPE_UNLOCK;
+        RESTORE_ERRNO;
 
         /* If the transformed string occupies less space than we told strxfrm()
          * was available, it means it transformed the whole string. */
@@ -6165,9 +6184,16 @@ Perl__is_in_locale_category(pTHX_ const bool compiling, const int category)
  * qualifies), these yield the correct one */
 #if defined(USE_LOCALE_CTYPE)
 #  define WHICH_LC_INDEX LC_CTYPE_INDEX_
+#  define WHICH_LOCK     LC_CTYPE_LOCK
+#  define WHICH_UNLOCK   LC_CTYPE_UNLOCK
 #elif defined(USE_LOCALE_MESSAGES)
 #  define WHICH_LC_INDEX LC_MESSAGES_INDEX_
+#  define WHICH_LOCK     LC_MESSAGES_LOCK
+#  define WHICH_UNLOCK   LC_MESSAGES_UNLOCK
 #endif
+
+#define MY_STRERROR_LOCK    LC_MESSAGES_LOCK
+#define MY_STRERROR_UNLOCK  LC_MESSAGES_UNLOCK
 
 /* my_strerror() returns a mortalized copy of the text of the error message
  * associated with 'errnum'.  If not called from within the scope of 'use
@@ -6306,7 +6332,9 @@ Perl_my_strerror(pTHX_ const int errnum, int * utf8ness)
 
     DEBUG_STRERROR_ENTER(errnum, 0);
 
+    gwLOCALE_LOCK;
         errstr = savepv(Strerror(errnum));
+    gwLOCALE_UNLOCK;
 
     *utf8ness = 1;
 
@@ -6333,9 +6361,11 @@ Perl_my_strerror(pTHX_ const int errnum, int * utf8ness)
     DEBUG_STRERROR_ENTER(errnum, IN_LC(categories[WHICH_LC_INDEX]));
 
     if (IN_LC(categories[WHICH_LC_INDEX])) {
+        WHICH_LOCK;
         gwLOCALE_LOCK;
         errstr = savepv(Strerror(errnum));
         gwLOCALE_UNLOCK;
+        WHICH_UNLOCK;
 
         *utf8ness = get_locale_string_utf8ness_i(NULL, WHICH_LC_INDEX, errstr,
                                                  UTF8NESS_UNKNOWN);
@@ -6343,9 +6373,11 @@ Perl_my_strerror(pTHX_ const int errnum, int * utf8ness)
     else {
         const char * orig_locale = toggle_locale_i(WHICH_LC_INDEX, "C");
 
+        WHICH_LOCK;
         gwLOCALE_LOCK;
         errstr = savepv(Strerror(errnum));
         gwLOCALE_UNLOCK;
+        WHICH_UNLOCK;
 
         restore_toggled_locale_i(WHICH_LC_INDEX, orig_locale);
 
@@ -6382,9 +6414,13 @@ Perl_my_strerror(pTHX_ const int errnum, int * utf8ness)
     orig_CTYPE_locale = toggle_locale_c(LC_CTYPE, desired_locale);
     orig_MESSAGES_locale = toggle_locale_c(LC_MESSAGES, desired_locale);
 
+    LC_MESSAGES_LOCK;
+    LC_CTYPE_LOCK;
     gwLOCALE_LOCK;
     errstr = savepv(Strerror(errnum));
     gwLOCALE_UNLOCK;
+    LC_CTYPE_UNLOCK;
+    LC_MESSAGES_UNLOCK;
 
     restore_toggled_locale_c(LC_MESSAGES, orig_MESSAGES_locale);
     restore_toggled_locale_c(LC_CTYPE, orig_CTYPE_locale);
