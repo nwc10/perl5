@@ -1080,7 +1080,7 @@ S_emulate_setlocale_i(pTHX_ const unsigned int index, const char * locale)
 
 #ifdef USE_LOCALE
 
-#  ifndef HAS_POSIX_2008_LOCALE
+/*#  ifndef HAS_POSIX_2008_LOCALE*/
 
 /* So far, the locale strings returned by modern 2008-compliant systems have
  * been fine */
@@ -1208,9 +1208,43 @@ S_stdize_locale(pTHX_ const int category,
      * trailing) */
     *((char *) first_bad) = '\0';
     return retval;
+
+#    if 0
+    const char * const s = strchr(locs, '=');
+
+    No =, means is ok
+
+    bool okay = TRUE;
+
+    if (s) {
+        const char * const t = strchr(s, '.');
+        okay = FALSE;
+
+        = but no . is bad
+
+        if (t) {
+            const char * const u = strchr(t, '\n');
+
+            Final \n with . is ok, but not just a plain dot.
+
+            if (u && (u[1] == 0)) {
+                const STRLEN len = u - s;
+                Move(s + 1, locs, len, char);
+                locs[len] = 0;
+                okay = TRUE;
+            }
+        }
+    }
+
+    if (!okay)
+        Perl_croak(aTHX_ "Can't fix broken locale name \"%s\"", locs);
+
+    return locs;
+#  endif
+
 }
 
-#  endif
+/*#  endif*/
 
 STATIC
 const char *
