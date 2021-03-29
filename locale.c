@@ -6679,8 +6679,13 @@ S_setlocale_debug_string_i(const unsigned cat_index,
 void
 Perl_thread_locale_init(pTHX)
 {
-    /* Called from a thread on startup*/
-
+    /* Called from a thread on startup.
+     *
+     * This should do nothing unless per-thread locales are in effect, as it
+     * would be changing the global locale.  Instead, rely on the copying of
+     * the state of the parent thread in sv.c to initialize the new thread.
+     * This allows threaded perls with global locales to work, as long as the
+     * threads aren't changing things */
 #if defined(USE_LOCALE_THREADS)                                         \
                                                                         \
     /* It can cause races and totally wrong results to use threads and  \
@@ -6688,11 +6693,10 @@ Perl_thread_locale_init(pTHX)
      * exacerbating that */                                             \
  && defined(USE_THREAD_SAFE_LOCALE)
 
-    DEBUG_L(PORCELAIN_SETLOCALE_LOCK;
-            PerlIO_printf(Perl_debug_log,
+    /* XXX windows converted to non-safe */
+    DEBUG_L(PerlIO_printf(Perl_debug_log,
                           "new thread, initial locale is %s\n",
-                          porcelain_setlocale(LC_ALL, NULL));
-            PORCELAIN_SETLOCALE_UNLOCK;);
+                          porcelain_setlocale(LC_ALL, NULL)));
 
     if (! sync_locale()) {  /* Side effect of going to per-thread if avail */
         locale_panic_("Thread unexpectedly started not in global locale");
