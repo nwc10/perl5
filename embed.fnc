@@ -3267,7 +3267,7 @@ S	|HV *	|get_nl_item_from_localeconv				\
                                 |const int unused
 #      endif
 #  endif
-STR	|const char *|save_to_buffer|NULLOK const char * string	\
+ST	|const char *|save_to_buffer|NULLOK const char * string	\
 				    |NULLOK const char **buf	\
 				    |NULLOK Size_t *buf_size
 :#    ifndef HAS_POSIX_2008_LOCALE
