@@ -367,14 +367,6 @@ PERLVAR(I, utf8locale,	bool)		/* utf8 locale detected */
 PERLVAR(I, in_utf8_CTYPE_locale, bool)
 PERLVAR(I, in_utf8_COLLATE_locale, bool)
 PERLVAR(I, in_utf8_turkic_locale, bool)
-
-#ifdef USE_PL_CURLOCALES
-/* This is the most number of categories we've encountered so far on any
- * platform */
-PERLVARA(I, curlocales, 12, const char *)
-PERLVARA(I, curlocales_sizes, 12, Size_t)
-#endif
-
 #if defined(USE_LOCALE) && defined(USE_LOCALE_THREADS)
 PERLVARI(I, locale_mutex_depth, int, 0)     /* Emulate general semaphore */
 #endif
@@ -725,6 +717,13 @@ PERLVAR(I, constpadix,	PADOFFSET)	/* lowest unused for constants */
 
 PERLVAR(I, padix_floor,	PADOFFSET)	/* how low may inner block reset padix */
 
+#ifdef USE_PL_CURLOCALES
+
+/* This is the most number of categories we've encountered so far on any
+ * platform */
+PERLVARA(I, curlocales, 12, const char *)
+
+#endif
 #ifdef USE_LOCALE_COLLATE
 
 PERLVAR(I, collation_name, char *)	/* Name of current collation */
