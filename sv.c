@@ -15648,6 +15648,7 @@ perl_clone_using(PerlInterpreter *proto_perl, UV flags,
 #ifdef USE_PL_CURLOCALES
     for (i = 0; i < (int) C_ARRAY_LENGTH(PL_curlocales); i++) {
         PL_curlocales[i] = SAVEPV(proto_perl->Icurlocales[i]);
+        PL_curlocales_sizes[i] = strlen(PL_curlocales[i]);
     }
 #endif
 #ifdef USE_LOCALE_CTYPE

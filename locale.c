@@ -854,8 +854,7 @@ S_update_PL_curlocales_i(pTHX_
                          /* PL_curlocales is a parallel array, so has same
                           * length as 'categories' */
         for (i = 0; i < LC_ALL_INDEX_; i++) {
-            Safefree(PL_curlocales[i]);
-            PL_curlocales[i] = savepv(new_locale);
+            save_to_buffer(new_locale, &PL_curlocales[i], &PL_curlocales_sizes[i]);
         }
 
         recalc_LC_ALL = TRUE;
@@ -863,8 +862,7 @@ S_update_PL_curlocales_i(pTHX_
     else {
 
         /* Update the single category's record */
-        Safefree(PL_curlocales[index]);
-        PL_curlocales[index] = savepv(new_locale);
+        save_to_buffer(new_locale, &PL_curlocales[index], &PL_curlocales_sizes[index]);
 
         if (recalc_LC_ALL == LOOPING) {
             recalc_LC_ALL = (index == NOMINAL_LC_ALL_INDEX - 1);
@@ -872,9 +870,7 @@ S_update_PL_curlocales_i(pTHX_
     }
 
     if (recalc_LC_ALL) { /* And recalculate LC_ALL */
-        Safefree(PL_curlocales[LC_ALL_INDEX_]);
-        PL_curlocales[LC_ALL_INDEX_] =
-                                    savepv(calculate_LC_ALL(PL_curlocales));
+        save_to_buffer(calculate_LC_ALL(PL_curlocales), &PL_curlocales[LC_ALL_INDEX_], &PL_curlocales_sizes[LC_ALL_INDEX_]);
     }
 
     return PL_curlocales[index];
@@ -997,8 +993,6 @@ S_setlocale_from_aggregate_LC_ALL(pTHX_ const char * locale, const line_t line)
      * as the value may omit categories whose locale is 'C'.  khw thinks it's
      * better to store a complete LC_ALL.  So calculate it. */
     retval = savepv(calculate_LC_ALL(PL_curlocales));
-    Safefree(PL_curlocales[LC_ALL_INDEX_]);
-    PL_curlocales[LC_ALL_INDEX_] = retval;
 
     Safefree(locale_on_entry);
     return retval;
@@ -5274,7 +5268,8 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
 
     /* Similarly, in this case we need to fill in our records. */
     for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
-        PL_curlocales[i] = savepv(curlocales[i]);
+        PL_curlocales_sizes[i] = 0;
+        save_to_buffer(curlocales[i], &PL_curlocales[i], &PL_curlocales_sizes[i]);
     }
 
 #  endif
