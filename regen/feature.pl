@@ -41,6 +41,7 @@ my %feature = (
     multidimensional => 'multidimensional',
     bareword_filehandles => 'bareword_filehandles',
     try             => 'try',
+    format_vars     => 'format_vars',
 );
 
 # NOTE: If a feature is ever enabled in a non-contiguous range of Perl
@@ -50,7 +51,7 @@ my %feature = (
 # 5.odd implies the next 5.even, but an explicit 5.even can override it.
 
 # features bundles
-use constant V5_9_5 => sort qw{say state switch indirect multidimensional bareword_filehandles};
+use constant V5_9_5 => sort qw{say state switch indirect multidimensional bareword_filehandles format_vars};
 use constant V5_11  => sort ( +V5_9_5, qw{unicode_strings} );
 use constant V5_15  => sort ( +V5_11, qw{unicode_eval evalbytes current_sub fc} );
 use constant V5_23  => sort ( +V5_15, qw{postderef_qq} );
@@ -58,7 +59,7 @@ use constant V5_27  => sort ( +V5_23, qw{bitwise} );
 
 my %feature_bundle = (
     all     => [ sort keys %feature ],
-    default => [ qw{indirect multidimensional bareword_filehandles} ],
+    default => [ qw{indirect multidimensional bareword_filehandles format_vars} ],
     # using 5.9.5 features bundle
     "5.9.5" => [ +V5_9_5 ],
     "5.10"  => [ +V5_9_5 ],
@@ -823,6 +824,19 @@ handling, where exceptions throwin from the body of the block introduced with
 C<try> are caught by executing the body of the C<catch> block.
 
 For more information, see L<perlsyn/"Try Catch Exception Handling">.
+
+=head2 The 'format_vars' feature.
+
+This feature enables the punctuation variables that affect the operation of
+formats. It is enabled by default, but can be turned off to disallow the use
+of these variables.
+
+  $^A  $^L  $%  $-  $:  $=  $^  $~
+
+This is provided for the possible future expansion of the language, which may
+wish to use variable syntax including these characters, but currently cannot
+due to its collision with these little-used variables. By disabling this
+feature it permits these as a possible future expansion.
 
 =head1 FEATURE BUNDLES
 
