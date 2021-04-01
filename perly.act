@@ -1465,7 +1465,7 @@ case 2:
 #line 1089 "perly.y"
     {
 			    struct Perl_custom_infix *def = (struct Perl_custom_infix *)(ps[0].val.pval);
-			    (yyval.opval) = (*def->parse)(aTHX_ (ps[-1].val.opval));
+			    (yyval.opval) = (*def->parse)(aTHX_ (ps[-1].val.opval), def);
 			}
 
     break;
@@ -2153,6 +2153,6 @@ case 2:
     
 
 /* Generated from:
- * aa57fbf45412e1f3604790f1f83a6030e5f000896c83202e45ced91f39e4dd58 perly.y
+ * 5a4d55d8501232c9e1f55d8729c7db13e1e36af1c22b41e35389efa2bf4541f0 perly.y
  * acf1cbfd2545faeaaa58b1cf0cf9d7f98b5be0752eb7a54528ef904a9e2e1ca7 regen_perly.pl
  * ex: set ro: */

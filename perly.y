@@ -1088,7 +1088,7 @@ termrelop:	relopchain %prec PREC_LOW
 	|	term[lhs] PLUGRELOP
 			{
 			    struct Perl_custom_infix *def = (struct Perl_custom_infix *)$PLUGRELOP;
-			    $$ = (*def->parse)(aTHX_ $lhs);
+			    $$ = (*def->parse)(aTHX_ $lhs, def);
 			}
 	;
 

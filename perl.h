@@ -5600,9 +5600,10 @@ typedef void (*ATEXIT_t) (pTHX_ void*);
 typedef void (*XSUBADDR_t) (pTHX_ CV *);
 
 /* TODO: find somewhere to store this */
+struct Perl_custom_infix;
 struct Perl_custom_infix {
     /* TODO: a precedence field. for now hardcoded to RELOP only */
-    OP *(*parse)(pTHX_ OP *lhs);
+    OP *(*parse)(pTHX_ OP *lhs, struct Perl_custom_infix *);
 };
 
 typedef OP* (*Perl_ppaddr_t)(pTHX);
