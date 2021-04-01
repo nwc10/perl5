@@ -8640,6 +8640,22 @@ yyl_keylookup(pTHX_ char *s, GV *gv)
         }
     }
 
+    /* Check for plugged-in named operator */
+    {
+        struct Perl_custom_infix *def;
+        int result;
+        result = PL_infix_plugin(aTHX_ PL_tokenbuf, len, &def);
+        if(result) {
+            if((STRLEN)result != len)
+                Perl_croak(aTHX_ "Bad infix plugin result (%d) - did not consume entire identifier <%s>\n",
+                    result, PL_tokenbuf);
+            PL_bufptr = s = d;
+            pl_yylval.pval = (char *)def;
+            CLINE;
+            return REPORT(PLUGRELOP);
+        }
+    }
+
     /* Is this a label? */
     if (!anydelim && PL_expect == XSTATE
           && d < PL_bufend && *d == ':' && *(d + 1) != ':') {
