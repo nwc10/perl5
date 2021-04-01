@@ -1581,7 +1581,7 @@ PERL_CALLCONV void	Perl_hv_undef_flags(pTHX_ HV *hv, U32 flags);
 
 /* PERL_CALLCONV I32	ibcmp_utf8(pTHX_ const char *s1, char **pe1, UV l1, bool u1, const char *s2, char **pe2, UV l2, bool u2); */
 #define PERL_ARGS_ASSERT_IBCMP_UTF8
-PERL_CALLCONV int	Perl_infix_plugin_standard(pTHX_ char* operator_ptr, STRLEN operator_len, struct Perl_custom_infix** def);
+PERL_CALLCONV STRLEN	Perl_infix_plugin_standard(pTHX_ char* operator_ptr, STRLEN operator_len, struct Perl_custom_infix** def);
 #define PERL_ARGS_ASSERT_INFIX_PLUGIN_STANDARD	\
 	assert(operator_ptr); assert(def)
 PERL_CALLCONV void	Perl_init_argv_symbols(pTHX_ int argc, char **argv);

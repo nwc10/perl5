@@ -8652,11 +8652,11 @@ yyl_keylookup(pTHX_ char *s, GV *gv)
     /* Check for plugged-in named operator */
     if(PLUGINFIX_IS_ENABLED) {
         struct Perl_custom_infix *def;
-        int result;
+        STRLEN result;
         result = PL_infix_plugin(aTHX_ PL_tokenbuf, len, &def);
         if(result) {
-            if((STRLEN)result != len)
-                Perl_croak(aTHX_ "Bad infix plugin result (%d) - did not consume entire identifier <%s>\n",
+            if(result != len)
+                Perl_croak(aTHX_ "Bad infix plugin result (%zd) - did not consume entire identifier <%s>\n",
                     result, PL_tokenbuf);
             PL_bufptr = s = d;
             pl_yylval.pval = (char *)def;
@@ -8747,7 +8747,7 @@ yyl_try(pTHX_ char *s)
     if(PLUGINFIX_IS_ENABLED && isPLUGINFIX_FIRST(*s)) {
         struct Perl_custom_infix *def;
         char *s_end = s, *d = PL_tokenbuf;
-        int len;
+        STRLEN len;
 
         /* Copy the longest sequence of isPLUGINFIX() chars into PL_tokenbuf */
         while(s_end < PL_bufend && d < PL_tokenbuf+sizeof(PL_tokenbuf)-1 && isPLUGINFIX(*s_end))
@@ -12847,7 +12847,7 @@ Perl_keyword_plugin_standard(pTHX_
     return KEYWORD_PLUGIN_DECLINE;
 }
 
-int
+STRLEN
 Perl_infix_plugin_standard(pTHX_
         char *operator_ptr, STRLEN operator_len, struct Perl_custom_infix **def)
 {

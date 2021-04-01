@@ -3611,7 +3611,7 @@ Apxd	|void|cop_store_label \
 
 epo	|int	|keyword_plugin_standard|NN char* keyword_ptr|STRLEN keyword_len|NN OP** op_ptr
 
-epo	|int	|infix_plugin_standard|NN char* operator_ptr|STRLEN operator_len|NN struct Perl_custom_infix** def
+epo	|STRLEN	|infix_plugin_standard|NN char* operator_ptr|STRLEN operator_len|NN struct Perl_custom_infix** def
 
 #if defined(USE_ITHREADS)
 #  if defined(PERL_IN_SV_C)
