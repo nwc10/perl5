@@ -151,21 +151,22 @@ extern int yydebug;
     NCEQOP = 350,
     CHRELOP = 351,
     NCRELOP = 352,
-    SHIFTOP = 353,
-    MATCHOP = 354,
-    PERLY_EXCLAMATION_MARK = 355,
-    PERLY_TILDE = 356,
-    UMINUS = 357,
-    REFGEN = 358,
-    POWOP = 359,
-    PREINC = 360,
-    PREDEC = 361,
-    POSTINC = 362,
-    POSTDEC = 363,
-    POSTJOIN = 364,
-    ARROW = 365,
-    PERLY_PAREN_CLOSE = 366,
-    PERLY_PAREN_OPEN = 367
+    PLUGRELOP = 353,
+    SHIFTOP = 354,
+    MATCHOP = 355,
+    PERLY_EXCLAMATION_MARK = 356,
+    PERLY_TILDE = 357,
+    UMINUS = 358,
+    REFGEN = 359,
+    POWOP = 360,
+    PREINC = 361,
+    PREDEC = 362,
+    POSTINC = 363,
+    POSTDEC = 364,
+    POSTJOIN = 365,
+    ARROW = 366,
+    PERLY_PAREN_CLOSE = 367,
+    PERLY_PAREN_OPEN = 368
   };
 #endif
 
@@ -218,6 +219,6 @@ int yyparse (void);
 
 
 /* Generated from:
- * 427b422b0ce1154d834dc461973a3254729575694f98ab600032f67ccab7b9e5 perly.y
+ * aa57fbf45412e1f3604790f1f83a6030e5f000896c83202e45ced91f39e4dd58 perly.y
  * acf1cbfd2545faeaaa58b1cf0cf9d7f98b5be0752eb7a54528ef904a9e2e1ca7 regen_perly.pl
  * ex: set ro: */

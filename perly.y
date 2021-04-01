@@ -117,6 +117,7 @@
 %left <ival> BITANDOP
 %left <ival> CHEQOP NCEQOP
 %left <ival> CHRELOP NCRELOP
+%nonassoc <pval> PLUGRELOP
 %nonassoc UNIOP UNIOPSUB
 %nonassoc REQUIRE
 %left <ival> SHIFTOP
@@ -1084,6 +1085,11 @@ termrelop:	relopchain %prec PREC_LOW
 			{ yyerror("syntax error"); YYERROR; }
 	|	termrelop CHRELOP
 			{ yyerror("syntax error"); YYERROR; }
+	|	term[lhs] PLUGRELOP
+			{
+			    struct Perl_custom_infix *def = (struct Perl_custom_infix *)$PLUGRELOP;
+			    $$ = (*def->parse)(aTHX_ $lhs);
+			}
 	;
 
 relopchain:	term[lhs] CHRELOP term[rhs]
