@@ -115,6 +115,13 @@ static const char* const ident_var_zero_multi_digit = "Numeric variables with mo
  * 1999-02-27 mjd-perl-patch@plover.com */
 #define isCONTROLVAR(x) (isUPPER(x) || memCHRs("[\\]^_?", (x)))
 
+/* Non-identifier plugin infix operators are allowed any printing character
+ * except spaces, digits, or identifier chars
+ */
+#define isPLUGINFIX(c) (c && !isSPACE(c) && !isDIGIT(c) && !isALPHA(c))
+/* Plugin infix operators may not begin with a quote symbol */
+#define isPLUGINFIX_FIRST(c) (isPLUGINFIX(c) && c != '"' && c != '\'')
+
 #define PLUGINFIX_IS_ENABLED  UNLIKELY(PL_infix_plugin != &Perl_infix_plugin_standard)
 
 #define SPACE_OR_TAB(c) isBLANK_A(c)
@@ -8736,6 +8743,26 @@ yyl_try(pTHX_ char *s)
     int tok;
 
   retry:
+    /* Check for plugged-in symbolic operator */
+    if(PLUGINFIX_IS_ENABLED && isPLUGINFIX_FIRST(*s)) {
+        struct Perl_custom_infix *def;
+        char *s_end = s, *d = PL_tokenbuf;
+        int len;
+
+        /* Copy the longest sequence of isPLUGINFIX() chars into PL_tokenbuf */
+        while(s_end < PL_bufend && d < PL_tokenbuf+sizeof(PL_tokenbuf)-1 && isPLUGINFIX(*s_end))
+            *d++ = *s_end++;
+        *d = '\0';
+
+        if((len = (*PL_infix_plugin)(aTHX_ PL_tokenbuf, s_end - s, &def))) {
+            s += len;
+            pl_yylval.pval = (char *)def;
+            CLINE;
+            /* TODO: Examine precedence field of def to determine this */
+            OPERATOR(PLUGRELOP);
+        }
+    }
+
     switch (*s) {
     default:
         if (UTF ? isIDFIRST_utf8_safe(s, PL_bufend) : isALNUMC(*s)) {
