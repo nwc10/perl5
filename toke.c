@@ -115,6 +115,8 @@ static const char* const ident_var_zero_multi_digit = "Numeric variables with mo
  * 1999-02-27 mjd-perl-patch@plover.com */
 #define isCONTROLVAR(x) (isUPPER(x) || memCHRs("[\\]^_?", (x)))
 
+#define PLUGINFIX_IS_ENABLED  UNLIKELY(PL_infix_plugin != &Perl_infix_plugin_standard)
+
 #define SPACE_OR_TAB(c) isBLANK_A(c)
 
 #define HEXFP_PEEK(s)     \
@@ -8641,7 +8643,7 @@ yyl_keylookup(pTHX_ char *s, GV *gv)
     }
 
     /* Check for plugged-in named operator */
-    {
+    if(PLUGINFIX_IS_ENABLED) {
         struct Perl_custom_infix *def;
         int result;
         result = PL_infix_plugin(aTHX_ PL_tokenbuf, len, &def);
