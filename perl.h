@@ -7054,12 +7054,12 @@ cannot have changed since the precalculation.
  * khw believes the reason for the variables instead of the bits in a single
  * word is to avoid having to have masking instructions. */
 
-#  define _NOT_IN_NUMERIC_STANDARD (! PL_numeric_standard)
+#  define NOT_IN_NUMERIC_STANDARD_ (! PL_numeric_standard)
 
 /* We can lock the category to stay in the C locale, making requests to the
  * contrary be noops, in the dynamic scope by setting PL_numeric_standard to 2.
  * */
-#  define _NOT_IN_NUMERIC_UNDERLYING                                        \
+#  define NOT_IN_NUMERIC_UNDERLYING_                                        \
                     (! PL_numeric_underlying && PL_numeric_standard < 2)
 
 #  define DECLARATION_FOR_LC_NUMERIC_MANIPULATION                           \
@@ -7069,17 +7069,17 @@ cannot have changed since the precalculation.
         STMT_START {                                                        \
             bool _in_lc_numeric = (in);                                     \
             LC_NUMERIC_LOCK(                                                \
-                    (   (  _in_lc_numeric && _NOT_IN_NUMERIC_UNDERLYING)    \
-                     || (! _in_lc_numeric && _NOT_IN_NUMERIC_STANDARD)));   \
+                    (   (  _in_lc_numeric && NOT_IN_NUMERIC_UNDERLYING_)    \
+                     || (! _in_lc_numeric && NOT_IN_NUMERIC_STANDARD_)));   \
             if (_in_lc_numeric) {                                           \
-                if (_NOT_IN_NUMERIC_UNDERLYING) {                           \
+                if (NOT_IN_NUMERIC_UNDERLYING_) {                           \
                     Perl_set_numeric_underlying(aTHX);                      \
                     _restore_LC_NUMERIC_function                            \
                                             = &Perl_set_numeric_standard;   \
                 }                                                           \
             }                                                               \
             else {                                                          \
-                if (_NOT_IN_NUMERIC_STANDARD) {                             \
+                if (NOT_IN_NUMERIC_STANDARD_) {                             \
                     Perl_set_numeric_standard(aTHX);                        \
                     _restore_LC_NUMERIC_function                            \
                                             = &Perl_set_numeric_underlying; \
@@ -7113,7 +7113,8 @@ cannot have changed since the precalculation.
 
 #  define SET_NUMERIC_UNDERLYING()                                          \
 	STMT_START {                                                        \
-            if (_NOT_IN_NUMERIC_UNDERLYING) {                               \
+          /*assert(PL_locale_mutex_depth > 0);*/                            \
+            if (NOT_IN_NUMERIC_UNDERLYING_) {                               \
                 Perl_set_numeric_underlying(aTHX);                          \
             }                                                               \
         } STMT_END
@@ -7122,8 +7123,8 @@ cannot have changed since the precalculation.
  * the RESTORE_foo ones called to switch back, but only if need be */
 #  define STORE_LC_NUMERIC_SET_STANDARD()                                   \
         STMT_START {                                                        \
-            LC_NUMERIC_LOCK(_NOT_IN_NUMERIC_STANDARD);                      \
-            if (_NOT_IN_NUMERIC_STANDARD) {                                 \
+            LC_NUMERIC_LOCK(NOT_IN_NUMERIC_STANDARD_);                      \
+            if (NOT_IN_NUMERIC_STANDARD_) {                                 \
                 _restore_LC_NUMERIC_function = &Perl_set_numeric_underlying;\
                 Perl_set_numeric_standard(aTHX);                            \
             }                                                               \
@@ -7133,8 +7134,8 @@ cannot have changed since the precalculation.
  * locale'.  This is principally in the POSIX:: functions */
 #  define STORE_LC_NUMERIC_FORCE_TO_UNDERLYING()                            \
 	STMT_START {                                                        \
-            LC_NUMERIC_LOCK(_NOT_IN_NUMERIC_UNDERLYING);                    \
-            if (_NOT_IN_NUMERIC_UNDERLYING) {                               \
+            LC_NUMERIC_LOCK(NOT_IN_NUMERIC_UNDERLYING_);                    \
+            if (NOT_IN_NUMERIC_UNDERLYING_) {                               \
                 Perl_set_numeric_underlying(aTHX);                          \
                 _restore_LC_NUMERIC_function = &Perl_set_numeric_standard;  \
             }                                                               \
