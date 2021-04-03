@@ -4061,7 +4061,6 @@ S_my_langinfo_i(pTHX_
         }
 
 #  endif
-#  ifdef HAS_STRFTIME
 
             /* These formats are only available in later strfmtime's */
             case ERA_D_FMT: case ERA_T_FMT: case ERA_D_T_FMT: case T_FMT_AMPM:
@@ -4220,7 +4219,6 @@ S_my_langinfo_i(pTHX_
             return format;
         }
 
-#  endif
 
       case CODESET:
         if (isNAME_C_OR_POSIX(locale)) {
@@ -4300,7 +4298,7 @@ S_my_langinfo_i(pTHX_
                               &scratch_buf, &scratch_buf_size, &locale_is_utf8);
 
 #    endif
-#      if defined(USE_LOCALE_TIME) && defined(HAS_STRFTIME)
+#      ifdef USE_LOCALE_TIME
 
             /* If that didn't rule out being UTF-8, we look at LC_TIME entries,
              * like the names of the months or weekdays.  We quit at the first
