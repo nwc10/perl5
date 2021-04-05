@@ -152,6 +152,9 @@ hunk.
 #  elif defined(PERL_MICRO)
 #    define PERL_PATCHNUM "UNKNOWN-microperl"
 #    define PERL_GIT_UNPUSHED_COMMITS /*leave-this-comment*/
+#  elif defined(__CYGWIN__)
+#    define PERL_PATCHNUM "UNKNOWN-cygwin"
+#    define PERL_GIT_UNPUSHED_COMMITS /*leave-this-comment*/
 #  else
 #    include "git_version.h"
 #  endif
