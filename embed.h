@@ -863,6 +863,14 @@
 #define warn_nocontext		Perl_warn_nocontext
 #define warner_nocontext	Perl_warner_nocontext
 #endif
+#if defined(PERL_IN_LOCALE_C)
+#  if defined(USE_LOCALE)
+#    if defined(WIN32)
+#define Win_utf8_string_to_wstring	Perl_Win_utf8_string_to_wstring
+#define Win_wstring_to_utf8_string	Perl_Win_wstring_to_utf8_string
+#    endif
+#  endif
+#endif
 #if defined(PERL_USE_3ARG_SIGHANDLER)
 #define csighandler		Perl_csighandler
 #endif

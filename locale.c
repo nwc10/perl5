@@ -2270,9 +2270,8 @@ S_new_collate(pTHX_ const char *newcoll)
 
 #ifdef WIN32
 
-STATIC
 wchar_t *
-S_Win_utf8_string_to_wstring(const char * utf8_string)
+Perl_Win_utf8_string_to_wstring(const char * utf8_string)
 {
     wchar_t *wstring;
 
@@ -2294,9 +2293,8 @@ S_Win_utf8_string_to_wstring(const char * utf8_string)
     return wstring;
 }
 
-STATIC
 char *
-S_Win_wstring_to_utf8_string(const wchar_t * wstring)
+Perl_Win_wstring_to_utf8_string(const wchar_t * wstring)
 {
     char *utf8_string;
 
@@ -2327,7 +2325,7 @@ S_wrap_wsetlocale(pTHX_ int category, const char *locale) {
     char *result;
 
     if (locale) {
-        wlocale = S_Win_utf8_string_to_wstring(locale);
+        wlocale = Win_utf8_string_to_wstring(locale);
         if (! wlocale) {
             return NULL;
         }
@@ -2343,7 +2341,7 @@ S_wrap_wsetlocale(pTHX_ int category, const char *locale) {
             return NULL;
         }
 
-    result = S_Win_wstring_to_utf8_string(wresult);
+    result = Win_wstring_to_utf8_string(wresult);
     SAVEFREEPV(result); /* is there something better we can do here? */
 
     return result;
