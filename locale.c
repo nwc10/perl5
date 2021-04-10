@@ -1735,7 +1735,7 @@ S_new_numeric(pTHX_ const char *newnum)
                             newnum, PL_numeric_name));
 
     /* If this isn't actually a change, do nothing */
-    if (PL_numeric_name && strEQ(PL_numeric_name, newnum)) {
+    if (strEQ(PL_numeric_name, newnum)) {
         return;
     }
 
@@ -2378,7 +2378,7 @@ S_new_collate(pTHX_ const char *newcoll)
      * an unlikely bug */
 
     /* Return if the locale isn't changing */
-    if (PL_collation_name && strEQ(PL_collation_name, newcoll)) {
+    if (strEQ(PL_collation_name, newcoll)) {
         return;
     }
 
@@ -4797,11 +4797,23 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
 
     DEBUG_Lv(PerlIO_printf(Perl_debug_log, "created C object %p\n",
                            PL_C_locale_obj));
+
+#  endif
+#  ifdef USE_LOCALE_COLLATE
+
+    Newxz(PL_collation_name, 1, char);
+
+#  endif
+#  ifdef USE_LOCALE_CTYPE
+
+    Newxz(PL_ctype_name, 1, char);
+
 #  endif
 #  ifdef USE_LOCALE_NUMERIC
 
     PL_numeric_radix_sv    = newSVpvn(C_decimal_point, strlen(C_decimal_point));
     PL_underlying_radix_sv = newSVpvn(C_decimal_point, strlen(C_decimal_point));
+    Newxz(PL_numeric_name, 1, char);
 
 #  endif
 #  ifdef LOCALE_ENVIRON_REQUIRED
@@ -6177,7 +6189,7 @@ S_is_locale_utf8(pTHX_ const char * locale)
 
     PERL_ARGS_ASSERT_IS_LOCALE_UTF8;
 
-    if (PL_ctype_name && strEQ(locale, PL_ctype_name)) {
+    if (strEQ(locale, PL_ctype_name)) {
         return PL_in_utf8_CTYPE_locale;
     }
 
