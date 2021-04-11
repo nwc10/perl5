@@ -157,13 +157,9 @@ static const char C_thousands_sep[] = "";
 #  define HAS_SOME_LOCALECONV
 #endif
 
-/* For use in calling my_langinfo() */
-#define USE_UNDERLYING_NUMERIC  ((char *) 1)
-
 #define my_langinfo_c(item, category, locale, retbufp, retbuf_sizep, utf8ness) \
             my_langinfo_i(item, category##_INDEX_, locale, retbufp,            \
                                                       retbuf_sizep,  utf8ness)
-
 #ifdef USE_LOCALE
 
 #  ifdef DEBUGGING
@@ -3741,8 +3737,19 @@ Perl_langinfo8(const nl_item item, int * utf8ness)
 
     /* Use either the underlying numeric, or the other underlying categories */
     if (cat_index == LC_NUMERIC_INDEX_) {
-        return my_langinfo_c(item, LC_NUMERIC, USE_UNDERLYING_NUMERIC,
+        const char * result;
+        bool toggled = FALSE;
+
+        if (! PL_numeric_underlying) {
+            set_numeric_underlying();
+            toggled = TRUE;
+        }
+        result = my_langinfo_i(item, cat_index, NULL,
                              &PL_langinfo_buf, &PL_langinfo_bufsize, utf8ness);
+        if (toggled) {
+            set_numeric_standard();
+        }
+        return result;
     }
     else {
         return my_langinfo_i(item, cat_index, NULL,
@@ -3762,10 +3769,8 @@ S_my_langinfo_i(pTHX_
               const nl_item item,           /* The item to look up */
                 const unsigned int cat_index, /* The locale category that
                                                  controls it */
-                /* The locale to look up 'item' in.  Two special values:
-                 * NULL  => Use the current underlying locale of the program
-                 * USE_UNDERLYING_NUMERIC => Use the current underlying
-                 *                           LC_NUMERIC locale */
+                /* The locale to look up 'item' in.
+                 * NULL => Use the current underlying locale of the program */
                 const char * locale,
 
               /* Where to store the result, and where the size of that buffer
@@ -3786,9 +3791,7 @@ S_my_langinfo_i(pTHX_
 
     DEBUG_Lv(PerlIO_printf(Perl_debug_log,
                            "Entering my_langinfo item=%d, using ", item);
-            if (   locale == NULL
-                || locale == USE_UNDERLYING_NUMERIC)
-            {
+            if (locale == NULL) {
                 PerlIO_printf(Perl_debug_log, "underlying %s locale\n",
                                               category_names[cat_index]);
             }
@@ -3807,12 +3810,6 @@ S_my_langinfo_i(pTHX_
 
         if (locale == NULL) {
             cur = use_curlocale_scratch();
-            locale = NULL;
-        }
-        else if (locale == USE_UNDERLYING_NUMERIC) {
-            assert(cat_index == LC_NUMERIC_INDEX_);
-            cur = PL_underlying_numeric_obj;
-            locale = PL_numeric_name;
         }
         else {
             cur = newlocale(category_masks[cat_index], locale, (locale_t) 0);
@@ -3839,32 +3836,16 @@ S_my_langinfo_i(pTHX_
 
     {
         const char * orig_switched_locale = NULL;
-        DECLARATION_FOR_LC_NUMERIC_MANIPULATION;
-        bool toggled = FALSE;
 
-        if (locale == USE_UNDERLYING_NUMERIC) {
-            assert(cat_index == LC_NUMERIC_INDEX_);
-            STORE_LC_NUMERIC_FORCE_TO_UNDERLYING();
-            toggled = TRUE;
-            locale = PL_numeric_name;
-            }
-        else if (locale != NULL) {
+        if (locale != NULL) {
             orig_switched_locale = toggle_locale_i(cat_index, locale);
-        }
-        else {
-            locale = NULL;
         }
 
         NL_LANGINFO_LOCK;
         retval = save_to_buffer(nl_langinfo(item), retbufp, retbuf_sizep);
         NL_LANGINFO_UNLOCK;
 
-        if (toggled) {
-            RESTORE_LC_NUMERIC();
-        }
-        else if (orig_switched_locale != NULL) {
             restore_toggled_locale_i(cat_index, orig_switched_locale);
-    }
 
         if (utf8ness) {
             *utf8ness = get_locale_string_utf8ness_i(locale, cat_index,
@@ -3891,21 +3872,22 @@ S_my_langinfo_i(pTHX_
     if (locale == NULL) {
         locale = querylocale_i(cat_index);
     }
-    else {
-        const char * want_locale = (locale == USE_UNDERLYING_NUMERIC)
-                                   ? PL_numeric_name
-                                   : locale;
+    else if (strNE(locale, querylocale_i(cat_index))) {
+        const char * orig_switched_locale = toggle_locale_i(cat_index, locale);
 
-        if (strNE(want_locale, querylocale_i(cat_index))) {
-            const char * orig_switched_locale = toggle_locale_i(cat_index,
-                                                                want_locale);
-            retval = my_langinfo_i(item, cat_index, NULL,
-                                             retbufp, retbuf_sizep, utf8ness);
+#    ifdef USE_LOCALE_NUMERIC
+
+        /* We have taken pains to make sure we are toggled into the underlying
+         * numeric locale here. */
+        assert(cat_index != LC_NUMERIC_INDEX_);
+
+#    endif
+
+        retval = my_langinfo_i(item, cat_index, NULL, retbufp, retbuf_sizep,
+                               utf8ness);
             restore_toggled_locale_i(cat_index, orig_switched_locale);
             return retval;
         }
-        locale = want_locale;
-    }
 
     /* Here, we are in the locale we want information about */
 
