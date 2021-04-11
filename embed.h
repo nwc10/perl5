@@ -1616,8 +1616,8 @@
 #    if defined(PERL_IN_LOCALE_C)
 #define print_bytes_for_locale(a,b,c)	S_print_bytes_for_locale(aTHX_ a,b,c)
 #      if defined(USE_LOCALE)
+#define my_setlocale_debug_string_i(a,b,c,d)	S_my_setlocale_debug_string_i(aTHX_ a,b,c,d)
 #define print_collxfrm_input_and_return(a,b,c,d,e)	S_print_collxfrm_input_and_return(aTHX_ a,b,c,d,e)
-#define setlocale_debug_string_i	S_setlocale_debug_string_i
 #      endif
 #    endif
 #    if defined(PERL_IN_PAD_C)
