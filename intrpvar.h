@@ -807,6 +807,7 @@ PERLVARI(I, numeric_standard, int, TRUE)
 PERLVARI(I, numeric_name, const char *, NULL)
 
 PERLVAR(I, numeric_radix_sv, SV *)	/* The radix separator */
+PERLVAR(I, underlying_radix_sv, SV *)	/* The radix in the program's current underlying locale */
 
 #ifdef USE_LOCALE_CTYPE
 

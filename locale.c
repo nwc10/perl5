@@ -1524,24 +1524,11 @@ S_set_numeric_radix(pTHX_ const bool use_locale)
 
 #  else
 
-    int utf8ness = 1;
-    const char * radix;
-    const char * scratch_buffer = NULL;
-
     if (! use_locale) {
-        radix = C_decimal_point;
+        sv_setpv(PL_numeric_radix_sv, C_decimal_point);
     }
     else {
-        radix = my_langinfo_c(RADIXCHAR, LC_NUMERIC,
-                              USE_UNDERLYING_NUMERIC,
-                              &scratch_buffer, NULL, &utf8ness);
-    }
-
-        sv_setpv(PL_numeric_radix_sv, radix);
-    Safefree(scratch_buffer);
-
-    if (utf8ness > 1) {
-        SvUTF8_on(PL_numeric_radix_sv);
+        sv_setsv_nomg(PL_numeric_radix_sv, PL_underlying_radix_sv);
     }
 
     DEBUG_L(PerlIO_printf(Perl_debug_log, "Locale radix is '%s', ?UTF-8=%d\n",
@@ -1555,10 +1542,10 @@ S_set_numeric_radix(pTHX_ const bool use_locale)
 STATIC void
 S_new_numeric(pTHX_ const char *newnum)
 {
-    PERL_ARGS_ASSERT_NEW_NUMERIC;
 
 #  ifndef USE_LOCALE_NUMERIC
 
+    PERL_ARGS_ASSERT_NEW_NUMERIC;
     PERL_UNUSED_ARG(newnum);
 
 #  else
@@ -1600,11 +1587,19 @@ S_new_numeric(pTHX_ const char *newnum)
      *                  decimal point.  It is set to either a dot or the
      *                  program's underlying locale's radix character string,
      *                  depending on the situation.
+     * PL_underlying_radix_sv  Contains the program's underlying locale's radix
+     *                  character string.  This is copied into
+     *                  PL_numeric_radix_sv when the situation warrants.  It
+     *                  exists to avoid having to recalculate it when toggling.
      * PL_underlying_numeric_obj = (only on POSIX 2008 platforms)  An object
      *                  with everything set up properly so as to avoid work on
      *                  such platforms.
      */
 
+    const char * radix = C_decimal_point;
+    int utf8ness = 1;
+
+    PERL_ARGS_ASSERT_NEW_NUMERIC;
 
     /* If this isn't actually a change, do nothing */
     if (PL_numeric_name && strEQ(PL_numeric_name, newnum)) {
@@ -1621,6 +1616,7 @@ S_new_numeric(pTHX_ const char *newnum)
         PL_numeric_underlying_is_standard = TRUE;
         PL_numeric_underlying = TRUE;
         sv_setpv(PL_numeric_radix_sv, C_decimal_point);
+        sv_setpv(PL_underlying_radix_sv, C_decimal_point);
         return;
     }
 
@@ -1637,18 +1633,22 @@ S_new_numeric(pTHX_ const char *newnum)
 
 #    endif
 
-     { /* If its name isn't C nor POSIX, it could still be indistinguishable
-          from them. */
-        const char * scratch_buffer = NULL;
+    /* Find and save this locale's radix character. */
+    my_langinfo_c(RADIXCHAR, LC_NUMERIC, NULL, &radix, NULL, &utf8ness);
+    sv_setpv(PL_underlying_radix_sv, radix);
 
-        PL_numeric_underlying_is_standard = strEQ(C_decimal_point,
-                                  my_langinfo_c(RADIXCHAR, LC_NUMERIC, NULL,
-                                                &scratch_buffer, NULL, NULL));
-        Safefree(scratch_buffer);
+    if (utf8ness > 1) {
+        SvUTF8_on(PL_underlying_radix_sv);
+    }
+
+
+    /* This locale is indistinguishable from C (for numeric purposes) if both
+     * the radix character and the thousands separator are the same as C's.
+     * Start with the radix. */
+    PL_numeric_underlying_is_standard = strEQ(C_decimal_point, radix);
+    Safefree(radix);
 
 #    ifndef TS_W32_BROKEN_LOCALECONV
-
-        scratch_buffer = NULL;
 
     /* If the radix isn't the same as C's, we know it is distinguishable from
      * C; otherwise check the thousands separator too.  Only if both are the
@@ -1667,16 +1667,17 @@ S_new_numeric(pTHX_ const char *newnum)
      * to be used in any of the Micrsoft library routines anyway. */
 
     if (PL_numeric_underlying_is_standard) {
+        const char * scratch_buffer = NULL;
+
         PL_numeric_underlying_is_standard = strEQ(C_thousands_sep,
                                         my_langinfo_c(THOUSEP, LC_NUMERIC,
                                                           NULL, &scratch_buffer,
                                                           NULL, NULL));
-        }
         Safefree(scratch_buffer);
+    }
 
 #    endif
 
-    }
 
     PL_numeric_standard = PL_numeric_underlying_is_standard;
 
@@ -4724,6 +4725,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
 #  ifdef USE_LOCALE_NUMERIC
 
     PL_numeric_radix_sv    = newSVpvn(C_decimal_point, strlen(C_decimal_point));
+    PL_underlying_radix_sv = newSVpvn(C_decimal_point, strlen(C_decimal_point));
 
 #  endif
 #  ifdef LOCALE_ENVIRON_REQUIRED
