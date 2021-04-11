@@ -806,7 +806,7 @@ PERLVARI(I, numeric_standard, int, TRUE)
 /* Name of current numeric locale */
 PERLVARI(I, numeric_name, const char *, NULL)
 
-PERLVAR(I, numeric_radix_sv, SV *)	/* The radix separator if not '.' */
+PERLVAR(I, numeric_radix_sv, SV *)	/* The radix separator */
 
 #ifdef USE_LOCALE_CTYPE
 
