@@ -1734,7 +1734,6 @@
 #define new_numeric(a)		S_new_numeric(aTHX_ a)
 #define restore_toggled_locale_i(a,b)	S_restore_toggled_locale_i(aTHX_ a,b)
 #define save_to_buffer		S_save_to_buffer
-#define set_numeric_radix(a)	S_set_numeric_radix(aTHX_ a)
 #define setlocale_failure_panic_i(a,b,c,d,e)	S_setlocale_failure_panic_i(aTHX_ a,b,c,d,e)
 #define stdize_locale(a,b,c,d)	S_stdize_locale(aTHX_ a,b,c,d)
 #define toggle_locale_i(a,b)	S_toggle_locale_i(aTHX_ a,b)

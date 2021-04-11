@@ -3287,7 +3287,6 @@ Sr	|void	|setlocale_failure_panic_i|const unsigned int cat_index	\
 				|NN const char * failed			\
 				|const line_t caller_0_line		\
 				|const line_t caller_1_line
-S	|void	|set_numeric_radix|const bool use_locale
 S	|void	|new_numeric	|NN const char* newnum
 S	|void	|new_LC_ALL	|NULLOK const char* unused
 S	|const char *|toggle_locale_i|const unsigned switch_cat_index	\
