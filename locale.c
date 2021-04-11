@@ -1641,7 +1641,7 @@ S_new_numeric(pTHX_ const char *newnum)
           from them. */
         const char * scratch_buffer = NULL;
 
-        PL_numeric_standard = strEQ(C_decimal_point,
+        PL_numeric_underlying_is_standard = strEQ(C_decimal_point,
                                   my_langinfo_c(RADIXCHAR, LC_NUMERIC,
                                                 USE_UNDERLYING_NUMERIC,
                                                 &scratch_buffer, NULL,
@@ -1668,8 +1668,8 @@ S_new_numeric(pTHX_ const char *newnum)
      * get this value, which in almost all locales is empty, and doesn't appear
      * to be used in any of the Micrsoft library routines anyway. */
 
-        if (PL_numeric_standard) {
-            PL_numeric_standard = strEQ(C_thousands_sep,
+    if (PL_numeric_underlying_is_standard) {
+        PL_numeric_underlying_is_standard = strEQ(C_thousands_sep,
                                         my_langinfo_c(THOUSEP, LC_NUMERIC,
                                                       USE_UNDERLYING_NUMERIC,
                                                       &scratch_buffer, NULL,
@@ -1681,7 +1681,7 @@ S_new_numeric(pTHX_ const char *newnum)
 
     }
 
-    PL_numeric_underlying_is_standard = PL_numeric_standard;
+    PL_numeric_standard = PL_numeric_underlying_is_standard;
 
     DEBUG_L( PerlIO_printf(Perl_debug_log,
                             "Called new_numeric with %s, PL_numeric_name=%s\n",
