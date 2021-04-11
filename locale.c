@@ -1642,10 +1642,8 @@ S_new_numeric(pTHX_ const char *newnum)
         const char * scratch_buffer = NULL;
 
         PL_numeric_underlying_is_standard = strEQ(C_decimal_point,
-                                  my_langinfo_c(RADIXCHAR, LC_NUMERIC,
-                                                USE_UNDERLYING_NUMERIC,
-                                                &scratch_buffer, NULL,
-                                                NULL));
+                                  my_langinfo_c(RADIXCHAR, LC_NUMERIC, NULL,
+                                                &scratch_buffer, NULL, NULL));
         Safefree(scratch_buffer);
 
 #    ifndef TS_W32_BROKEN_LOCALECONV
@@ -1671,9 +1669,8 @@ S_new_numeric(pTHX_ const char *newnum)
     if (PL_numeric_underlying_is_standard) {
         PL_numeric_underlying_is_standard = strEQ(C_thousands_sep,
                                         my_langinfo_c(THOUSEP, LC_NUMERIC,
-                                                      USE_UNDERLYING_NUMERIC,
-                                                      &scratch_buffer, NULL,
-                                                      NULL));
+                                                          NULL, &scratch_buffer,
+                                                          NULL, NULL));
         }
         Safefree(scratch_buffer);
 
