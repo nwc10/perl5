@@ -160,13 +160,54 @@ leave:
 char*
 wide_to_utf8(const wchar_t *wbuf)
 {
-    return Perl_Win_wstring_to_utf8_string(wbuf);
+    char *buf;
+    int wlen = 0;
+    const char *oldlocale;
+    dTHX;
+
+    /* Here and elsewhere in this file, we have a critical section to prevent
+     * another thread from changing the locale out from under us.  XXX But why
+     * not just use uvchr_to_utf8? */
+    oldlocale = Perl_setlocale(LC_CTYPE, NULL);
+    Perl_setlocale(LC_CTYPE, "utf-8");
+
+    /* uvchr_to_utf8(buf, chr) or Encoding::_bytes_to_utf8(sv, "UCS-2BE"); */
+    LC_CTYPE_LOCK;
+    wlen = wcsrtombs(NULL, (const wchar_t **)&wbuf, wlen, NULL);
+    LC_CTYPE_UNLOCK;
+    buf = (char *) safemalloc(wlen+1);
+    LC_CTYPE_LOCK;
+    wcsrtombs(buf, (const wchar_t **)&wbuf, wlen, NULL);
+    LC_CTYPE_UNLOCK;
+
+    if (oldlocale) Perl_setlocale(LC_CTYPE, oldlocale);
+    else Perl_setlocale(LC_CTYPE, "C");
+
+    return buf;
 }
 
 wchar_t*
 utf8_to_wide(const char *buf)
 {
-    return Perl_Win_utf8_string_to_wstring(buf);
+    wchar_t *wbuf;
+    mbstate_t mbs;
+    const char *oldlocale;
+    int wlen = sizeof(wchar_t)*strlen(buf);
+    dTHX;
+
+    oldlocale = Perl_setlocale(LC_CTYPE, NULL);
+
+    Perl_setlocale(LC_CTYPE, "utf-8");
+    wbuf = (wchar_t *) safemalloc(wlen);
+    /* utf8_to_uvchr_buf(pathname, pathname + wlen, wpath) or Encoding::_utf8_to_bytes(sv, "UCS-2BE"); */
+    LC_CTYPE_LOCK;
+    wlen = mbsrtowcs(wbuf, (const char**)&buf, wlen, &mbs);
+    LC_CTYPE_UNLOCK;
+
+    if (oldlocale) Perl_setlocale(LC_CTYPE, oldlocale);
+    else Perl_setlocale(LC_CTYPE, "C");
+
+    return wbuf;
 }
 #endif /* cygwin 1.7 */
 
