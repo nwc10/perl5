@@ -24,6 +24,11 @@ my @known_categories = ( qw(LC_ALL LC_COLLATE LC_CTYPE LC_MESSAGES LC_MONETARY
                             LC_TOD));
 my @platform_categories;
 
+my $debug = 0;
+$debug = 1 if $^O =~ /cygwin /xi; #| darwin /xi; # or $^O =~ /MSWin32/i;
+my $save_D = $^D;
+local $^D = $save_D if $debug;
+
 sub is_category_valid($) {
     my $cat_name = shift =~ s/^LC_//r;
 
@@ -159,6 +164,7 @@ sub _trylocale ($$$$) { # For use only by other functions in this file!
                     /Locale .* may not work well(?#
                    )|The Perl program will use the expected meanings/i
             } @_;
+        print STDERR "#", __FILE__, ": ", __LINE__, ": @_\n" if $debug;
     };
 
     my $first_time = 1;
@@ -174,11 +180,16 @@ sub _trylocale ($$$$) { # For use only by other functions in this file!
 
         # Incompatible locales aren't warned about unless using locales.
         use locale;
+        $^D |= (0x04000000|0x00100000) if $debug;
 
         my $result = setlocale($category, $locale);
+        print STDERR "#", __FILE__, ": ", __LINE__, ": undef\n"  if $debug && ! defined $result;
         return unless defined $result;
 
+        $^D = $save_D;
         no locale;
+
+        print STDERR "#", __FILE__, ": ", __LINE__, ": $result\n" if $debug;
 
         # We definitely don't want the locale set to something that is
         # unsupported
@@ -189,6 +200,7 @@ sub _trylocale ($$$$) { # For use only by other functions in this file!
             return;
         }
 
+        print STDERR '#', __FILE__, ": ", __LINE__, ": Unsupported\n" if $debug && $unsupported;
         return if $unsupported;
 
         # Commas in locale names are bad in Windows, and there is a bug in
@@ -199,6 +211,7 @@ sub _trylocale ($$$$) { # For use only by other functions in this file!
         return unless $plays_well || $allow_incompatible;
     }
 
+    print STDERR '#', __FILE__, ": ", __LINE__, ": Adding $locale to list\n" if $debug;
     push @$list, $locale;
 }
 
@@ -397,7 +410,10 @@ sub find_locales ($;$) {
     my @categories = (ref $input_categories)
                       ? $input_categories->@*
                       : $input_categories;
+    use Data::Dumper;
+    #print STDERR __FILE__, ": ", __LINE__, ": ", "finding\n", Dumper \@categories;
     return unless locales_enabled(\@categories);
+    print STDERR __FILE__, ": ", __LINE__, ": ", "enabled, (allow incompat=$allow_incompatible)\n" if $debug;
 
     # Note, the subroutine call above converts the $categories into a form
     # suitable for _trylocale().
@@ -427,6 +443,7 @@ sub find_locales ($;$) {
     return sort @Locale if defined $Config{d_setlocale_accepts_any_locale_name};
 
     foreach (1..16) {
+        #print STDERR __FILE__, ": ", __LINE__, ": ", "foreach\n";
         _trylocale("ISO8859-$_", \@categories, \@Locale, $allow_incompatible);
         _trylocale("iso8859$_", \@categories, \@Locale, $allow_incompatible);
         _trylocale("iso8859-$_", \@categories, \@Locale, $allow_incompatible);
@@ -454,9 +471,12 @@ sub find_locales ($;$) {
             # locales will cause all IO hadles to default to (assume) utf8
             next unless utf8::valid($_);
             chomp;
+            print STDERR __FILE__, ": ", __LINE__, ": ", "trying $_\n" if $debug;
             _trylocale($_, \@categories, \@Locale, $allow_incompatible);
+            print STDERR __FILE__, ": ", __LINE__, ": ", "Finished trying $_\n" if $debug;
         }
         close(LOCALES);
+            print STDERR __FILE__, ": ", __LINE__, ": ", "done \n" if $debug;
     } elsif ($^O eq 'VMS'
              && defined($ENV{'SYS$I18N_LOCALE'})
              && -d 'SYS$I18N_LOCALE')
@@ -543,6 +563,7 @@ sub find_locales ($;$) {
 
     @Locale = sort @Locale;
 
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "returning \n" if $debug;
     return @Locale;
 }
 
@@ -555,20 +576,27 @@ sub is_locale_utf8 ($) { # Return a boolean as to if core Perl thinks the input
     return 0 unless locales_enabled('LC_CTYPE');
 
     my $locale = shift;
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
 
     use locale;
     no warnings 'locale'; # We may be trying out a weird locale
 
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
     my $save_locale = setlocale(&POSIX::LC_CTYPE());
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale, saved=$save_locale\n" if $debug;
     if (! $save_locale) {
         _my_fail("Verify could save previous locale");
         return 0;
     }
 
+    $^D |= (0x04000000|0x00100000) if $debug;
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
     if (! setlocale(&POSIX::LC_CTYPE(), $locale)) {
         _my_fail("Verify could setlocale to $locale");
         return 0;
     }
+    $^D = $save_D;
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
 
     my $ret = 0;
 
@@ -577,6 +605,7 @@ sub is_locale_utf8 ($) { # Return a boolean as to if core Perl thinks the input
     # most platforms with UTF-8 in its name, so if there is a bug in the op
     # giving a false negative, we should get a failure for those locales as we
     # go through testing all the locales on the platform.
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
     if (CORE::fc(chr utf8::unicode_to_native(0xdf)) ne "ss") {
         if ($locale =~ /UTF-?8/i) {
             _my_fail("Verify $locale with UTF-8 in name is a UTF-8 locale");
@@ -585,6 +614,7 @@ sub is_locale_utf8 ($) { # Return a boolean as to if core Perl thinks the input
     else {
         $ret = 1;
     }
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
 
     die "Couldn't restore locale '$save_locale'"
                             unless setlocale(&POSIX::LC_CTYPE(), $save_locale);
@@ -605,14 +635,17 @@ sub find_utf8_ctype_locales (;$) { # Return the names of the locales that core
 
     if (! defined $locales_ref) {
 
+        print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_ctype_locales:\n" if $debug;
         my @locales = find_locales(&POSIX::LC_CTYPE());
         $locales_ref = \@locales;
+        print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_ctype_locales:\n" if $debug;
     }
 
     foreach my $locale (@$locales_ref) {
         push @return, $locale if is_locale_utf8($locale);
     }
 
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_ctype_locales:\n" if $debug;
     return @return;
 }
 
@@ -626,8 +659,11 @@ sub find_utf8_ctype_locale (;$) { # Return the name of a locale that core Perl
                                   # platform
     my $try_locales_ref = shift;
 
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_ctype_locale:\n" if $debug;
     my @utf8_locales = find_utf8_ctype_locales($try_locales_ref);
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_ctype_locale:\n" if $debug;
     my @turkic_locales = find_utf8_turkic_locales($try_locales_ref);
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_ctype_locale:\n" if $debug;
 
     my %seen_turkic;
 
@@ -638,6 +674,7 @@ sub find_utf8_ctype_locale (;$) { # Return the name of a locale that core Perl
         return $locale unless exists $seen_turkic{$locale};
     }
 
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_ctype_locale:\n" if $debug;
     return;
 }
 
@@ -651,15 +688,20 @@ sub find_utf8_turkic_locales (;$) {
 
     return unless locales_enabled('LC_CTYPE');
 
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_turkic_locales:\n" if $debug;
     my $save_locale = setlocale(&POSIX::LC_CTYPE());
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_turkic_locales, saved=$save_locale\n" if $debug;
     foreach my $locale (find_utf8_ctype_locales(shift)) {
         use locale;
+        $^D |= (0x04000000|0x00100000) if $debug;
         setlocale(&POSIX::LC_CTYPE(), $locale);
+        $^D = $save_D;
         push @return, $locale if uc('i') eq "\x{130}";
     }
 
     die "Couldn't restore locale '$save_locale'"
                             unless setlocale(&POSIX::LC_CTYPE(), $save_locale);
+    print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_turkic_locales: save=$save_locale\n" if $debug;
 
     return @return;
 }
