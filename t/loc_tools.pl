@@ -578,8 +578,8 @@ sub is_locale_utf8 ($) { # Return a boolean as to if core Perl thinks the input
     my $locale = shift;
     print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
 
-    use locale;
     no warnings 'locale'; # We may be trying out a weird locale
+    use locale;
 
     print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
     my $save_locale = setlocale(&POSIX::LC_CTYPE());
