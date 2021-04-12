@@ -724,6 +724,9 @@ PERLVAR(I, padix_floor,	PADOFFSET)	/* how low may inner block reset padix */
 PERLVARA(I, curlocales, 12, const char *)
 
 #endif
+#ifndef USE_THREAD_SAFE_LOCALE_EMULATION
+PERLVARI(I, perl_controls_locale, bool, 1)
+#endif
 #ifdef USE_LOCALE_COLLATE
 
 /* The emory needed to store the collxfrm transformation of a string with

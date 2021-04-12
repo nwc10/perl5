@@ -250,6 +250,7 @@
 #define PL_parser		(vTHX->Iparser)
 #define PL_patchlevel		(vTHX->Ipatchlevel)
 #define PL_peepp		(vTHX->Ipeepp)
+#define PL_perl_controls_locale	(vTHX->Iperl_controls_locale)
 #define PL_perl_destruct_level	(vTHX->Iperl_destruct_level)
 #define PL_perldb		(vTHX->Iperldb)
 #define PL_perlio		(vTHX->Iperlio)
