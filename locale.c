@@ -1612,6 +1612,36 @@ S_calculate_LC_ALL(pTHX_ const char ** individ_locales)
     return aggregate_locale;
 }
 
+STATIC const char *
+S_get_LC_ALL_display(pTHX)
+{
+
+#  ifdef LC_ALL
+
+    return querylocale_c(LC_ALL);
+
+#  else
+
+    unsigned int i;
+    const char * retval;
+    const char * curlocales[NOMINAL_LC_ALL_INDEX];
+
+    for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
+        curlocales[i] = savepv(querylocale_i(i));
+    }
+
+    retval = calculate_LC_ALL(curlocales);
+
+    for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
+        Safefree(curlocales[i]);
+    }
+
+    return retval;
+
+#  endif
+
+}
+
 STATIC void
 S_setlocale_failure_panic_i(pTHX_
                             const unsigned int cat_index,

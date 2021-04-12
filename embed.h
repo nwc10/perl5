@@ -1740,6 +1740,7 @@
 #  endif
 #  if defined(PERL_IN_LOCALE_C)
 #    if defined(USE_LOCALE)
+#define get_LC_ALL_display()	S_get_LC_ALL_display(aTHX)
 #define get_category_index	S_get_category_index
 #define get_locale_string_utf8ness_i(a,b,c,d)	S_get_locale_string_utf8ness_i(aTHX_ a,b,c,d)
 #define is_codeset_name_UTF8	S_is_codeset_name_UTF8

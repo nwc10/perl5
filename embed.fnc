@@ -3233,6 +3233,7 @@ SG   |bool   |sv_derived_from_svpvn  |NULLOK SV *sv			\
 #if defined(PERL_IN_LOCALE_C)
 #  ifdef USE_LOCALE
 ST	|unsigned int|get_category_index|const int category|NULLOK const char * locale
+S	|const char *|get_LC_ALL_display
 S	|unsigned|get_locale_string_utf8ness_i				\
 				|NULLOK const char * locale		\
 				|const unsigned cat_index		\
