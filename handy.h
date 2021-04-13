@@ -1913,7 +1913,6 @@ END_EXTERN_C
 
 /* The next few are the same in all platforms. */
 #define is_porcelain_CNTRL(c)     iscntrl((U8) (c))
-#define is_porcelain_SPACE(c)     isspace((U8) (c))
 #define is_porcelain_IDFIRST(c)  (UNLIKELY((c) == '_') || is_porcelain_ALPHA(c))
 #define is_porcelain_WORDCHAR(c) (UNLIKELY((c) == '_') || is_porcelain_ALPHANUMERIC(c))
 
@@ -1922,18 +1921,22 @@ END_EXTERN_C
 #define to_porcelain_UPPER(c)     toupper((U8) (c))
 #define to_porcelain_FOLD(c)      to_porcelain_LOWER(c)
 
+#ifdef _AIX     /* Many AIX locales have this wrong */
+#  define is_porcelain_SPACE(c)   (isspace((U8) (c)) && ! is_porcelain_GRAPH(c))
+#else
+#  define is_porcelain_SPACE(c)   isspace((U8) (c))
+#endif
 #ifdef WIN32
 
 /* The Windows functions don't bother to follow the POSIX standard, which for
  * example says that something can't both be a printable and a control.  But
  * Windows treats the \t control as a printable, and does such things as making
  * superscripts into both digits and punctuation.  These #defines tame these
- * flaws by assuming that the definitions of both controls and space are
- * correct, and then making sure that other definitions don't have weirdnesses,
- * by adding a check that things that aren't \w, like ispunct(), arent't
- * controls, and that \w and its subsets aren't ispunct().  Not all possible
- * weirdnesses are checked for, just ones that were detected on actual
- * Microsoft code pages */
+ * flaws by assuming that the definitions of controls are correct, and then
+ * making sure that other definitions don't have weirdnesses, by adding a check
+ * that things that aren't \w, like ispunct(), arent't controls, and that \w
+ * and its subsets aren't ispunct().  Not all possible weirdnesses are checked
+ * for, just ones that were detected on actual Microsoft code pages */
 #  define is_porcelain_ALPHA(c)                                          \
                           (isalpha((U8) (c)) && ! is_porcelain_PUNCT(c))
 #  define is_porcelain_ALPHANUMERIC(c)                                   \
