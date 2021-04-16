@@ -2807,9 +2807,11 @@ thread using an alien library without a problem; but no more than a
 single thread can be so-occupied.  Bad results likely will happen.
 
 In perls without multi-thread locale support, some alien libraries,
-such as C<Gtk> change locales.  This can cause problems for the Perl
-core and other modules.  For these, before control is returned to
-perl, starting in v5.20.1, calling the function
+such as C<X> (including C<Gtk>) change locales.  This can cause problems
+for the Perl core and other modules.  Unless C<switch_to_global_locale>
+has been called as described above, these libraries won't know what the
+current locale Perl has set actually is.  But also, before control is
+returned to perl, starting in v5.20.1, calling the function
 L<sync_locale()|perlapi/sync_locale> from XS should be sufficient to
 avoid most of these problems.  Prior to this, you need a pure Perl
 statement that does this:

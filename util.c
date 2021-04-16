@@ -2576,6 +2576,7 @@ Perl_my_setenv(pTHX_ const char *nam, const char *val)
             const Size_t vlen = strlen(val);
             char * const new_env = S_env_alloc(NULL, nlen, vlen, 2, 1);
             my_setenv_format(new_env, nam, nlen, val, vlen);
+        /* Why no mutex XXX */
             (void)putenv(new_env);
         }
 
@@ -2591,6 +2592,7 @@ Perl_my_setenv(pTHX_ const char *nam, const char *val)
         new_env = S_env_alloc(NULL, nlen, vlen, 2, 1);
         /* all that work just for this */
         my_setenv_format(new_env, nam, nlen, val, vlen);
+        /* Why no mutex XXX */
         (void)putenv(new_env);
 
 #    endif /* MY_HAS_SETENV */
@@ -4167,6 +4169,7 @@ Perl_my_strftime(pTHX_ const char *fmt, int sec, int min, int hour, int mday, in
 =for apidoc my_strftime
 strftime(), but with a different API so that the return value is a pointer
 to the formatted result (which MUST be arranged to be FREED BY THE
+XXX why not a PL_buffer
 CALLER).  This allows this function to increase the buffer size as needed,
 so that the caller doesn't have to worry about that.
 
