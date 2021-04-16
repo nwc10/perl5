@@ -54,6 +54,7 @@ BEGIN {
 }
 
 use feature 'fc';
+use I18N::Langinfo qw(langinfo CODESET CRNCYSTR RADIXCHAR);
 
 # =1 adds debugging output; =2 increases the verbosity somewhat
 our $debug = $ENV{PERL_DEBUG_FULL_TEST} // 0;
@@ -1052,9 +1053,11 @@ foreach my $Locale (@Locale) {
 
     my $is_utf8_locale = is_locale_utf8($Locale);
 
+    debug "code set = " . langinfo(CODESET);
     debug "is utf8 locale? = $is_utf8_locale\n";
 
-    debug "radix = " . disp_str(localeconv()->{decimal_point}) . "\n";
+    debug "radix = " . disp_str(langinfo(RADIXCHAR));
+    debug "currency = " . disp_str(langinfo(CRNCYSTR));
 
     if (! $is_utf8_locale) {
         use locale;
@@ -2429,7 +2432,7 @@ foreach my $Locale (@Locale) {
         $test_names{$locales_test_number} = 'Verify atof with locale radix and negative exponent';
         $problematical_tests{$locales_test_number} = 1;
 
-        my $radix = POSIX::localeconv()->{decimal_point};
+        my $radix = langinfo(RADIXCHAR);
         my @nums = (
              "3.14e+9",  "3${radix}14e+9",  "3.14e-9",  "3${radix}14e-9",
             "-3.14e+9", "-3${radix}14e+9", "-3.14e-9", "-3${radix}14e-9",
