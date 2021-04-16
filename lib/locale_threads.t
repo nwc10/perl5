@@ -25,6 +25,8 @@ $Data::Dumper::Useqq = 1;
 $Data::Dumper::Deepcopy = 1;
 
 plan(2);
+my $debug = $^O eq 'cygwin' or $^O =~ /MSWin32/i;
+local $^D = 0x04000000|0x00100000 if $debug;
 
 my $thread_count = $^O =~ /linux/i ? 50 : 3;
 $thread_count = 3;
@@ -179,6 +181,7 @@ SKIP: {
                                             # created only for locales that
                                             # match this
 
+        #print STDERR Dumper $valid_locales{$category_name};
         foreach my $locale (@valid_locales) {
 
             # Skip if this test requires a particular locale and this isn't that
@@ -200,6 +203,9 @@ SKIP: {
             # disparate locales
             my $result = eval "use locale; $op;";
             die "$category_name: '$op': $@" if $@;
+            if ($debug) {
+            print STDERR __FILE__, ": ", __LINE__, ": Undefined result for $locale $category_name: '$op'\n" unless defined $result;
+            }
             next unless defined $result;
             if (length $result > $max_result_length) {
                 diag("For $locale, '$op', result is too long; skipped");
@@ -222,6 +228,7 @@ SKIP: {
                 {
                     my $swap_locale = $seen{$result}{$category_name}{$op};
 
+                    print STDERR __FILE__, ": ", __LINE__, ": changing \$tests_prep\{$category_name}{foo} = '$result'; from $swap_locale to $locale\n";
                     $tests_prep{$category_name}{$locale}{$op} = $result;
                     $seen{$result}{$category_name}{$op} = $locale;
 
@@ -258,6 +265,7 @@ SKIP: {
             # No point in looking at this if we already have all the tests we need.
             # Note this assumes that the same op isn't used in two categories.
             if (defined $op_counts{$op} && $op_counts{$op} >= $thread_count) {
+                print STDERR __FILE__, ": ", __LINE__, ": Now have enough tests for $op=$op_counts{$op}\n" if $debug;
                 last ; #if defined $op_counts{$op} && $op_counts{$op} >= $thread_count;
             }
         }
@@ -275,6 +283,7 @@ SKIP: {
         next unless "$description";
         $msg_catalog{$number} = quotemeta "$description";
     }
+    print STDERR __FILE__, ": ", __LINE__, ": ", Dumper \%msg_catalog if $debug;
 
     # Then just the errnos.
     my @msg_catalog = sort { $a <=> $b } keys %msg_catalog;
@@ -345,19 +354,20 @@ SKIP: {
     # locale-sensitive operations, and then figuring out something to exercise
     # them.
     foreach my $category (@valid_categories) {
+            print STDERR __FILE__, ": ", __LINE__, ": $category\n" if $debug;
         if ($category eq 'LC_ALL') {
             next;   #XXX we don't currently test this separately
         }
 
         if ($category eq 'LC_COLLATE') {
-            add_trials('LC_COLLATE', 'quotemeta join "", sort reverse map { chr } (0..255)');
+            add_trials('LC_COLLATE', 'quotemeta join "", sort reverse map { chr } (0..255)') unless $debug;
 
             # We pass an re to exclude testing locales that don't necessarily have
             # a lt b.
             add_trials('LC_COLLATE', '"a" lt "B"', $english);
             add_trials('LC_COLLATE', 'my $a = "a"; my $b = "B"; POSIX::strcoll($a, $b) < 0;', $english);
 
-            add_trials('LC_COLLATE', 'my $string = quotemeta join "", map { chr } (0..255); POSIX::strxfrm($string)');
+            add_trials('LC_COLLATE', 'my $string = quotemeta join "", map { chr } (0..255); POSIX::strxfrm($string)') unless $debug;
             next;
         }
 
@@ -378,43 +388,66 @@ SKIP: {
             add_trials('LC_CTYPE', 'my $string = join "", map { chr } 0..255; $string =~ s|(.)|$1=~/[[:print:]]/?1:0|gers');
             add_trials('LC_CTYPE', 'my $string = join "", map { chr } 0..255; $string =~ s|(.)|$1=~/[[:punct:]]/?1:0|gers');
             add_trials('LC_CTYPE', 'my $string = join "", map { chr } 0..255; $string =~ s|(.)|$1=~/[[:upper:]]/?1:0|gers');
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             add_trials('LC_CTYPE', 'my $string = join "", map { chr } 0..255; $string =~ s|(.)|$1=~/[[:xdigit:]]/?1:0|gers');
-            add_trials('LC_CTYPE', $langinfo_LC_CTYPE);
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
+            add_trials('LC_CTYPE', $langinfo_LC_CTYPE) unless $debug;;
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             add_trials('LC_CTYPE', 'POSIX::mblen(chr 0x100)');
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             add_trials('LC_CTYPE', 'my $value; my $str = "\x{100}"; utf8::encode($str); POSIX::mbtowc($value, $str); $value;');
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             add_trials('LC_CTYPE', 'my $value; POSIX::wctomb($value, 0xFF); $value;');
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             add_trials('LC_CTYPE', $case_insensitive_matching_test);
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             next;
         }
 
         if ($category eq 'LC_MESSAGES') {
-            add_trials('LC_MESSAGES', "join \"\n\", map { \$! = \$_; \"\$!\" } ($msg_catalog)");
-            add_trials('LC_MESSAGES', $langinfo_LC_MESSAGES);
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
+            add_trials('LC_MESSAGES', "join \"\n\", map { \$! = \$_; \"\$!\" } ($msg_catalog)") unless $debug;
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
+            add_trials('LC_MESSAGES', $langinfo_LC_MESSAGES) unless $debug;;
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             next;
         }
 
         if ($category eq 'LC_MONETARY') {
-            add_trials('LC_MONETARY', "localeconv()->{currency_symbol}");
-            add_trials('LC_MONETARY', $langinfo_LC_MONETARY);
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
+            add_trials('LC_MONETARY', "localeconv()->{currency_symbol}") unless $debug;
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
+            add_trials('LC_MONETARY', $langinfo_LC_MONETARY) unless $debug;
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             next;
         }
 
         if ($category eq 'LC_NUMERIC') {
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             add_trials('LC_NUMERIC', "no warnings; 'uninitialised'; join '|', localeconv()->{decimal_point}, localeconv()->{thousands_sep}");
-            add_trials('LC_NUMERIC', $langinfo_LC_NUMERIC);
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
+            add_trials('LC_NUMERIC', $langinfo_LC_NUMERIC) unless $debug;
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
 
             # Use a variable to avoid runtime bugs being hidden by constant
             # folding
             add_trials('LC_NUMERIC', 'my $in = 4.2; sprintf("%g", $in)');
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             next;
         }
 
         if ($category eq 'LC_TIME') {
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             add_trials('LC_TIME', "POSIX::strftime($strftime_args)");
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             add_trials('LC_TIME', $langinfo_LC_TIME);
+            print STDERR __FILE__, ": ", __LINE__, ": Got here\n" if $debug;
             next;
         }
     }
+
+    print STDERR __FILE__, __LINE__, ": ", Dumper \%tests_prep if $debug;
+    #__END__
 
     sub final_ordering
     {
@@ -452,6 +485,8 @@ SKIP: {
             }
 
             if (! exists $tests[$i]->{$category}{locale_tests}) {
+                #print STDERR __FILE__, ": ", __LINE__, ": i=$i $category: missing tests\n";
+                #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper $tests_prep{$category}{duplicate_results};
                 foreach my $op (sort keys $tests_prep{$category}{duplicate_results}->%*) {
                     my $locale_result_pair = shift $tests_prep{$category}{duplicate_results}{$op}->@*;
                     next unless $locale_result_pair;
@@ -462,7 +497,10 @@ SKIP: {
                     my %temp = ( op => $op,
                                 expected => $expected
                             );
+                    #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper \%temp ; #if $locale eq "es_CO.utf8" && $category eq 'LC_TIME';
+                    #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper $tests[$i]->{$category}{locale_tests} ; #if $locale eq "es_CO.utf8" && $category eq 'LC_TIME';
                     push $tests[$i]->{$category}{locale_tests}->@*, \%temp;
+                    #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper $tests[$i]->{$category}{locale_tests} ; #if $locale eq "es_CO.utf8" && $category eq 'LC_TIME';
                     # Conserve our resources by only consuming one of the
                     # things we have in our reserves; the purpose here is to
                     # make sure this category has at least one test.  (The
@@ -482,9 +520,13 @@ SKIP: {
 
                 $tests[$i  ]->{$category}{locale_tests}
                 = $tests[$i-1]->{$category}{locale_tests};
+    #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper $category, $i, $tests[$i  ]->{$category};
             }
         }
     }
+
+    print STDERR __FILE__, ": ", __LINE__, ": ", Dumper \@tests;
+    #__END__
 
     my $tests_expanded = Data::Dumper->Dump([ \@tests ], [ 'all_tests_ref' ]);
     my $starting_time = sprintf "%.16e", (    time()
@@ -492,7 +534,7 @@ SKIP: {
                                             + ($thread_count * $per_thread_startup))
                                         * 1_000_000;
     my $switches = "";
-    $switches = "switches => [ -DLv ]";
+    $switches = "switches => [ -DLv ]" if $debug;
 
     # See if multiple threads can simultaneously change the locale, and give
     # the expected radix results.  On systems without a comma radix locale,
@@ -611,6 +653,9 @@ SKIP: {
                                     print STDERR \" (already was UTF-8)\";
                                 }
                                 else {
+                                    #print STDERR \"\\n\";
+                                    #Dump \$got;
+                                    #print STDERR \"\\n\";
                                     utf8::upgrade(\$got);
                                     print STDERR \" (converted to UTF-8)\";
                                 }
