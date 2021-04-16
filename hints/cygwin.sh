@@ -32,6 +32,11 @@ man3ext='3pm'
 test -z "$use64bitint" && use64bitint='define'
 test -z "$useithreads" && useithreads='define'
 ccflags="$ccflags -DPERL_USE_SAFE_PUTENV -U__STRICT_ANSI__ -D_GNU_SOURCE"
+
+# Broken as of 3.2.0(0.34053)].  It dies within newlocale() when doing a printf
+# of a float
+ccflags="$ccflags -DNO_POSIX_2008_LOCALE"
+
 # - otherwise i686-cygwin
 archname='cygwin'
 
