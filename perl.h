@@ -10,6 +10,11 @@
 
 #ifndef H_PERL
 #define H_PERL 1
+#if 0
+#define DEBUG_PRE_STMTS   dSAVE_ERRNO;                                        \
+                PerlIO_printf(Perl_debug_log, "%s:%d: ", __FILE__, __LINE__);
+#define DEBUG_POST_STMTS  RESTORE_ERRNO;
+#endif
 
 #ifdef PERL_FOR_X2P
 /*
