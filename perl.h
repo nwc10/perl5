@@ -1106,6 +1106,7 @@ Example usage:
 
 /* Allow use of glib's undocumented querylocale() equivalent if asked for, and
  * appropriate */
+#define USE_NL_LOCALE_NAME
 #  ifdef USE_POSIX_2008_LOCALE
 #    if  defined(HAS_QUERYLOCALE)                                           \
               /* Has this internal undocumented item for nl_langinfo() */   \
