@@ -1,5 +1,4 @@
 /*    perl.h
- *
  *    Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
  *    2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 by Larry Wall and others
  *
@@ -10,11 +9,6 @@
 
 #ifndef H_PERL
 #define H_PERL 1
-#if 0
-#define DEBUG_PRE_STMTS   dSAVE_ERRNO;                                        \
-                PerlIO_printf(Perl_debug_log, "%s:%d: ", __FILE__, __LINE__);
-#define DEBUG_POST_STMTS  RESTORE_ERRNO;
-#endif
 
 #ifdef PERL_FOR_X2P
 /*
@@ -1103,6 +1097,27 @@ Example usage:
 #      define USE_POSIX_2008_LOCALE
 #    endif
 #  endif
+
+#if defined(PERL_IN_LOCALE_C) || defined(PERL_IN_DUMP_C) || defined(PERL_IN_SV_C) || defined(PERL_IN_VUTIL_C) || defined(PERL_IN_NUMERIC_C)
+#  ifndef USE_ITHREADS
+#    define PRE_aTHX_ NULL
+#    define PRE_per_thread_ 0
+#  else
+#    define PRE_aTHX_ aTHX
+#    ifndef USE_THREAD_SAFE_LOCALE
+#      define PRE_per_thread_ 0
+#    else
+#      ifdef WIN32
+#        define PRE_per_thread_ (_configthreadlocale(0) == _ENABLE_PER_THREAD_LOCALE)
+#      else
+#        define PRE_per_thread_ (uselocale((locale_t) 0) != LC_GLOBAL_LOCALE)
+#      endif
+#    endif
+#  endif
+#  define DEBUG_PRE_STMTS   dSAVE_ERRNO;                                        \
+ PerlIO_printf(Perl_debug_log, "%s:%d:%p:%d: ", __FILE__, __LINE__, PRE_aTHX_, PRE_per_thread_);
+#  define DEBUG_POST_STMTS  RESTORE_ERRNO;
+#endif
 
 /* Allow use of glib's undocumented querylocale() equivalent if asked for, and
  * appropriate */
@@ -3998,42 +4013,43 @@ intrinsic function, see its documents for more details.
 =cut
 */
 
-#ifdef DEBUGGING
-#  define ASSUME(x) assert(x)
-#  if __has_builtin(__builtin_unreachable)
-#    define HAS_BUILTIN_UNREACHABLE
-#  elif (defined(__GNUC__) && (   __GNUC__ > 4                              \
-                               || __GNUC__ == 4 && __GNUC_MINOR__ >= 5))
-#    define HAS_BUILTIN_UNREACHABLE
-#  endif
+#if __has_builtin(__builtin_unreachable)
+#  define HAS_BUILTIN_UNREACHABLE
+#elif (defined(__GNUC__) && (   __GNUC__ > 4                              \
+                             || __GNUC__ == 4 && __GNUC_MINOR__ >= 5))
+#  define HAS_BUILTIN_UNREACHABLE
 #endif
 
-#if defined(__sun) || (defined(__hpux) && !defined(__GNUC__))
-#  ifndef ASSUME
-#    define ASSUME(x)      /* ASSUME() generates warnings on Solaris */
-#  endif
-#  define NOT_REACHED
+#ifdef DEBUGGING
+#  define ASSUME(x) assert(x)
+#elif defined(_MSC_VER)
+#  define ASSUME(x) __assume(x)
+#elif defined(__ARMCC_VERSION) /* untested */
+#  define ASSUME(x) __promise(x)
 #elif defined(HAS_BUILTIN_UNREACHABLE)
-#  ifndef ASSUME
-#    define ASSUME(x) ((x) ? (void) 0 : __builtin_unreachable())
-#  endif
+#  define ASSUME(x) ((x) ? (void) 0 : __builtin_unreachable())
+#else
+    /* a random compiler might define assert to its own special optimization
+     * token so pass it through to C lib as a last resort */
+#  define ASSUME(x) assert(x)
+#endif
+
+#ifdef HAS_BUILTIN_UNREACHABLE
 #  define NOT_REACHED                                                       \
         STMT_START {                                                        \
             ASSUME(!"UNREACHABLE"); __builtin_unreachable();                \
         } STMT_END
+#  undef HAS_BUILTIN_UNREACHABLE
 #else
-#  if defined(_MSC_VER)
-#    define ASSUME(x) __assume(x)
-#  elif defined(__ARMCC_VERSION) /* untested */
-#    define ASSUME(x) __promise(x)
-#  else
-    /* a random compiler might define assert to its own special optimization
-     * token so pass it through to C lib as a last resort */
-#    define ASSUME(x) assert(x)
-#  endif
 #  define NOT_REACHED ASSUME(!"UNREACHABLE")
 #endif
-#undef HAS_BUILTIN_UNREACHABLE
+#if 0
+#if defined(__sun) || (defined(__hpux) && !defined(__GNUC__))
+#  ifndef ASSUME
+#    define ASSUME(x)      /* ASSUME() generates warnings on Solaris */
+#  endif
+#endif
+#endif
 
 /* Some unistd.h's give a prototype for pause() even though
    HAS_PAUSE ends up undefined.  This causes the #define

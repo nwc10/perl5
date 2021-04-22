@@ -13,6 +13,9 @@ my @times  = qw( MON_1 MON_2 MON_3 MON_4 MON_5 MON_6 MON_7
 my @constants = qw(ABDAY_1 DAY_1 ABMON_1 RADIXCHAR AM_STR THOUSEP D_T_FMT
                    D_FMT T_FMT);
 push @constants, @times;
+my $debug = ($^O =~ /cygwin | mswin  /xi);
+local $^D = 0x04000000|0x00100000 if $debug;
+my $eval_debug = 'local $^D = 0x04000000|0x00100000;' if $debug;
 
 my %want =
     (
@@ -30,9 +33,68 @@ if (   $Config{osname} !~ / netbsd /ix
     $want{MON_1}   = "January";
 }
 
+sub disp_str ($) {
+    my $string = shift;
+
+    # Displays the string unambiguously.  ASCII printables are always output
+    # as-is, though perhaps separated by blanks from other characters.  If
+    # entirely printable ASCII, just returns the string.  Otherwise if valid
+    # UTF-8 it uses the character names for non-printable-ASCII.  Otherwise it
+    # outputs hex for each non-ASCII-printable byte.
+
+    return $string if $string =~ / ^ [[:print:]]* $/xa;
+
+    my $result = "";
+    my $prev_was_punct = 1; # Beginning is considered punct
+    if (utf8::valid($string) && utf8::is_utf8($string)) {
+        use charnames ();
+        foreach my $char (split "", $string) {
+
+            # Keep punctuation adjacent to other characters; otherwise
+            # separate them with a blank
+            if ($char =~ /[[:punct:]]/a) {
+                $result .= $char;
+                $prev_was_punct = 1;
+            }
+            elsif ($char =~ /[[:print:]]/a) {
+                $result .= "  " unless $prev_was_punct;
+                $result .= $char;
+                $prev_was_punct = 0;
+            }
+            else {
+                $result .= "  " unless $prev_was_punct;
+                my $name = charnames::viacode(ord $char);
+                $result .= (defined $name) ? $name : ':unknown:';
+                $prev_was_punct = 0;
+            }
+        }
+    }
+    else {
+        use bytes;
+        foreach my $char (split "", $string) {
+            if ($char =~ /[[:punct:]]/a) {
+                $result .= $char;
+                $prev_was_punct = 1;
+            }
+            elsif ($char =~ /[[:print:]]/a) {
+                $result .= " " unless $prev_was_punct;
+                $result .= $char;
+                $prev_was_punct = 0;
+            }
+            else {
+                $result .= " " unless $prev_was_punct;
+                $result .= sprintf("%02X", ord $char);
+                $prev_was_punct = 0;
+            }
+        }
+    }
+
+    return $result;
+}
+
 my @want = sort keys %want;
 
-plan tests => 1 + 3 * @constants + keys(@want) + 1 + 2;
+#plan tests => 1 + 3 * @constants + keys(@want) + 1 + 2;
 
 use_ok('I18N::Langinfo', 'langinfo', @constants, 'CRNCYSTR');
 
@@ -86,12 +148,18 @@ SKIP: {
     my $found_time = 0;
     my $found_monetary = 0;
     my @locales = find_locales( [ 'LC_TIME', 'LC_CTYPE', 'LC_MONETARY' ]);
+    my @utf8_locales = find_utf8_ctype_locales(\@locales);
 
-    while (defined (my $utf8_locale = find_utf8_ctype_locale(\@locales))) {
+    foreach my $utf8_locale (@utf8_locales) {
+
         if (! $found_time) {
-            setlocale(&LC_TIME, $utf8_locale);
+            print STDERR __FILE__, ": ", __LINE__, ": calling setlocale(LC_TIME, $utf8_locale)\n" if $debug;
+            my $set_ret = setlocale(&LC_TIME, $utf8_locale);
+            print STDERR __FILE__, ": ", __LINE__, ": setlocale returned '$set_ret'\n" if $debug;
             foreach my $time_item (@times) {
-                my $eval_string = "langinfo(&$time_item)";
+                print STDERR __FILE__, ": ", __LINE__, ": ", setlocale(&LC_TIME), "\n" if $debug;
+                my $eval_string = "$eval_debug langinfo(&$time_item)";
+                print STDERR __FILE__, ": ", __LINE__, ": ", setlocale(&LC_TIME), "\n" if $debug;
                 my $time_name = eval $eval_string;
                 if ($@) {
                     fail("'$eval_string' failed: $@");
@@ -107,16 +175,18 @@ SKIP: {
                 }
 
                 if ($time_name =~ /\P{ASCII}/) {
-                    ok(utf8::is_utf8($time_name), "The name for '$time_item' in $utf8_locale is a UTF8 string");
-                    $found_time = 1;
+                    ok(utf8::is_utf8($time_name), "The name for '$time_item' in $utf8_locale is a UTF8 string.  Got:\n" . disp_str($time_name));
+                    #$found_time = 1;
                     last;
                 }
             }
         }
 
         if (! $found_monetary) {
+            print STDERR __FILE__, ": ", __LINE__, ": calling setlocale(LC_MONETARY, $utf8_locale)\n" if $debug;
             setlocale(&LC_MONETARY, $utf8_locale);
-            my $eval_string = "langinfo(&CRNCYSTR)";
+            print STDERR __FILE__, ": ", __LINE__, ": setlocale returned\n" if $debug;
+            my $eval_string = "$eval_debug langinfo(&CRNCYSTR)";
             my $symbol = eval $eval_string;
             if ($@) {
                 fail("'$eval_string' failed: $@");
@@ -127,16 +197,12 @@ SKIP: {
                 last SKIP;
             }
             if ($symbol =~ /\P{ASCII}/) {
-                ok(utf8::is_utf8($symbol), "The name for 'CRNCYSTR' in $utf8_locale is a UTF8 string");
-                $found_monetary = 1;
+                ok(utf8::is_utf8($symbol), "The name for 'CRNCYSTR' in $utf8_locale is a UTF8 string.  Got:\n" . disp_str($symbol));
+                #$found_monetary = 1;
             }
         }
 
         last if $found_monetary && $found_time;
-
-        # Remove this locale from the list, and loop to find another utf8
-        # locale
-        @locales = grep { $_ ne $utf8_locale } @locales;
     }
 
     if ($found_time + $found_monetary < 2) {
@@ -149,3 +215,5 @@ SKIP: {
         skip("Couldn't find a locale with a non-ascii $message", 2 - $found_time - $found_monetary);
     }
 }
+
+done_testing();

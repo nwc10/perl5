@@ -25,9 +25,9 @@ my @known_categories = ( qw(LC_ALL LC_COLLATE LC_CTYPE LC_MESSAGES LC_MONETARY
 my @platform_categories;
 
 my $debug = 0;
-$debug = 1 if $^O =~ /cygwin /xi; #| darwin /xi; # or $^O =~ /MSWin32/i;
-my $save_D = $^D;
-local $^D = $save_D if $debug;
+$debug = 1 if $^O =~ / MSWin32 /xi; #| darwin /xi;
+my $d = $^D;
+$d |= (0x04000000|0x00100000) if $debug;
 
 sub is_category_valid($) {
     my $cat_name = shift =~ s/^LC_//r;
@@ -180,13 +180,12 @@ sub _trylocale ($$$$) { # For use only by other functions in this file!
 
         # Incompatible locales aren't warned about unless using locales.
         use locale;
-        $^D |= (0x04000000|0x00100000) if $debug;
+        local $^D = $d;
 
         my $result = setlocale($category, $locale);
         print STDERR "#", __FILE__, ": ", __LINE__, ": undef\n"  if $debug && ! defined $result;
         return unless defined $result;
 
-        $^D = $save_D;
         no locale;
 
         print STDERR "#", __FILE__, ": ", __LINE__, ": $result\n" if $debug;
@@ -208,12 +207,26 @@ sub _trylocale ($$$$) { # For use only by other functions in this file!
         # an illegal return value, which it can't later parse.
         return if $result =~ /,/;
 
+        if (    CORE::fc($result) ne CORE::fc($locale)
+
+                # C and POSIX are interchangeable
+            && (CORE::fc($result) ne 'posix' || CORE::fc($result) ne 'c'))
+        {
+            _my_diag("setlocale('$locale') returned '$result'\n");
+        }
+
         return unless $plays_well || $allow_incompatible;
     }
 
     print STDERR '#', __FILE__, ": ", __LINE__, ": Adding $locale to list\n" if $debug;
     push @$list, $locale;
 }
+
+# Windows boxes sometimes erroneously return that ".UTF-8" is a valid locale.
+# So we can't try that on such platforms.
+my $utf8_suffix = ($^O =~ / MSWin32 /xi)
+                   ? "65001"
+                   : "UTF-8";
 
 sub _decode_encodings { # For use only by other functions in this file!
     my @enc;
@@ -589,13 +602,13 @@ sub is_locale_utf8 ($) { # Return a boolean as to if core Perl thinks the input
         return 0;
     }
 
-    $^D |= (0x04000000|0x00100000) if $debug;
+    local $^D = $d;
     print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
+
     if (! setlocale(&POSIX::LC_CTYPE(), $locale)) {
         _my_fail("Verify could setlocale to $locale");
         return 0;
     }
-    $^D = $save_D;
     print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "is_locale_utf8: $locale\n" if $debug;
 
     my $ret = 0;
@@ -693,9 +706,8 @@ sub find_utf8_turkic_locales (;$) {
     print STDERR "# ", __FILE__, ": ", __LINE__, ": ", "find_utf8_turkic_locales, saved=$save_locale\n" if $debug;
     foreach my $locale (find_utf8_ctype_locales(shift)) {
         use locale;
-        $^D |= (0x04000000|0x00100000) if $debug;
+        local $^D = $d;
         setlocale(&POSIX::LC_CTYPE(), $locale);
-        $^D = $save_D;
         push @return, $locale if uc('i') eq "\x{130}";
     }
 

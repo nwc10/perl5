@@ -27,7 +27,7 @@ skip_all("no locales available") unless @locales;
 diag("locales available: @locales");
 
 my $debug = 0;
-$debug = 1 if $^O eq 'cygwin'; # or $^O eq 'MSWin32';
+#$debug = 1 if $^O eq 'cygwin'; # or $^O eq 'MSWin32';
 my $switches = "";
 if (defined $ARGV[0] && $ARGV[0] ne "") {
     if ($ARGV[0] ne 'debug') {

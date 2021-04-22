@@ -4871,7 +4871,7 @@ S_setup_EXACTISH_ST(pTHX_ const regnode * const text_node,
                     continue;
                 }
 
-                matches[m->count][0] = fold_from;
+                matches[m->count][0] = (U8) fold_from;
                 lengths[m->count] = 1;
                 m->count++;
             }
