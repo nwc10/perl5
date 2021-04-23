@@ -30,10 +30,14 @@ $debug = 1 if 0 && $^O =~ /MSWin32/i;
 my $d = $^D;
 $d |= 0x04000000|0x00100000 if $^O =~ /MSWin32/i; #if $debug;
 if ($^O =~ /MSWin32/i) {
+    local $^D = $d;
     print STDERR setlocale(&POSIX::LC_ALL, "Albanian"), "\n";
+    print STDERR Dumper localeconv();
+    print STDERR setlocale(&POSIX::LC_CTYPE, "tr"), "\n";
     print STDERR Dumper localeconv();
     print STDERR setlocale(&POSIX::LC_ALL, "tr"), "\n";
     print STDERR Dumper localeconv();
+    print STDERR setlocale(&POSIX::LC_ALL, "C"), "\n";
 }
 
 my $thread_count = $^O =~ /linux/i ? 50 : 3;

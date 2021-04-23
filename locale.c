@@ -2165,7 +2165,7 @@ S_new_ctype(pTHX_ const char *newctype)
                 bool is_bad = FALSE;
                 char name[4] = { '\0' };
 
-                /* Convert the name into a string */
+                /* XXX don't do this unless needed.  Convert the name into a string */
                 if (isGRAPH_A(i)) {
                     name[0] = i;
                     name[1] = '\0';
@@ -4443,6 +4443,56 @@ S_my_langinfo_i(pTHX_
                 mbtowc_ret = Perl_mbtowc_(aTHX_ &wc,
                                       STR_WITH_LEN(REPLACEMENT_CHARACTER_UTF8));
                 if (mbtowc_ret >= 0 && wc == UNICODE_REPLACEMENT) {
+                    unsigned int i;
+                    for (i = 128; i < 256; i++) {
+                        if (UNLIKELY(cBOOL(iswalnum(i)) != cBOOL(isALPHANUMERIC_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswalnum(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswalnum(i))));
+                        }
+                        if (UNLIKELY(cBOOL(iswcntrl(i)) != cBOOL(isCNTRL_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswcntrl(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswcntrl(i))));
+                        }
+                        if (UNLIKELY(cBOOL(iswalpha(i)) != cBOOL(isALPHA_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswalpha(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswalpha(i))));
+                        }
+                        if (UNLIKELY(cBOOL(iswdigit(i)) != cBOOL(isDIGIT_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswdigit(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswdigit(i))));
+                        }
+                        if (UNLIKELY(cBOOL(iswgraph(i)) != cBOOL(isGRAPH_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswgraph(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswgraph(i))));
+                        }
+                        if (UNLIKELY(cBOOL(iswlower(i)) != cBOOL(isLOWER_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswlower(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswlower(i))));
+                        }
+                        if (UNLIKELY(cBOOL(iswprint(i)) != cBOOL(isPRINT_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswprint(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswprint(i))));
+                        }
+                        if (UNLIKELY(cBOOL(iswspace(i)) != cBOOL(isSPACE_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswspace(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswspace(i))));
+                        }
+                        if (UNLIKELY(cBOOL(iswupper(i)) != cBOOL(isUPPER_L1(i))))  {
+                            DEBUG_L(PerlIO_printf(Perl_debug_log,
+                                                "iswupper(%x) unexpectedly is %x\n",
+                                                i, cBOOL(iswupper(i))));
+                        }
+                    }
+
+                    DEBUG_Lv(PerlIO_printf(Perl_debug_log, "mbtowc returned REPLACEMENT\n"));
                     retval = "UTF-8";
                     break;
                 }

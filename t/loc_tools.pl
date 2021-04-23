@@ -210,7 +210,7 @@ sub _trylocale ($$$$) { # For use only by other functions in this file!
         if (    CORE::fc($result) ne CORE::fc($locale)
 
                 # C and POSIX are interchangeable
-            && (CORE::fc($result) ne 'posix' || CORE::fc($result) ne 'c'))
+            && ! (CORE::fc($locale) eq 'posix' && CORE::fc($result) eq 'c'))
         {
             _my_diag("setlocale('$locale') returned '$result'\n");
         }
