@@ -121,6 +121,8 @@ my $tree = {
                                     [ 5.033, DEFAULT_ON ],
                                 'experimental::defer' =>
                                     [ 5.035, DEFAULT_ON ],
+                                'experimental::for_list' =>
+                                    [ 5.035, DEFAULT_ON ],
                         }],
 
         'missing'       => [ 5.021, DEFAULT_OFF],
