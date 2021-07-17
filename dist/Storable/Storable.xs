@@ -1412,8 +1412,8 @@ static SV *get_lstring(pTHX_ stcxt_t *cxt, UV len, int isutf8, const char *cname
 #ifdef HAS_U64
 static SV *get_larray(pTHX_ stcxt_t *cxt, UV len, const char *cname);
 static SV *get_lhash(pTHX_ stcxt_t *cxt, UV len, int hash_flags, const char *cname);
-static int store_lhash(pTHX_ stcxt_t *cxt, HV *hv, unsigned char hash_flags);
 #endif
+static int store_hash_direct(pTHX_ stcxt_t *cxt, HV *hv, unsigned char hash_flags);
 static int store_hentry(pTHX_ stcxt_t *cxt, HV* hv, UV i, HEK *hek, SV *val,
                         unsigned char hash_flags);
 
@@ -2764,6 +2764,7 @@ static int store_hash(pTHX_ stcxt_t *cxt, HV *hv)
                          ) ? 1 : 0);
     unsigned char hash_flags = (SvREADONLY(hv) ? SHV_RESTRICTED : 0);
     SV * const recur_sv = cxt->recur_sv;
+    int store_sorted = 0;
 
     /* 
      * Signal hash by emitting SX_HASH, followed by the table length.
@@ -2794,7 +2795,7 @@ static int store_hash(pTHX_ stcxt_t *cxt, HV *hv)
             PUTMARK(SX_HASH);
         }
         W64LEN(len);
-        return store_lhash(aTHX_ cxt, hv, hash_flags);
+        return store_hash_direct(aTHX_ cxt, hv, hash_flags);
 #else
         /* <5.12 you could store larger hashes, but cannot iterate over them.
            So we reject them, it's a bug. */
@@ -2813,6 +2814,31 @@ static int store_hash(pTHX_ stcxt_t *cxt, HV *hv)
         }
         WLEN(l);
         TRACEME(("size = %d, used = %d", (int)l, (int)HvUSEDKEYS(hv)));
+    }
+
+    if (
+        !(cxt->optype & ST_CLONE)
+        && (cxt->canonical == 1
+            || (cxt->canonical < 0
+                && (cxt->canonical =
+                    (SvTRUE(get_sv("Storable::canonical", GV_ADD))
+                     ? 1 : 0))))
+	) {
+        /*
+         * Storing in order, sorted by key.
+         * Run through the hash, building up an array of keys in a
+         * mortal array, sort the array and then run through the
+         * array.
+         */
+        store_sorted = 1;
+    }
+
+    if (!store_sorted && !SvMAGICAL(hv) && !SvRMAGICAL(hv)) {
+        /* If there is no magic on the hash and we don't need to sort the keys,
+         * we can actually re-use the direct iteration code of store_lhash,
+         * and avoid the need to save/restore all the iterator state.
+         * If it's empty, don't even call store_hash_direct() */
+        return len ? store_hash_direct(aTHX_ cxt, hv, hash_flags) : 0;
     }
 
     TRACEME((">hash recur_depth %" IVdf ", recur_sv (0x%" UVxf ") max %" IVdf, cxt->recur_depth,
@@ -2849,21 +2875,7 @@ static int store_hash(pTHX_ stcxt_t *cxt, HV *hv)
      * Fetch the value from perl only once per store() operation, and only
      * when needed.
      */
-
-    if (
-        !(cxt->optype & ST_CLONE)
-        && (cxt->canonical == 1
-            || (cxt->canonical < 0
-                && (cxt->canonical =
-                    (SvTRUE(get_sv("Storable::canonical", GV_ADD))
-                     ? 1 : 0))))
-	) {
-        /*
-         * Storing in order, sorted by key.
-         * Run through the hash, building up an array of keys in a
-         * mortal array, sort the array and then run through the
-         * array.
-         */
+    if (store_sorted) {
         AV *av = newAV();
         av_extend (av, len);
 
@@ -3123,19 +3135,22 @@ static int store_hentry(pTHX_
 }
 
 
-#ifdef HAS_U64
 /*
- * store_lhash
+ * store_hash_direct
+ *
+ * Formerly store_lhash:
  *
  * Store a overlong hash table, with >2G keys, which we cannot iterate
  * over with perl5. xhv_eiter is only I32 there. (only cperl can)
  * and we also do not want to sort it.
  * So we walk the buckets and chains manually.
  *
+ * but we can actually use this code more generally for hashes without magic
+ *
  * type, len and flags are already written.
  */
 
-static int store_lhash(pTHX_ stcxt_t *cxt, HV *hv, unsigned char hash_flags)
+static int store_hash_direct(pTHX_ stcxt_t *cxt, HV *hv, unsigned char hash_flags)
 {
     dVAR;
     int ret = 0;
@@ -3147,10 +3162,10 @@ static int store_lhash(pTHX_ stcxt_t *cxt, HV *hv, unsigned char hash_flags)
 #endif
     SV * const recur_sv = cxt->recur_sv;
     if (hash_flags) {
-        TRACEME(("store_lhash (0x%" UVxf ") (flags %x)", PTR2UV(hv),
+        TRACEME(("store_hash_direct (0x%" UVxf ") (flags %x)", PTR2UV(hv),
                  (int) hash_flags));
     } else {
-        TRACEME(("store_lhash (0x%" UVxf ")", PTR2UV(hv)));
+        TRACEME(("store_hash_direct (0x%" UVxf ")", PTR2UV(hv)));
     }
     TRACEME(("size = %" UVuf ", used = %" UVuf, len, (UV)HvUSEDKEYS(hv)));
 
@@ -3184,7 +3199,6 @@ static int store_lhash(pTHX_ stcxt_t *cxt, HV *hv, unsigned char hash_flags)
     assert(ix == len);
     return ret;
 }
-#endif
 
 /*
  * store_code
