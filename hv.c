@@ -1637,6 +1637,23 @@ Perl_hv_ksplit(pTHX_ HV *hv, IV newmax)
 } STMT_END
 
 
+static U32
+newHVhv_callback(pTHX_ HEK *key, SV *val, void *state)
+{
+    HV *hv = (HV *)state;
+
+    val = SvIMMORTAL(val) ? val : newSVsv(val);
+    if (HEK_LEN(key) == HEf_SVKEY) {
+        SV * const keysv = *(SV **)HEK_KEY(key);
+        (void)hv_store_ent(hv, keysv, val, 0);
+    }
+    else {
+        (void)hv_store_flags(hv, HEK_KEY(key), HEK_LEN(key), val,
+                             HEK_HASH(key), HEK_FLAGS(key));
+    }
+    return 0;
+}
+
 HV *
 Perl_newHVhv(pTHX_ HV *ohv)
 {
@@ -1647,7 +1664,16 @@ Perl_newHVhv(pTHX_ HV *ohv)
         return hv;
     hv_max = HvMAX(ohv);
 
-    if (!SvMAGICAL((const SV *)ohv)) {
+    if (UNLIKELY(SvMAGICAL((const SV *)ohv))) {
+        /* Iterate over ohv, copying keys and values one at a time. */
+        STRLEN hv_keys = HvTOTALKEYS(ohv);
+
+        HV_SET_MAX_ADJUSTED_FOR_KEYS(hv,hv_max,hv_keys);
+
+        Perl_hv_foreach_magical(aTHX_ ohv, HV_ITERNEXT_EXPOSE_HASH_ORDER,
+                                newHVhv_callback, hv);
+    }
+    else {
         /* It's an ordinary hash, so copy it fast. AMS 20010804 */
         STRLEN i;
         const bool shared = !!HvSHAREKEYS(ohv);
@@ -1691,29 +1717,6 @@ Perl_newHVhv(pTHX_ HV *ohv)
         HvMAX(hv)   = hv_max;
         HvTOTALKEYS(hv)  = HvTOTALKEYS(ohv);
         HvARRAY(hv) = ents;
-    } /* not magical */
-    else {
-        /* Iterate over ohv, copying keys and values one at a time. */
-        HE *entry;
-        const I32 riter = HvRITER_get(ohv);
-        HE * const eiter = HvEITER_get(ohv);
-        STRLEN hv_keys = HvTOTALKEYS(ohv);
-
-        HV_SET_MAX_ADJUSTED_FOR_KEYS(hv,hv_max,hv_keys);
-
-        hv_iterinit(ohv);
-        while ((entry = hv_iternext_flags(ohv, 0))) {
-            SV *val = hv_iterval(ohv,entry);
-            SV * const keysv = HeSVKEY(entry);
-            val = SvIMMORTAL(val) ? val : newSVsv(val);
-            if (keysv)
-                (void)hv_store_ent(hv, keysv, val, 0);
-            else
-                (void)hv_store_flags(hv, HeKEY(entry), HeKLEN(entry), val,
-                                 HeHASH(entry), HeKFLAGS(entry));
-        }
-        HvRITER_set(ohv, riter);
-        HvEITER_set(ohv, eiter);
     }
 
     return hv;
