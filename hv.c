@@ -1727,6 +1727,29 @@ added to it.  A pointer to the new hash is returned.
 =cut
 */
 
+static U32
+copy_hints_hv_callback(pTHX_ HEK *key, SV *val, void *state)
+{
+    HV *hv = (HV *)state;
+    SV *sv = newSVsv(val);
+
+    if (HEK_LEN(key) == HEf_SVKEY) {
+        SV * const keysv = *(SV **)HEK_KEY(key);
+        if (sv)
+            sv_magic(sv, NULL, PERL_MAGIC_hintselem, (char *)keysv, HEf_SVKEY);
+        (void)hv_store_ent(hv, keysv, sv, 0);
+    }
+    else {
+        SV * const keysv = newSVhek(key);
+        if (sv)
+            sv_magic(sv, NULL, PERL_MAGIC_hintselem, (char *)keysv, HEf_SVKEY);
+        (void)hv_common(hv, keysv, HEK_KEY(key), HEK_LEN(key), HEK_FLAGS(key),
+                        HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, sv, HEK_HASH(key));
+        SvREFCNT_dec_NN(keysv);
+    }
+    return 0;
+}
+
 HV *
 Perl_hv_copy_hints_hv(pTHX_ HV *const ohv)
 {
@@ -1735,32 +1758,13 @@ Perl_hv_copy_hints_hv(pTHX_ HV *const ohv)
     if (ohv) {
         STRLEN hv_max = HvMAX(ohv);
         STRLEN hv_keys = HvTOTALKEYS(ohv);
-        HE *entry;
-        const I32 riter = HvRITER_get(ohv);
-        HE * const eiter = HvEITER_get(ohv);
 
         ENTER;
         SAVEFREESV(hv);
 
         HV_SET_MAX_ADJUSTED_FOR_KEYS(hv,hv_max,hv_keys);
 
-        hv_iterinit(ohv);
-        while ((entry = hv_iternext_flags(ohv, 0))) {
-            SV *const sv = newSVsv(hv_iterval(ohv,entry));
-            SV *heksv = HeSVKEY(entry);
-            if (!heksv && sv) heksv = newSVhek(HeKEY_hek(entry));
-            if (sv) sv_magic(sv, NULL, PERL_MAGIC_hintselem,
-                     (char *)heksv, HEf_SVKEY);
-            if (heksv == HeSVKEY(entry))
-                (void)hv_store_ent(hv, heksv, sv, 0);
-            else {
-                (void)hv_common(hv, heksv, HeKEY(entry), HeKLEN(entry),
-                                 HeKFLAGS(entry), HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, sv, HeHASH(entry));
-                SvREFCNT_dec_NN(heksv);
-            }
-        }
-        HvRITER_set(ohv, riter);
-        HvEITER_set(ohv, eiter);
+        hv_foreach(ohv, HV_ITERNEXT_EXPOSE_HASH_ORDER, copy_hints_hv_callback, hv);
 
         SvREFCNT_inc_simple_void_NN(hv);
         LEAVE;
