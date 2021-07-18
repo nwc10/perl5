@@ -988,19 +988,58 @@ flags : 1   = push keys
         2   = push values
         1|2 = push keys and values
         XXX use symbolic flag constants at some point?
-I might unroll the non-tied hv_iternext() in here at some point - DAPM
 */
+
+static U32
+pushkv_direct_callback(pTHX_ HEK *key, SV *val, void *state)
+{
+    U32 *flags = (U32 *) state;
+    if (*flags & 1) {
+        SV *keysv = newSVhek(key);
+        SvTEMP_on(keysv);
+        PL_tmps_stack[++PL_tmps_ix] = keysv;
+        *++PL_stack_sp = keysv;
+    }
+    if (*flags & 2)
+        *++PL_stack_sp = val;
+    return 0;
+}
+
+/* Might not actually be magic. But we can't be sure, so can't shortcut. */
+static U32
+pushkv_magic_callback(pTHX_ HEK *key, SV *val, void *state)
+{
+    dSP;
+    U32 *flags = (U32 *) state;
+
+    switch (*flags) {
+    case 1:
+        EXTEND(SP, 1);
+        PUSHs(sv_2mortal(newSVhek(key)));
+        break;
+    case 2:
+        EXTEND(SP, 1);
+        PUSHs(val);
+        break;
+    case 3:
+        EXTEND(SP, 2);
+        PUSHs(sv_2mortal(newSVhek(key)));
+        PUSHs(val);
+        break;
+    }
+    PUTBACK;
+    return 0;
+}
+
 
 void
 Perl_hv_pushkv(pTHX_ HV *hv, U32 flags)
 {
-    HE *entry;
     bool tied = SvRMAGICAL(hv) && (mg_find(MUTABLE_SV(hv), PERL_MAGIC_tied)
 #ifdef DYNAMIC_ENV_FETCH  /* might not know number of keys yet */
                                    || mg_find(MUTABLE_SV(hv), PERL_MAGIC_env)
 #endif
                                   );
-    dSP;
 
     PERL_ARGS_ASSERT_HV_PUSHKV;
     assert(flags); /* must be pushing at least one of keys and values */
@@ -1008,16 +1047,10 @@ Perl_hv_pushkv(pTHX_ HV *hv, U32 flags)
     (void)hv_iterinit(hv);
 
     if (tied) {
-        SSize_t ext = (flags == 3) ? 2 : 1;
-        while ((entry = hv_iternext(hv))) {
-            EXTEND(SP, ext);
-            if (flags & 1)
-                PUSHs(hv_iterkeysv(entry));
-            if (flags & 2)
-                PUSHs(hv_iterval(hv, entry));
-        }
+        hv_foreach(hv, 0, pushkv_magic_callback, &flags);
     }
     else {
+        dSP;
         Size_t nkeys = HvUSEDKEYS(hv);
         SSize_t ext;
 
@@ -1031,19 +1064,13 @@ Perl_hv_pushkv(pTHX_ HV *hv, U32 flags)
         EXTEND_MORTAL(nkeys);
         EXTEND(SP, ext);
 
-        while ((entry = hv_iternext(hv))) {
-            if (flags & 1) {
-                SV *keysv = newSVhek(HeKEY_hek(entry));
-                SvTEMP_on(keysv);
-                PL_tmps_stack[++PL_tmps_ix] = keysv;
-                PUSHs(keysv);
-            }
-            if (flags & 2)
-                PUSHs(HeVAL(entry));
-        }
+        PUTBACK;
+
+        U32 rand = S_hv_get_rand(aTHX_ hv);
+
+        S_hv_foreach_no_placeholders(aTHX_ hv, rand, pushkv_direct_callback, &flags);
     }
 
-    PUTBACK;
 }
 
 
@@ -2641,6 +2668,65 @@ Perl_hv_kill_backrefs(pTHX_ HV *hv) {
         if (SvTYPE(av) == SVt_PVAV)
             SvREFCNT_dec_NN(av);
     }
+}
+
+/* See (and call) hv_foreach in inline.h */
+
+U32
+Perl_hv_foreach_magical(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, void *state)
+{
+    PERL_ARGS_ASSERT_HV_FOREACH_MAGICAL;
+
+    if (SvRMAGICAL(hv)) {
+        MAGIC *mg = mg_find((const SV *)hv, PERL_MAGIC_tied);
+        if (mg) {
+            /* tied hash. */
+            SV *key;
+            char buffer[HEK_BASESIZE + sizeof(const SV *)];
+            HEK *hek = (HEK *)buffer;
+
+            memset(hek, 0, sizeof(buffer));
+            hek->hek_len = HEf_SVKEY;
+
+            key = sv_newmortal();
+            magic_nextpack(MUTABLE_SV(hv), mg, key);
+
+            while (SvOK(key)) {
+                SV * const val = sv_newmortal();
+                *((SV **)hek->hek_key) = key;
+                mg_copy(MUTABLE_SV(hv), val, (char*)key, HEf_SVKEY);
+                U32 retval = callback(aTHX_ hek, val, state);
+                if (retval)
+                    return retval;
+
+                key = sv_mortalcopy(key);
+                magic_nextpack(MUTABLE_SV(hv), mg, key);
+            }
+
+            return 0;
+        }
+
+#if defined(DYNAMIC_ENV_FETCH) && !defined(__riscos__)  /* set up %ENV for iteration */
+        if (!HvARRAY(hv) && mg_find((const SV *)hv, PERL_MAGIC_env)) {
+            prime_env_iter();
+        }
+#endif
+    }
+
+    U32 rand;
+    if (flags & HV_ITERNEXT_EXPOSE_HASH_ORDER) {
+        /* This is not the order that each() will report.
+         * (So will break code if you expose it to Perl space. As well as being
+         * insecure). */
+        rand = 0;
+    }
+    else {
+        rand = S_hv_get_rand(aTHX_ hv);
+    }
+
+    return (flags & HV_ITERNEXT_WANTPLACEHOLDERS)
+        ? S_hv_foreach_with_placeholders(aTHX_ hv, rand, callback, state)
+        : S_hv_foreach_no_placeholders(aTHX_ hv, rand, callback, state);
 }
 
 /*

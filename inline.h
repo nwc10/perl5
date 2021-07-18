@@ -226,6 +226,121 @@ Perl_HvIS_EMPTY(const HV *hv) {
     return !SvRMAGICAL(hv) && !HvTOTALKEYS(hv);
 }
 
+/*
+=for apidoc hv_foreach
+
+XXX Call the callback
+
+=cut
+*/
+
+/* Assume that these three *will* change soon. Specifically, the _rand_
+   parameter may well be removed, and S_hv_get_rand will be deleted. */
+
+PERL_STATIC_INLINE U32
+S_hv_foreach_with_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state)
+{
+    PERL_ARGS_ASSERT_HV_FOREACH_WITH_PLACEHOLDERS;
+
+    if (!HvTOTALKEYS(hv))
+        return 0;
+
+    XPVHV* xhv = (XPVHV*)SvANY(hv);
+    U32 max = xhv->xhv_max;
+
+    HE **array = HvARRAY(hv);
+
+    for (U32 i = 0; i <= (Size_t)max; i++) {
+        HE *entry = array[ (i ^ rand) & max ];
+        while (entry) {
+            U32 retval = callback(aTHX_ HeKEY_hek(entry), HeVAL(entry), state);
+            if (retval)
+                return retval;
+
+            entry = HeNEXT(entry);
+        }
+    }
+    return 0;
+}
+
+PERL_STATIC_INLINE U32
+S_hv_foreach_no_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state)
+{
+    PERL_ARGS_ASSERT_HV_FOREACH_NO_PLACEHOLDERS;
+
+    if (!HvTOTALKEYS(hv))
+        return 0;
+
+    XPVHV* xhv = (XPVHV*)SvANY(hv);
+    U32 max = xhv->xhv_max;
+
+    HE **array = HvARRAY(hv);
+
+    for (U32 i = 0; i <= (Size_t)max; i++) {
+        HE *entry = array[ (i ^ rand) & max ];
+        while (entry) {
+            SV *val = HeVAL(entry);
+            if (val != &PL_sv_placeholder) {
+                U32 retval = callback(aTHX_ HeKEY_hek(entry), val, state);
+                if (retval)
+                    return retval;
+            }
+
+            entry = HeNEXT(entry);
+        }
+    }
+    return 0;
+}
+
+PERL_STATIC_INLINE U32
+S_hv_get_rand(pTHX_ HV *hv)
+{
+#ifdef PERL_PERTURB_KEYS_DISABLED
+    return 0;
+#else
+    /* If no aux struct is allocated we need to call hv_iterinit()
+     * (instead of just picking some random 32 bit value for rand)
+     * because we need to store this value (and hence the ordering that it
+     * implies) so that each() reports values in the same order as us. */
+    if (!SvOOK(hv)) {
+        hv_iterinit(hv);
+    }
+    struct xpvhv_aux *iter = HvAUX(hv);
+    return iter->xhv_rand;
+#endif
+}
+
+PERL_STATIC_INLINE U32
+Perl_hv_foreach(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, void *state)
+{
+    PERL_ARGS_ASSERT_HV_FOREACH;
+
+    if (UNLIKELY(SvRMAGICAL(hv)))
+        return Perl_hv_foreach_magical(aTHX_ hv, flags, callback, state);
+
+    if (!HvTOTALKEYS(hv))
+        return 0;
+
+    U32 rand;
+    if (flags & HV_ITERNEXT_EXPOSE_HASH_ORDER) {
+        /* This is not the order that each() will report.
+         * (So will break code if you expose it to Perl space. As well as being
+         * insecure). */
+        rand = 0;
+    }
+    else {
+        rand = S_hv_get_rand(aTHX_ hv);
+    }
+
+    /* I assume that we will be called with a constant for flags, and as we are
+     * an inlined function, the compiler will discard whichever side is dead
+     * code: */
+
+    return (flags & HV_ITERNEXT_WANTPLACEHOLDERS)
+        ? S_hv_foreach_with_placeholders(aTHX_ hv, rand, callback, state)
+        : S_hv_foreach_no_placeholders(aTHX_ hv, rand, callback, state);
+}
+
 /* ------------------------------- mg.h ------------------------------- */
 
 #if defined(PERL_CORE) || defined(PERL_EXT)

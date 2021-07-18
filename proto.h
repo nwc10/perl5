@@ -1493,6 +1493,24 @@ PERL_CALLCONV HE*	Perl_hv_fetch_ent(pTHX_ HV *hv, SV *keysv, I32 lval, U32 hash)
 PERL_CALLCONV STRLEN	Perl_hv_fill(pTHX_ HV *const hv);
 #define PERL_ARGS_ASSERT_HV_FILL	\
 	assert(hv)
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE U32	Perl_hv_foreach(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, void *state);
+#define PERL_ARGS_ASSERT_HV_FOREACH	\
+	assert(hv); assert(callback)
+#endif
+PERL_CALLCONV U32	Perl_hv_foreach_magical(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, void *state);
+#define PERL_ARGS_ASSERT_HV_FOREACH_MAGICAL	\
+	assert(hv); assert(callback)
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE U32	S_hv_foreach_no_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state);
+#define PERL_ARGS_ASSERT_HV_FOREACH_NO_PLACEHOLDERS	\
+	assert(hv); assert(callback)
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE U32	S_hv_foreach_with_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state);
+#define PERL_ARGS_ASSERT_HV_FOREACH_WITH_PLACEHOLDERS	\
+	assert(hv); assert(callback)
+#endif
 PERL_CALLCONV void	Perl_hv_free_ent(pTHX_ HV *hv, HE *entry);
 #define PERL_ARGS_ASSERT_HV_FREE_ENT	\
 	assert(hv)

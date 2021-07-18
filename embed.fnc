@@ -1034,6 +1034,10 @@ Cp	|void*	|hv_common_key_len|NULLOK HV *hv|NN const char *key \
 				|I32 klen_i32|const int action|NULLOK SV *val \
 				|const U32 hash
 Apod	|STRLEN	|hv_fill	|NN HV *const hv
+Aidp	|U32	|hv_foreach	|NN HV *hv|U32 flags|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
+pX	|U32	|hv_foreach_magical|NN HV *hv|U32 flags|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
+isox	|U32	|hv_foreach_no_placeholders|NN const HV *hv|U32 rand|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
+isox	|U32	|hv_foreach_with_placeholders|NN const HV *hv|U32 rand|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
 Ap	|void	|hv_free_ent	|NN HV *hv|NULLOK HE *entry
 AiTpd	|bool	|HvIS_EMPTY 	|NN const HV *hv
 Apd	|I32	|hv_iterinit	|NN HV *hv
