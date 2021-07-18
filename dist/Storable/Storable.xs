@@ -3150,17 +3150,34 @@ static int store_hentry(pTHX_
  * type, len and flags are already written.
  */
 
+struct hash_direct_state {
+    UV ix;
+    stcxt_t *cxt;
+    HV *hv;
+    unsigned char hash_flags;
+};
+
+static U32 store_hash_direct_callback(pTHX_ HEK *key, SV *val, void *state_v)
+{
+    struct hash_direct_state *state = (struct hash_direct_state *) state_v;
+    return store_hentry(aTHX_ state->cxt, state->hv, state->ix++, key, val, state->hash_flags);
+}
+
 static int store_hash_direct(pTHX_ stcxt_t *cxt, HV *hv, unsigned char hash_flags)
 {
     dVAR;
-    int ret = 0;
-    Size_t i;
-    UV ix = 0;
-    HE** array;
+    int ret;
 #ifdef DEBUGME
     UV len = (UV)HvTOTALKEYS(hv);
 #endif
     SV * const recur_sv = cxt->recur_sv;
+    struct hash_direct_state state;
+
+    state.ix = 0;
+    state.cxt = cxt;
+    state.hv = hv;
+    state.hash_flags = hash_flags;
+
     if (hash_flags) {
         TRACEME(("store_hash_direct (0x%" UVxf ") (flags %x)", PTR2UV(hv),
                  (int) hash_flags));
@@ -3181,22 +3198,14 @@ static int store_hash_direct(pTHX_ stcxt_t *cxt, HV *hv, unsigned char hash_flag
         CROAK((MAX_DEPTH_ERROR));
     }
 
-    array = HvARRAY(hv);
-    for (i = 0; i <= (Size_t)HvMAX(hv); i++) {
-        HE* entry = array[i];
+    ret = hv_foreach(hv, HV_ITERNEXT_WANTPLACEHOLDERS,
+                     store_hash_direct_callback, &state);
 
-        while (entry) {
-            SV* val = hv_iterval(hv, entry);
-            if ((ret = store_hentry(aTHX_ cxt, hv, ix++, HeKEY_hek(entry), val, hash_flags)))
-                return ret;
-            entry = HeNEXT(entry);
-        }
-    }
     if (recur_sv != (SV*)hv && cxt->max_recur_depth_hash != -1 && cxt->recur_depth > 0) {
         TRACEME(("recur_depth --%" IVdf, cxt->recur_depth));
         --cxt->recur_depth;
     }
-    assert(ix == len);
+    assert(state.ix == len);
     return ret;
 }
 

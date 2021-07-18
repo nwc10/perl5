@@ -446,6 +446,7 @@ See L</hv_fill>.
 
 /* Flags for hv_iternext_flags.  */
 #define HV_ITERNEXT_WANTPLACEHOLDERS	0x01	/* Don't skip placeholders.  */
+#define HV_ITERNEXT_EXPOSE_HASH_ORDER	0x02	/* Insecure.  */
 
 #define hv_iternext(hv)	hv_iternext_flags(hv, 0)
 #define hv_magic(hv, gv, how) sv_magic(MUTABLE_SV(hv), MUTABLE_SV(gv), how, NULL, 0)
@@ -657,6 +658,8 @@ Creates a new HV.  The reference count is set to 1.
 #define newHV()	MUTABLE_HV(newSV_type(SVt_PVHV))
 
 #include "hv_func.h"
+
+typedef U32 (HV_FOREACH_CALLBACK)(pTHX_ HEK *, SV *, void *);
 
 /*
  * ex: set ts=8 sts=4 sw=4 et:
