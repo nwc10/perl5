@@ -991,42 +991,70 @@ flags : 1   = push keys
 */
 
 static U32
-pushkv_direct_callback(pTHX_ HEK *key, SV *val, void *state)
+pushkv_direct_callback1(pTHX_ HEK *key, SV *val, void *state)
 {
-    U32 *flags = (U32 *) state;
-    if (*flags & 1) {
-        SV *keysv = newSVhek(key);
-        SvTEMP_on(keysv);
-        PL_tmps_stack[++PL_tmps_ix] = keysv;
-        *++PL_stack_sp = keysv;
-    }
-    if (*flags & 2)
-        *++PL_stack_sp = val;
+    PERL_UNUSED_VAR(state);
+    PERL_UNUSED_VAR(val);
+    SV *keysv = newSVhek(key);
+    SvTEMP_on(keysv);
+    PL_tmps_stack[++PL_tmps_ix] = keysv;
+    *++PL_stack_sp = keysv;
+    return 0;
+}
+static U32
+pushkv_direct_callback2(pTHX_ HEK *key, SV *val, void *state)
+{
+    PERL_UNUSED_VAR(state);
+    PERL_UNUSED_VAR(key);
+    *++PL_stack_sp = val;
+    return 0;
+}
+static U32
+pushkv_direct_callback3(pTHX_ HEK *key, SV *val, void *state)
+{
+    PERL_UNUSED_VAR(state);
+    SV *keysv = newSVhek(key);
+    SvTEMP_on(keysv);
+    PL_tmps_stack[++PL_tmps_ix] = keysv;
+    *++PL_stack_sp = keysv;
+    *++PL_stack_sp = val;
     return 0;
 }
 
 /* Might not actually be magic. But we can't be sure, so can't shortcut. */
 static U32
-pushkv_magic_callback(pTHX_ HEK *key, SV *val, void *state)
+pushkv_magic_callback1(pTHX_ HEK *key, SV *val, void *state)
 {
     dSP;
-    U32 *flags = (U32 *) state;
+    PERL_UNUSED_VAR(state);
+    PERL_UNUSED_VAR(val);
 
-    switch (*flags) {
-    case 1:
-        EXTEND(SP, 1);
-        PUSHs(sv_2mortal(newSVhek(key)));
-        break;
-    case 2:
-        EXTEND(SP, 1);
-        PUSHs(val);
-        break;
-    case 3:
-        EXTEND(SP, 2);
-        PUSHs(sv_2mortal(newSVhek(key)));
-        PUSHs(val);
-        break;
-    }
+    EXTEND(SP, 1);
+    PUSHs(sv_2mortal(newSVhek(key)));
+    PUTBACK;
+    return 0;
+}
+static U32
+pushkv_magic_callback2(pTHX_ HEK *key, SV *val, void *state)
+{
+    dSP;
+    PERL_UNUSED_VAR(state);
+    PERL_UNUSED_VAR(key);
+
+    EXTEND(SP, 1);
+    PUSHs(val);
+    PUTBACK;
+    return 0;
+}
+static U32
+pushkv_magic_callback3(pTHX_ HEK *key, SV *val, void *state)
+{
+    dSP;
+    PERL_UNUSED_VAR(state);
+
+    EXTEND(SP, 2);
+    PUSHs(sv_2mortal(newSVhek(key)));
+    PUSHs(val);
     PUTBACK;
     return 0;
 }
@@ -1046,8 +1074,21 @@ Perl_hv_pushkv(pTHX_ HV *hv, U32 flags)
 
     (void)hv_iterinit(hv);
 
-    if (tied) {
-        hv_foreach(hv, 0, pushkv_magic_callback, &flags);
+    if (UNLIKELY(tied)) {
+        /* We could call hv_foreach here directly (like a proper user of the
+         * public API) but we know that SvRMAGICAL(hv) is true, so we can go
+         * direct to what it calls. */
+        switch (flags) {
+        case 1:
+            Perl_hv_foreach_magical(aTHX_ hv, 0, pushkv_magic_callback1, NULL);
+            break;
+        case 2:
+            Perl_hv_foreach_magical(aTHX_ hv, 0, pushkv_magic_callback2, NULL);
+            break;
+        case 3:
+            Perl_hv_foreach_magical(aTHX_ hv, 0, pushkv_magic_callback3, NULL);
+            break;
+        }
     }
     else {
         dSP;
@@ -1068,9 +1109,18 @@ Perl_hv_pushkv(pTHX_ HV *hv, U32 flags)
 
         U32 rand = S_hv_get_rand(aTHX_ hv);
 
-        S_hv_foreach_no_placeholders(aTHX_ hv, rand, pushkv_direct_callback, &flags);
+        switch (flags) {
+        case 1:
+            S_hv_foreach_no_placeholders(aTHX_ hv, rand, pushkv_direct_callback1, &flags);
+            break;
+        case 2:
+            S_hv_foreach_no_placeholders(aTHX_ hv, rand, pushkv_direct_callback2, &flags);
+            break;
+        case 3:
+            S_hv_foreach_no_placeholders(aTHX_ hv, rand, pushkv_direct_callback3, &flags);
+            break;
+        }
     }
-
 }
 
 
