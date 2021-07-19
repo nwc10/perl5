@@ -2640,11 +2640,53 @@ Perl_gv_efullname4(pTHX_ SV *sv, const GV *gv, const char *prefix, bool keepmain
  * that need the "only used once" warning raised
  */
 
+static U32
+gv_check_callback(pTHX_ HEK *hek, SV *val, void *state)
+{
+    GV *gv;
+    HV *hv;
+    STRLEN keylen = HEK_LEN(hek);
+    const char * const key = HEK_KEY(hek);
+    HV *stash = (HV *)state;
+
+    if (keylen >= 2 && key[keylen-2] == ':'  && key[keylen-1] == ':' &&
+        (gv = MUTABLE_GV(val)) && isGV(gv) && (hv = GvHV(gv))) {
+        if (hv != PL_defstash && hv != stash
+            && !(SvOOK(hv)
+                 && (HvAUX(hv)->xhv_aux_flags & HvAUXf_SCAN_STASH))
+            )
+            gv_check(hv);              /* nested package */
+    }
+    else if (   keylen != 0
+                && *key != '_'
+                && isIDFIRST_lazy_if_safe(key,
+                                          key + keylen,
+                                          HEK_UTF8(hek)) ) {
+        const char *file;
+        gv = MUTABLE_GV(val);
+        if (SvTYPE(gv) != SVt_PVGV || GvMULTI(gv))
+            return 0;
+
+        file = GvFILE(gv);
+        CopLINE_set(PL_curcop, GvLINE(gv));
+#ifdef USE_ITHREADS
+        CopFILE(PL_curcop) = (char *)file;	/* set for warning */
+#else
+        CopFILEGV(PL_curcop)
+            = gv_fetchfile_flags(file, HEK_LEN(GvFILE_HEK(gv)), 0);
+#endif
+        Perl_warner(aTHX_ packWARN(WARN_ONCE),
+                    "Name \"%" HEKf "::%" HEKf
+                    "\" used only once: possible typo",
+                    HEKfARG(HvNAME_HEK(stash)),
+                    HEKfARG(GvNAME_HEK(gv)));
+    }
+    return 0;
+}
+
 void
 Perl_gv_check(pTHX_ HV *stash)
 {
-    I32 i;
-
     PERL_ARGS_ASSERT_GV_CHECK;
 
     if (!SvOOK(stash))
@@ -2653,51 +2695,12 @@ Perl_gv_check(pTHX_ HV *stash)
     assert(HvARRAY(stash));
 
     /* mark stash is being scanned, to avoid recursing */
-    HvAUX(stash)->xhv_aux_flags |= HvAUXf_SCAN_STASH;
-    for (i = 0; i <= (I32) HvMAX(stash); i++) {
-        const HE *entry;
-        for (entry = HvARRAY(stash)[i]; entry; entry = HeNEXT(entry)) {
-            GV *gv;
-            HV *hv;
-            STRLEN keylen = HeKLEN(entry);
-            const char * const key = HeKEY(entry);
+    struct xpvhv_aux *iter = HvAUX(stash);
+    iter->xhv_aux_flags |= HvAUXf_SCAN_STASH;
 
-            if (keylen >= 2 && key[keylen-2] == ':'  && key[keylen-1] == ':' &&
-                (gv = MUTABLE_GV(HeVAL(entry))) && isGV(gv) && (hv = GvHV(gv)))
-            {
-                if (hv != PL_defstash && hv != stash
-                    && !(SvOOK(hv)
-                        && (HvAUX(hv)->xhv_aux_flags & HvAUXf_SCAN_STASH))
-                )
-                     gv_check(hv);              /* nested package */
-            }
-            else if (   HeKLEN(entry) != 0
-                     && *HeKEY(entry) != '_'
-                     && isIDFIRST_lazy_if_safe(HeKEY(entry),
-                                               HeKEY(entry) + HeKLEN(entry),
-                                               HeUTF8(entry)) )
-            {
-                const char *file;
-                gv = MUTABLE_GV(HeVAL(entry));
-                if (SvTYPE(gv) != SVt_PVGV || GvMULTI(gv))
-                    continue;
-                file = GvFILE(gv);
-                CopLINE_set(PL_curcop, GvLINE(gv));
-#ifdef USE_ITHREADS
-                CopFILE(PL_curcop) = (char *)file;	/* set for warning */
-#else
-                CopFILEGV(PL_curcop)
-                    = gv_fetchfile_flags(file, HEK_LEN(GvFILE_HEK(gv)), 0);
-#endif
-                Perl_warner(aTHX_ packWARN(WARN_ONCE),
-                        "Name \"%" HEKf "::%" HEKf
-                        "\" used only once: possible typo",
-                            HEKfARG(HvNAME_HEK(stash)),
-                            HEKfARG(GvNAME_HEK(gv)));
-            }
-        }
-    }
-    HvAUX(stash)->xhv_aux_flags &= ~HvAUXf_SCAN_STASH;
+    S_hv_foreach_with_placeholders(aTHX_ stash, 0, gv_check_callback, stash);
+
+    iter->xhv_aux_flags &= ~HvAUXf_SCAN_STASH;
 }
 
 GV *
