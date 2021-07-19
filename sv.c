@@ -16249,31 +16249,38 @@ Perl_sv_cat_decode(pTHX_ SV *dsv, SV *encoding,
 /* Look for an entry in the hash whose value has the same SV as val;
  * If so, return a mortal copy of the key. */
 
+static U32
+find_hash_subscript_callback(pTHX_ HEK *hek, SV *val, void *state)
+{
+    /* In: this is the SV we're looking for.
+     * Out: this is the key that we found. */
+    SV **target = (SV **)state;
+    if (val != *target) {
+        /* Keep searching. */
+        return 0;
+    }
+    /* Terminate success. */
+    *target = sv_2mortal(newSVhek(hek));
+    return 1;
+}
+
 STATIC SV*
 S_find_hash_subscript(pTHX_ const HV *const hv, const SV *const val)
 {
-    HE **array;
-    I32 i;
-
     PERL_ARGS_ASSERT_FIND_HASH_SUBSCRIPT;
 
     if (!hv || SvMAGICAL(hv) || !HvTOTALKEYS(hv) ||
                         (HvTOTALKEYS(hv) > FUV_MAX_SEARCH_SIZE))
         return NULL;
-
     if (val == &PL_sv_undef || val == &PL_sv_placeholder)
         return NULL;
 
-    array = HvARRAY(hv);
-
-    for (i=HvMAX(hv); i>=0; i--) {
-        HE *entry;
-        for (entry = array[i]; entry; entry = HeNEXT(entry)) {
-            if (HeVAL(entry) == val)
-                return sv_2mortal(newSVhek(HeKEY_hek(entry)));
-        }
-    }
-    return NULL;
+    const SV *in_out = val;
+    U32 found = S_hv_foreach_with_placeholders(aTHX_ hv,
+                                               0,
+                                               find_hash_subscript_callback,
+                                               &in_out);
+    return found ? (SV *)in_out : NULL;
 }
 
 /* Look for an entry in the array whose value has the same SV as val;
