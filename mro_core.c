@@ -886,6 +886,177 @@ Perl_mro_package_moved(pTHX_ HV * const stash, HV * const oldstash,
     }
 }
 
+struct gather_and_rename_state {
+    HV * stashes;
+    HV * seen_stashes;
+    HV * stash;
+    HV * oldstash;
+    SV * namesv;
+    HV * seen;
+};
+
+static U32
+S_gather_and_rename_callback1(pTHX_ HE *entry, struct gather_and_rename_state *state)
+{
+    HV * const stashes = state->stashes;
+    HV * const seen_stashes = state->seen_stashes;
+    HV * const stash = state->stash;
+    HV * const oldstash = state->oldstash;
+    SV * const namesv = state->namesv;
+    HV * const seen = state->seen;
+
+    /* If this entry is not a glob, ignore it.
+       Try the next.  */
+    if (!isGV(HeVAL(entry)))
+        return 0;
+
+    I32 len;
+    const char *key = hv_iterkey(entry, &len);
+    if (!((len > 1 && key[len-2] == ':' && key[len-1] == ':')
+          || (len == 1 && key[0] == ':')))
+        return 0;
+
+    HV * const oldsubstash = GvHV(HeVAL(entry));
+    HV *substash = NULL;
+
+    /* Avoid main::main::main::... */
+    if (oldsubstash == oldstash)
+        return 0;
+
+    SV ** const stashentry
+        = stash ? hv_fetchhek(stash, HeKEY_hek(entry), 0) : NULL;
+
+    if(
+       (
+        stashentry && *stashentry && isGV(*stashentry)
+        && (substash = GvHV(*stashentry))
+        )
+       || (oldsubstash && HvENAME_get(oldsubstash))
+       ) {
+        /* Add :: and the key (minus the trailing ::) to each name. */
+        SV *subname;
+        if(SvTYPE(namesv) == SVt_PVAV) {
+            SSize_t items = AvFILLp((AV *)namesv) + 1;
+            SV **svp = AvARRAY((AV *)namesv);
+            subname = sv_2mortal((SV *)newAV());
+            while (items--) {
+                SV *aname = newSVsv(*svp++);
+                if (len == 1)
+                    sv_catpvs(aname, ":");
+                else {
+                    sv_catpvs(aname, "::");
+                    sv_catpvn_flags(
+                                    aname, key, len-2,
+                                    HeUTF8(entry)
+                                    ? SV_CATUTF8 : SV_CATBYTES
+                                    );
+                }
+                av_push((AV *)subname, aname);
+            }
+        }
+        else {
+            subname = sv_2mortal(newSVsv(namesv));
+            if (len == 1) sv_catpvs(subname, ":");
+            else {
+                sv_catpvs(subname, "::");
+                sv_catpvn_flags(
+                                subname, key, len-2,
+                                HeUTF8(entry) ? SV_CATUTF8 : SV_CATBYTES
+                                );
+            }
+        }
+        mro_gather_and_rename(
+                              stashes, seen_stashes,
+                              substash, oldsubstash, subname
+                              );
+    }
+
+    (void)hv_storehek(seen, HeKEY_hek(entry), &PL_sv_yes);
+    return 0;
+}
+
+
+static U32
+S_gather_and_rename_callback2(pTHX_ HE *entry, struct gather_and_rename_state *state)
+{
+    HV * const stashes = state->stashes;
+    HV * const seen_stashes = state->seen_stashes;
+    HV * const stash = state->stash;
+    SV * const namesv = state->namesv;
+    HV * const seen = state->seen;
+
+    /* If this entry is not a glob, ignore it.
+       Try the next.  */
+    if (!isGV(HeVAL(entry)))
+        return 0;
+
+    I32 len;
+    const char* key = hv_iterkey(entry, &len);
+    if (!((len > 1 && key[len-2] == ':' && key[len-1] == ':')
+          || (len == 1 && key[0] == ':')))
+        return 0;
+
+    HV *substash;
+
+    /* If this entry was seen when we iterated through the
+       oldstash, skip it. */
+    if(seen && hv_existshek(seen, HeKEY_hek(entry)))
+        return 0;
+
+    /* We get here only if this stash has no corresponding
+       entry in the stash being replaced. */
+
+    substash = GvHV(HeVAL(entry));
+
+    if (!substash)
+        return 0;
+
+    /* Avoid checking main::main::main::... */
+    if(substash == stash)
+        return 0;
+
+    SV *subname;
+
+    /* Add :: and the key (minus the trailing ::)
+       to each name. */
+    if (SvTYPE(namesv) == SVt_PVAV) {
+        SV *aname;
+        SSize_t items = AvFILLp((AV *)namesv) + 1;
+        SV **svp = AvARRAY((AV *)namesv);
+        subname = sv_2mortal((SV *)newAV());
+        while (items--) {
+            aname = newSVsv(*svp++);
+            if (len == 1)
+                sv_catpvs(aname, ":");
+            else {
+                sv_catpvs(aname, "::");
+                sv_catpvn_flags(
+                                aname, key, len-2,
+                                HeUTF8(entry)
+                                ? SV_CATUTF8 : SV_CATBYTES
+                                );
+            }
+            av_push((AV *)subname, aname);
+        }
+    }
+    else {
+        subname = sv_2mortal(newSVsv(namesv));
+        if (len == 1) sv_catpvs(subname, ":");
+        else {
+            sv_catpvs(subname, "::");
+            sv_catpvn_flags(
+                            subname, key, len-2,
+                            HeUTF8(entry) ? SV_CATUTF8 : SV_CATBYTES
+                            );
+        }
+    }
+    mro_gather_and_rename(
+                          stashes, seen_stashes,
+                          substash, NULL, subname
+                          );
+    return 0;
+}
+
 STATIC void
 S_mro_gather_and_rename(pTHX_ HV * const stashes, HV * const seen_stashes,
                               HV *stash, HV *oldstash, SV *namesv)
@@ -896,7 +1067,6 @@ S_mro_gather_and_rename(pTHX_ HV * const stashes, HV * const seen_stashes,
     I32 items = 0;
     const bool stash_had_name = stash && HvENAME(stash);
     bool fetched_isarev = FALSE;
-    HV *seen = NULL;
     HV *isarev = NULL;
     SV **svp = NULL;
 
@@ -1113,13 +1283,21 @@ S_mro_gather_and_rename(pTHX_ HV * const stashes, HV * const seen_stashes,
       }
     }
 
+    struct gather_and_rename_state state;
+    state.seen = NULL;
+    state.stashes = stashes;
+    state.seen_stashes = seen_stashes;
+    state.stash = stash;
+    state.oldstash = oldstash;
+    state.namesv = namesv;
+
     /* This is partly based on code in hv_iternext_flags. We are not call-
        ing that here, as we want to avoid resetting the hash iterator. */
 
     /* Skip the entire loop if the hash is empty.   */
     if(oldstash && HvTOTALKEYS(oldstash)) {
         xhv = (XPVHV*)SvANY(oldstash);
-        seen = (HV *) sv_2mortal((SV *)newHV());
+        state.seen = (HV *) sv_2mortal((SV *)newHV());
 
         /* Iterate through entries in the oldstash, adding them to the
            list, meanwhile doing the equivalent of $seen{$key} = 1.
@@ -1130,75 +1308,7 @@ S_mro_gather_and_rename(pTHX_ HV * const stashes, HV * const seen_stashes,
 
             /* Iterate through the entries in this list */
             for(; entry; entry = HeNEXT(entry)) {
-                const char* key;
-                I32 len;
-
-                /* If this entry is not a glob, ignore it.
-                   Try the next.  */
-                if (!isGV(HeVAL(entry))) continue;
-
-                key = hv_iterkey(entry, &len);
-                if ((len > 1 && key[len-2] == ':' && key[len-1] == ':')
-                 || (len == 1 && key[0] == ':')) {
-                    HV * const oldsubstash = GvHV(HeVAL(entry));
-                    SV **stashentry;
-                    HV *substash = NULL;
-
-                    /* Avoid main::main::main::... */
-                    if(oldsubstash == oldstash) continue;
-
-                    stashentry = stash ? hv_fetchhek(stash, HeKEY_hek(entry), 0) : NULL;
-
-                    if(
-                        (
-                            stashentry && *stashentry && isGV(*stashentry)
-                         && (substash = GvHV(*stashentry))
-                        )
-                     || (oldsubstash && HvENAME_get(oldsubstash))
-                    )
-                    {
-                        /* Add :: and the key (minus the trailing ::)
-                           to each name. */
-                        SV *subname;
-                        if(SvTYPE(namesv) == SVt_PVAV) {
-                            SV *aname;
-                            items = AvFILLp((AV *)namesv) + 1;
-                            svp = AvARRAY((AV *)namesv);
-                            subname = sv_2mortal((SV *)newAV());
-                            while (items--) {
-                                aname = newSVsv(*svp++);
-                                if (len == 1)
-                                    sv_catpvs(aname, ":");
-                                else {
-                                    sv_catpvs(aname, "::");
-                                    sv_catpvn_flags(
-                                        aname, key, len-2,
-                                        HeUTF8(entry)
-                                           ? SV_CATUTF8 : SV_CATBYTES
-                                    );
-                                }
-                                av_push((AV *)subname, aname);
-                            }
-                        }
-                        else {
-                            subname = sv_2mortal(newSVsv(namesv));
-                            if (len == 1) sv_catpvs(subname, ":");
-                            else {
-                                sv_catpvs(subname, "::");
-                                sv_catpvn_flags(
-                                   subname, key, len-2,
-                                   HeUTF8(entry) ? SV_CATUTF8 : SV_CATBYTES
-                                );
-                            }
-                        }
-                        mro_gather_and_rename(
-                             stashes, seen_stashes,
-                             substash, oldsubstash, subname
-                        );
-                    }
-
-                    (void)hv_storehek(seen, HeKEY_hek(entry), &PL_sv_yes);
-                }
+                S_gather_and_rename_callback1(aTHX_ entry, &state);
             }
         }
     }
@@ -1215,71 +1325,7 @@ S_mro_gather_and_rename(pTHX_ HV * const stashes, HV * const seen_stashes,
 
             /* Iterate through the entries in this list */
             for(; entry; entry = HeNEXT(entry)) {
-                const char* key;
-                I32 len;
-
-                /* If this entry is not a glob, ignore it.
-                   Try the next.  */
-                if (!isGV(HeVAL(entry))) continue;
-
-                key = hv_iterkey(entry, &len);
-                if ((len > 1 && key[len-2] == ':' && key[len-1] == ':')
-                 || (len == 1 && key[0] == ':')) {
-                    HV *substash;
-
-                    /* If this entry was seen when we iterated through the
-                       oldstash, skip it. */
-                    if(seen && hv_existshek(seen, HeKEY_hek(entry))) continue;
-
-                    /* We get here only if this stash has no corresponding
-                       entry in the stash being replaced. */
-
-                    substash = GvHV(HeVAL(entry));
-                    if(substash) {
-                        SV *subname;
-
-                        /* Avoid checking main::main::main::... */
-                        if(substash == stash) continue;
-
-                        /* Add :: and the key (minus the trailing ::)
-                           to each name. */
-                        if(SvTYPE(namesv) == SVt_PVAV) {
-                            SV *aname;
-                            items = AvFILLp((AV *)namesv) + 1;
-                            svp = AvARRAY((AV *)namesv);
-                            subname = sv_2mortal((SV *)newAV());
-                            while (items--) {
-                                aname = newSVsv(*svp++);
-                                if (len == 1)
-                                    sv_catpvs(aname, ":");
-                                else {
-                                    sv_catpvs(aname, "::");
-                                    sv_catpvn_flags(
-                                        aname, key, len-2,
-                                        HeUTF8(entry)
-                                           ? SV_CATUTF8 : SV_CATBYTES
-                                    );
-                                }
-                                av_push((AV *)subname, aname);
-                            }
-                        }
-                        else {
-                            subname = sv_2mortal(newSVsv(namesv));
-                            if (len == 1) sv_catpvs(subname, ":");
-                            else {
-                                sv_catpvs(subname, "::");
-                                sv_catpvn_flags(
-                                   subname, key, len-2,
-                                   HeUTF8(entry) ? SV_CATUTF8 : SV_CATBYTES
-                                );
-                            }
-                        }
-                        mro_gather_and_rename(
-                          stashes, seen_stashes,
-                          substash, NULL, subname
-                        );
-                    }
-                }
+                S_gather_and_rename_callback2(aTHX_ entry, &state);
             }
         }
     }
