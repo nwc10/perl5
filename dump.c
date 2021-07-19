@@ -672,6 +672,27 @@ Dumps the optrees for all visible subroutines in C<stash>.
 =cut
 */
 
+static U32
+dump_packsubs_callback(pTHX_ HEK *key, SV *val, void *justperl)
+{
+    GV * gv = (GV *)val;
+    if (SvROK(gv) && SvTYPE(SvRV(gv)) == SVt_PVCV)
+        /* unfake a fake GV */
+        (void)CvGV(SvRV(gv));
+    if (SvTYPE(gv) != SVt_PVGV || !GvGP(gv))
+        return 0;
+    if (GvCVu(gv))
+        dump_sub_perl(gv, cBOOL(justperl));
+    if (GvFORM(gv))
+        dump_form(gv);
+    if (HEK_KEY(key)[HEK_LEN(key)-1] == ':') {
+        const HV * const hv = GvHV(gv);
+        if (hv && (hv != PL_defstash))
+            dump_packsubs_perl(hv, cBOOL(justperl)); /* nested package */
+    }
+    return 0;
+}
+
 void
 Perl_dump_packsubs(pTHX_ const HV *stash)
 {
@@ -682,32 +703,19 @@ Perl_dump_packsubs(pTHX_ const HV *stash)
 void
 Perl_dump_packsubs_perl(pTHX_ const HV *stash, bool justperl)
 {
-    I32	i;
 
     PERL_ARGS_ASSERT_DUMP_PACKSUBS_PERL;
 
     if (!HvTOTALKEYS(stash))
         return;
-    for (i = 0; i <= (I32) HvMAX(stash); i++) {
-        const HE *entry;
-        for (entry = HvARRAY(stash)[i]; entry; entry = HeNEXT(entry)) {
-            GV * gv = (GV *)HeVAL(entry);
-            if (SvROK(gv) && SvTYPE(SvRV(gv)) == SVt_PVCV)
-                /* unfake a fake GV */
-                (void)CvGV(SvRV(gv));
-            if (SvTYPE(gv) != SVt_PVGV || !GvGP(gv))
-                continue;
-            if (GvCVu(gv))
-                dump_sub_perl(gv, justperl);
-            if (GvFORM(gv))
-                dump_form(gv);
-            if (HeKEY(entry)[HeKLEN(entry)-1] == ':') {
-                const HV * const hv = GvHV(gv);
-                if (hv && (hv != PL_defstash))
-                    dump_packsubs_perl(hv, justperl); /* nested package */
-            }
-        }
-    }
+
+    /* The simplest way to pass in a boolean is a NULL/non-NULL pointer.
+     * So we use the address of justperl as our non-NULL poiner. */
+    S_hv_foreach_with_placeholders(aTHX_
+                                   stash,
+                                   0,
+                                   dump_packsubs_callback,
+                                   justperl ? &justperl : NULL);
 }
 
 void
