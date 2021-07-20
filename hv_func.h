@@ -110,9 +110,9 @@
 #endif
 
 #define PERL_HASH_WITH_SEED(seed,hash,str,len) \
-    (hash) = S_perl_hash_with_seed((const U8 *) seed, (const U8 *) str,len)
+    (hash) = 0xFFFFFFFFFFFFFFULL ^ S_perl_hash_with_seed((const U8 *) seed, (const U8 *) str,len)
 #define PERL_HASH_WITH_STATE(state,hash,str,len) \
-    (hash) = _PERL_HASH_WITH_STATE((state),(U8*)(str),(len))
+    (hash) = 0xFFFFFFFFFFFFFFULL ^ _PERL_HASH_WITH_STATE((state),(U8*)(str),(len))
 
 #define PERL_HASH_SEED_STATE(seed,state) _PERL_HASH_SEED_STATE(seed,state)
 #define PERL_HASH_SEED_BYTES _PERL_HASH_SEED_roundup(_PERL_HASH_SEED_BYTES)
@@ -124,7 +124,7 @@
 
 #ifdef PERL_USE_SINGLE_CHAR_HASH_CACHE
 #define PERL_HASH(state,str,len) \
-    (hash) = ((len) < 2 ? ( (len) == 0 ? PL_hash_chars[256] : PL_hash_chars[(U8)(str)[0]] ) \
+    (hash) = 0xFFFFFFFFFFFFFFULL ^ ((len) < 2 ? ( (len) == 0 ? PL_hash_chars[256] : PL_hash_chars[(U8)(str)[0]] ) \
                        : _PERL_HASH_WITH_STATE(PL_hash_state,(U8*)(str),(len)))
 #else
 #define PERL_HASH(hash,str,len) \
