@@ -10957,7 +10957,7 @@ Perl_newMYSUB(pTHX_ I32 floor, OP *o, OP *proto, OP *attrs, OP *block)
         if (CvNAMED(*spot))
             hek = CvNAME_HEK(*spot);
         else {
-            U32 hash;
+            BIKESHED hash;
             PERL_HASH(hash, PadnamePV(name)+1, PadnameLEN(name)-1);
             CvNAME_HEK_set(*spot, hek =
                 share_hek(
@@ -11116,7 +11116,7 @@ Perl_newMYSUB(pTHX_ I32 floor, OP *o, OP *proto, OP *attrs, OP *block)
     if (!CvNAME_HEK(cv)) {
         if (hek) (void)share_hek_hek(hek);
         else {
-            U32 hash;
+            BIKESHED hash;
             PERL_HASH(hash, PadnamePV(name)+1, PadnameLEN(name)-1);
             hek = share_hek(PadnamePV(name)+1,
                       (PadnameLEN(name)-1) * (PadnameUTF8(name) ? -1 : 1),
@@ -11632,7 +11632,7 @@ Perl_newATTRSUB_x(pTHX_ I32 floor, OP *o, OP *proto, OP *attrs,
                 assert(CvGV(cv) == gv);
             }
             else {
-                U32 hash;
+                BIKESHED hash;
                 PERL_HASH(hash, name, namlen);
                 CvNAME_HEK_set(cv,
                                share_hek(name,
@@ -11702,7 +11702,7 @@ Perl_newATTRSUB_x(pTHX_ I32 floor, OP *o, OP *proto, OP *attrs,
         if (isGV(gv))
             CvGV_set(cv, gv);
         else {
-            U32 hash;
+            BIKESHED hash;
             PERL_HASH(hash, name, namlen);
             CvNAME_HEK_set(cv, share_hek(name,
                                          name_is_utf8
@@ -13987,7 +13987,7 @@ Perl_ck_require(pTHX_ OP *o)
 
     if (o->op_flags & OPf_KIDS) {	/* Shall we supply missing .pm? */
         SVOP * const kid = (SVOP*)cUNOPo->op_first;
-        U32 hash;
+        BIKESHED hash;
         char *s;
         STRLEN len;
         if (kid->op_type == OP_CONST) {

@@ -1389,7 +1389,7 @@ prime_env_iter(void)
     while (1) {
       char *cp1, *cp2, *key;
       unsigned long int sts, iosb[2], retlen, keylen;
-      U32 hash;
+      BIKESHED hash;
 
       sts = sys$qiow(0,chan,IO$_READVBLK,iosb,0,0,buf,mbxbufsiz,0,0,0,0);
       if (sts & 1) sts = iosb[0] & 0xffff;

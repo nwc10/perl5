@@ -43,7 +43,7 @@ struct he {
 
 /* hash key -- defined separately for use as shared pointer */
 struct hek {
-    U32         hek_hash;        /* computed hash of key */
+    BIKESHED    hek_hash;        /* computed hash of key */
     I32         hek_len;        /* length of the hash key */
     /* Be careful! Sometimes we store a pointer in the hek_key
      * buffer, which means it must be 8 byte aligned or things
@@ -71,7 +71,7 @@ struct mro_alg {
     const char *name;
     U16 length;
     U16	kflags;	/* For the hash API - set HVhek_UTF8 if name is UTF-8 */
-    U32 hash; /* or 0 */
+    BIKESHED hash; /* or 0 */
 };
 
 struct mro_meta {
@@ -199,7 +199,7 @@ to.
   HeVAL(hv)= sv;
 
 
-=for apidoc Am|U32|HeHASH|HE* he
+=for apidoc Am|BIKESHED|HeHASH|HE* he
 Returns the computed hash stored in the hash entry.
 
 =for apidoc Am|char*|HePV|HE* he|STRLEN len
@@ -553,18 +553,18 @@ struct refcounted_he;
 /* Gosh. This really isn't a good name any longer.  */
 struct refcounted_he {
     struct refcounted_he *refcounted_he_next;	/* next entry in chain */
-#ifdef USE_ITHREADS
-    U32                   refcounted_he_hash;
-    U32                   refcounted_he_keylen;
-#else
-    HEK                  *refcounted_he_hek;	/* hint key */
-#endif
     union {
         IV                refcounted_he_u_iv;
         UV                refcounted_he_u_uv;
         STRLEN            refcounted_he_u_len;
         void		 *refcounted_he_u_ptr;	/* Might be useful in future */
     } refcounted_he_val;
+#ifdef USE_ITHREADS
+    BIKESHED              refcounted_he_hash;
+    U32                   refcounted_he_keylen;
+#else
+    HEK                  *refcounted_he_hek;	/* hint key */
+#endif
     U32	                  refcounted_he_refcnt;	/* reference count */
     /* First byte is flags. Then NUL-terminated value. Then for ithreads,
        non-NUL terminated key.  */

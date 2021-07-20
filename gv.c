@@ -185,7 +185,7 @@ GP *
 Perl_newGP(pTHX_ GV *const gv)
 {
     GP *gp;
-    U32 hash;
+    BIKESHED hash;
     const char *file;
     STRLEN len;
 #ifndef USE_ITHREADS
@@ -3746,7 +3746,7 @@ Perl_amagic_call(pTHX_ SV *left, SV *right, int method, int flags)
 void
 Perl_gv_name_set(pTHX_ GV *gv, const char *name, U32 len, U32 flags)
 {
-    U32 hash;
+    BIKESHED hash;
 
     PERL_ARGS_ASSERT_GV_NAME_SET;
 

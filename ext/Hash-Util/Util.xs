@@ -85,11 +85,11 @@ hash_value(string,...)
     PROTOTYPE: $;$
     PPCODE:
 {
-    UV uv;
+    BIKESHED hash;
     STRLEN len;
     char *pv= SvPV(string,len);
     if (items<2) {
-        PERL_HASH(uv, pv, len);
+        PERL_HASH(hash, pv, len);
     } else {
         STRLEN seedlen;
         U8 *seedbuf= (U8 *)SvPV(ST(1),seedlen);
@@ -99,9 +99,9 @@ hash_value(string,...)
                              UVuf " bytes", (UV)PERL_HASH_SEED_BYTES, (UV)seedlen);
         }
 
-        PERL_HASH_WITH_SEED(seedbuf, uv, pv, len);
+        PERL_HASH_WITH_SEED(seedbuf, hash, pv, len);
     }
-    XSRETURN_UV(uv);
+    XSRETURN_UV((UV)hash);
 }
 
 void

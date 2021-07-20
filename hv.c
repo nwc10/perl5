@@ -82,7 +82,7 @@ S_new_he(pTHX)
 #endif
 
 STATIC HEK *
-S_save_hek_flags(const char *str, I32 len, U32 hash, int flags)
+S_save_hek_flags(const char *str, STRLEN len, BIKESHED hash, U32 flags)
 {
     const int flags_masked = flags & HVhek_MASK;
     char *k;
@@ -327,7 +327,7 @@ information on how to use this function on tied hashes.
 /* Common code for hv_delete()/hv_exists()/hv_fetch()/hv_store()  */
 void *
 Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, I32 klen_i32,
-                       const int action, SV *val, const U32 hash)
+                       const int action, SV *val, const BIKESHED hash)
 {
     STRLEN klen;
     int flags;
@@ -346,7 +346,7 @@ Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, I32 klen_i32,
 
 void *
 Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
-               int flags, int action, SV *val, U32 hash)
+               int flags, int action, SV *val, BIKESHED hash)
 {
     XPVHV* xhv;
     HE *entry;
@@ -1147,7 +1147,7 @@ value, or 0 to ask for it to be computed.
 
 STATIC SV *
 S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
-                   int k_flags, I32 d_flags, U32 hash)
+                   int k_flags, I32 d_flags, BIKESHED hash)
 {
     XPVHV* xhv;
     HE *entry;
@@ -1694,7 +1694,7 @@ Perl_newHVhv(pTHX_ HV *ohv)
 
             /* Copy the linked list of entries. */
             for (; oent; oent = HeNEXT(oent)) {
-                const U32 hash   = HeHASH(oent);
+                const BIKESHED hash   = HeHASH(oent);
                 const char * const key = HeKEY(oent);
                 const STRLEN len = HeKLEN(oent);
                 const int flags  = HeKFLAGS(oent);
@@ -2434,7 +2434,7 @@ void
 Perl_hv_name_set(pTHX_ HV *hv, const char *name, U32 len, U32 flags)
 {
     struct xpvhv_aux *iter;
-    U32 hash;
+    BIKESHED hash;
     HEK **spot;
 
     PERL_ARGS_ASSERT_HV_NAME_SET;
@@ -2541,7 +2541,7 @@ void
 Perl_hv_ename_add(pTHX_ HV *hv, const char *name, U32 len, U32 flags)
 {
     struct xpvhv_aux *aux = SvOOK(hv) ? HvAUX(hv) : hv_auxinit(hv);
-    U32 hash;
+    BIKESHED hash;
 
     PERL_ARGS_ASSERT_HV_ENAME_ADD;
 
@@ -3040,7 +3040,7 @@ Adds magic to a hash.  See C<L</sv_magic>>.
  * len and hash must both be valid for str.
  */
 void
-Perl_unsharepvn(pTHX_ const char *str, I32 len, U32 hash)
+Perl_unsharepvn(pTHX_ const char *str, SSize_t len, BIKESHED hash)
 {
     unshare_hek_or_pvn (NULL, str, len, hash);
 }
@@ -3058,7 +3058,7 @@ Perl_unshare_hek(pTHX_ HEK *hek)
    are used.  If so, len and hash must both be valid for str.
  */
 STATIC void
-S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, I32 len, U32 hash)
+S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, SSize_t len, BIKESHED hash)
 {
     XPVHV* xhv;
     HE *entry;
@@ -3148,7 +3148,7 @@ S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, I32 len, U32 hash)
  * len and hash must both be valid for str.
  */
 HEK *
-Perl_share_hek(pTHX_ const char *str, SSize_t len, U32 hash)
+Perl_share_hek(pTHX_ const char *str, SSize_t len, BIKESHED hash)
 {
     bool is_utf8 = FALSE;
     int flags = 0;
@@ -3179,7 +3179,7 @@ Perl_share_hek(pTHX_ const char *str, SSize_t len, U32 hash)
 }
 
 STATIC HEK *
-S_share_hek_flags(pTHX_ const char *str, STRLEN len, U32 hash, int flags)
+S_share_hek_flags(pTHX_ const char *str, STRLEN len, BIKESHED hash, U32 flags)
 {
     HE *entry;
     const int flags_masked = flags & HVhek_MASK;
@@ -3385,9 +3385,9 @@ Perl_refcounted_he_chain_2hv(pTHX_ const struct refcounted_he *chain, U32 flags)
     placeholders = 0;
     while (chain) {
 #ifdef USE_ITHREADS
-        U32 hash = chain->refcounted_he_hash;
+        BIKESHED hash = chain->refcounted_he_hash;
 #else
-        U32 hash = HEK_HASH(chain->refcounted_he_hek);
+        BIKESHED hash = HEK_HASH(chain->refcounted_he_hek);
 #endif
         HE **oentry = &((HvARRAY(hv))[hash & max]);
         HE *entry = *oentry;
@@ -3474,7 +3474,7 @@ if there is no value associated with the key.
 
 SV *
 Perl_refcounted_he_fetch_pvn(pTHX_ const struct refcounted_he *chain,
-                         const char *keypv, STRLEN keylen, U32 hash, U32 flags)
+                         const char *keypv, STRLEN keylen, BIKESHED hash, U32 flags)
 {
     U8 utf8_flag;
     PERL_ARGS_ASSERT_REFCOUNTED_HE_FETCH_PVN;
@@ -3558,7 +3558,7 @@ instead of a string/length pair.
 
 SV *
 Perl_refcounted_he_fetch_pv(pTHX_ const struct refcounted_he *chain,
-                         const char *key, U32 hash, U32 flags)
+                         const char *key, BIKESHED hash, U32 flags)
 {
     PERL_ARGS_ASSERT_REFCOUNTED_HE_FETCH_PV;
     return refcounted_he_fetch_pvn(chain, key, strlen(key), hash, flags);
@@ -3575,7 +3575,7 @@ string/length pair.
 
 SV *
 Perl_refcounted_he_fetch_sv(pTHX_ const struct refcounted_he *chain,
-                         SV *key, U32 hash, U32 flags)
+                         SV *key, BIKESHED hash, U32 flags)
 {
     const char *keypv;
     STRLEN keylen;
@@ -3626,7 +3626,7 @@ C<refcounted_he>.
 
 struct refcounted_he *
 Perl_refcounted_he_new_pvn(pTHX_ struct refcounted_he *parent,
-        const char *keypv, STRLEN keylen, U32 hash, SV *value, U32 flags)
+        const char *keypv, STRLEN keylen, BIKESHED hash, SV *value, U32 flags)
 {
     STRLEN value_len = 0;
     const char *value_p = NULL;
@@ -3745,7 +3745,7 @@ of a string/length pair.
 
 struct refcounted_he *
 Perl_refcounted_he_new_pv(pTHX_ struct refcounted_he *parent,
-        const char *key, U32 hash, SV *value, U32 flags)
+        const char *key, BIKESHED hash, SV *value, U32 flags)
 {
     PERL_ARGS_ASSERT_REFCOUNTED_HE_NEW_PV;
     return refcounted_he_new_pvn(parent, key, strlen(key), hash, value, flags);
@@ -3762,7 +3762,7 @@ string/length pair.
 
 struct refcounted_he *
 Perl_refcounted_he_new_sv(pTHX_ struct refcounted_he *parent,
-        SV *key, U32 hash, SV *value, U32 flags)
+        SV *key, BIKESHED hash, SV *value, U32 flags)
 {
     const char *keypv;
     STRLEN keylen;

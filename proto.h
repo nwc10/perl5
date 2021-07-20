@@ -1430,9 +1430,9 @@ PERL_CALLCONV void	Perl_hv_clear(pTHX_ HV *hv);
 PERL_CALLCONV void	Perl_hv_clear_placeholders(pTHX_ HV *hv);
 #define PERL_ARGS_ASSERT_HV_CLEAR_PLACEHOLDERS	\
 	assert(hv)
-PERL_CALLCONV void*	Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char* key, STRLEN klen, int flags, int action, SV *val, U32 hash);
+PERL_CALLCONV void*	Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char* key, STRLEN klen, int flags, int action, SV *val, BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_COMMON
-PERL_CALLCONV void*	Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, I32 klen_i32, const int action, SV *val, const U32 hash);
+PERL_CALLCONV void*	Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, I32 klen_i32, const int action, SV *val, const BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN	\
 	assert(key)
 PERL_CALLCONV HV *	Perl_hv_copy_hints_hv(pTHX_ HV *const ohv)
@@ -1448,7 +1448,7 @@ PERL_CALLCONV SV*	Perl_hv_delete(pTHX_ HV *hv, const char *key, I32 klen, I32 fl
 	assert(key)
 #endif
 #ifndef NO_MATHOMS
-PERL_CALLCONV SV*	Perl_hv_delete_ent(pTHX_ HV *hv, SV *keysv, I32 flags, U32 hash);
+PERL_CALLCONV SV*	Perl_hv_delete_ent(pTHX_ HV *hv, SV *keysv, I32 flags, BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_DELETE_ENT	\
 	assert(keysv)
 #endif
@@ -1474,7 +1474,7 @@ PERL_CALLCONV bool	Perl_hv_exists(pTHX_ HV *hv, const char *key, I32 klen)
 #endif
 
 #ifndef NO_MATHOMS
-PERL_CALLCONV bool	Perl_hv_exists_ent(pTHX_ HV *hv, SV *keysv, U32 hash)
+PERL_CALLCONV bool	Perl_hv_exists_ent(pTHX_ HV *hv, SV *keysv, BIKESHED hash)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_HV_EXISTS_ENT	\
 	assert(keysv)
@@ -1486,7 +1486,7 @@ PERL_CALLCONV SV**	Perl_hv_fetch(pTHX_ HV *hv, const char *key, I32 klen, I32 lv
 	assert(key)
 #endif
 #ifndef NO_MATHOMS
-PERL_CALLCONV HE*	Perl_hv_fetch_ent(pTHX_ HV *hv, SV *keysv, I32 lval, U32 hash);
+PERL_CALLCONV HE*	Perl_hv_fetch_ent(pTHX_ HV *hv, SV *keysv, I32 lval, BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_FETCH_ENT	\
 	assert(keysv)
 #endif
@@ -1593,15 +1593,15 @@ PERL_CALLCONV SV*	Perl_hv_scalar(pTHX_ HV *hv)
 	assert(hv)
 
 #ifndef NO_MATHOMS
-PERL_CALLCONV SV**	Perl_hv_store(pTHX_ HV *hv, const char *key, I32 klen, SV *val, U32 hash);
+PERL_CALLCONV SV**	Perl_hv_store(pTHX_ HV *hv, const char *key, I32 klen, SV *val, BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_STORE
 #endif
 #ifndef NO_MATHOMS
-PERL_CALLCONV HE*	Perl_hv_store_ent(pTHX_ HV *hv, SV *key, SV *val, U32 hash);
+PERL_CALLCONV HE*	Perl_hv_store_ent(pTHX_ HV *hv, SV *key, SV *val, BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_STORE_ENT
 #endif
 #ifndef NO_MATHOMS
-PERL_CALLCONV SV**	Perl_hv_store_flags(pTHX_ HV *hv, const char *key, I32 klen, SV *val, U32 hash, int flags);
+PERL_CALLCONV SV**	Perl_hv_store_flags(pTHX_ HV *hv, const char *key, I32 klen, SV *val, BIKESHED hash, int flags);
 #define PERL_ARGS_ASSERT_HV_STORE_FLAGS
 #endif
 /* PERL_CALLCONV void	hv_undef(pTHX_ HV *hv); */
@@ -2525,7 +2525,7 @@ PERL_CALLCONV SV*	Perl_newSVpv(pTHX_ const char *const s, const STRLEN len)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVPV
 
-PERL_CALLCONV SV*	Perl_newSVpv_share(pTHX_ const char* s, U32 hash)
+PERL_CALLCONV SV*	Perl_newSVpv_share(pTHX_ const char* s, BIKESHED hash)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVPV_SHARE
 
@@ -2543,7 +2543,7 @@ PERL_CALLCONV SV*	Perl_newSVpvn_flags(pTHX_ const char *const s, const STRLEN le
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVPVN_FLAGS
 
-PERL_CALLCONV SV*	Perl_newSVpvn_share(pTHX_ const char* s, I32 len, U32 hash)
+PERL_CALLCONV SV*	Perl_newSVpvn_share(pTHX_ const char* s, I32 len, BIKESHED hash)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVPVN_SHARE
 
@@ -2913,26 +2913,26 @@ PERL_CALLCONV void	Perl_reentrant_size(pTHX);
 #define PERL_ARGS_ASSERT_REENTRANT_SIZE
 PERL_CALLCONV HV *	Perl_refcounted_he_chain_2hv(pTHX_ const struct refcounted_he *c, U32 flags);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_CHAIN_2HV
-PERL_CALLCONV SV *	Perl_refcounted_he_fetch_pv(pTHX_ const struct refcounted_he *chain, const char *key, U32 hash, U32 flags);
+PERL_CALLCONV SV *	Perl_refcounted_he_fetch_pv(pTHX_ const struct refcounted_he *chain, const char *key, BIKESHED hash, U32 flags);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_FETCH_PV	\
 	assert(key)
-PERL_CALLCONV SV *	Perl_refcounted_he_fetch_pvn(pTHX_ const struct refcounted_he *chain, const char *keypv, STRLEN keylen, U32 hash, U32 flags);
+PERL_CALLCONV SV *	Perl_refcounted_he_fetch_pvn(pTHX_ const struct refcounted_he *chain, const char *keypv, STRLEN keylen, BIKESHED hash, U32 flags);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_FETCH_PVN	\
 	assert(keypv)
-PERL_CALLCONV SV *	Perl_refcounted_he_fetch_sv(pTHX_ const struct refcounted_he *chain, SV *key, U32 hash, U32 flags);
+PERL_CALLCONV SV *	Perl_refcounted_he_fetch_sv(pTHX_ const struct refcounted_he *chain, SV *key, BIKESHED hash, U32 flags);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_FETCH_SV	\
 	assert(key)
 PERL_CALLCONV void	Perl_refcounted_he_free(pTHX_ struct refcounted_he *he);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_FREE
 PERL_CALLCONV struct refcounted_he *	Perl_refcounted_he_inc(pTHX_ struct refcounted_he *he);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_INC
-PERL_CALLCONV struct refcounted_he *	Perl_refcounted_he_new_pv(pTHX_ struct refcounted_he *parent, const char *key, U32 hash, SV *value, U32 flags);
+PERL_CALLCONV struct refcounted_he *	Perl_refcounted_he_new_pv(pTHX_ struct refcounted_he *parent, const char *key, BIKESHED hash, SV *value, U32 flags);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_NEW_PV	\
 	assert(key)
-PERL_CALLCONV struct refcounted_he *	Perl_refcounted_he_new_pvn(pTHX_ struct refcounted_he *parent, const char *keypv, STRLEN keylen, U32 hash, SV *value, U32 flags);
+PERL_CALLCONV struct refcounted_he *	Perl_refcounted_he_new_pvn(pTHX_ struct refcounted_he *parent, const char *keypv, STRLEN keylen, BIKESHED hash, SV *value, U32 flags);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_NEW_PVN	\
 	assert(keypv)
-PERL_CALLCONV struct refcounted_he *	Perl_refcounted_he_new_sv(pTHX_ struct refcounted_he *parent, SV *key, U32 hash, SV *value, U32 flags);
+PERL_CALLCONV struct refcounted_he *	Perl_refcounted_he_new_sv(pTHX_ struct refcounted_he *parent, SV *key, BIKESHED hash, SV *value, U32 flags);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_NEW_SV	\
 	assert(key)
 PERL_CALLCONV SV*	Perl_reg_named_buff(pTHX_ REGEXP * const rx, SV * const key, SV * const value, const U32 flags);
@@ -3288,7 +3288,7 @@ PERL_CALLCONV void	Perl_setfd_inhexec(int fd);
 #define PERL_ARGS_ASSERT_SETFD_INHEXEC
 PERL_CALLCONV void	Perl_setfd_inhexec_for_sysfd(pTHX_ int fd);
 #define PERL_ARGS_ASSERT_SETFD_INHEXEC_FOR_SYSFD
-PERL_CALLCONV HEK*	Perl_share_hek(pTHX_ const char* str, SSize_t len, U32 hash);
+PERL_CALLCONV HEK*	Perl_share_hek(pTHX_ const char* str, SSize_t len, BIKESHED hash);
 #define PERL_ARGS_ASSERT_SHARE_HEK	\
 	assert(str)
 PERL_CALLCONV Signal_t	Perl_sighandler1(int sig);
@@ -4027,7 +4027,7 @@ PERL_CALLCONV SSize_t	Perl_unpackstring(pTHX_ const char *pat, const char *paten
 	assert(pat); assert(patend); assert(s); assert(strend)
 PERL_CALLCONV void	Perl_unshare_hek(pTHX_ HEK* hek);
 #define PERL_ARGS_ASSERT_UNSHARE_HEK
-PERL_CALLCONV void	Perl_unsharepvn(pTHX_ const char* sv, I32 len, U32 hash);
+PERL_CALLCONV void	Perl_unsharepvn(pTHX_ const char* sv, SSize_t len, BIKESHED hash);
 #define PERL_ARGS_ASSERT_UNSHAREPVN
 PERL_CALLCONV SV*	Perl_upg_version(pTHX_ SV *ver, bool qv);
 #define PERL_ARGS_ASSERT_UPG_VERSION	\
@@ -5150,7 +5150,7 @@ STATIC struct xpvhv_aux*	S_hv_auxinit(pTHX_ HV *hv);
 STATIC struct xpvhv_aux*	S_hv_auxinit_internal(struct xpvhv_aux *iter);
 #define PERL_ARGS_ASSERT_HV_AUXINIT_INTERNAL	\
 	assert(iter)
-STATIC SV*	S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen, int k_flags, I32 d_flags, U32 hash);
+STATIC SV*	S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen, int k_flags, I32 d_flags, BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_DELETE_COMMON
 STATIC SV*	S_hv_free_ent_ret(pTHX_ HV *hv, HE *entry);
 #define PERL_ARGS_ASSERT_HV_FREE_ENT_RET	\
@@ -5177,18 +5177,18 @@ PERL_STATIC_INLINE U32	S_ptr_hash(PTRV u);
 STATIC SV *	S_refcounted_he_value(pTHX_ const struct refcounted_he *he);
 #define PERL_ARGS_ASSERT_REFCOUNTED_HE_VALUE	\
 	assert(he)
-STATIC HEK*	S_save_hek_flags(const char *str, I32 len, U32 hash, int flags)
+STATIC HEK*	S_save_hek_flags(const char *str, STRLEN len, BIKESHED hash, U32 flags)
 			__attribute__malloc__
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_SAVE_HEK_FLAGS	\
 	assert(str)
 
-STATIC HEK*	S_share_hek_flags(pTHX_ const char *str, STRLEN len, U32 hash, int flags)
+STATIC HEK*	S_share_hek_flags(pTHX_ const char *str, STRLEN len, BIKESHED hash, U32 flags)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_SHARE_HEK_FLAGS	\
 	assert(str)
 
-STATIC void	S_unshare_hek_or_pvn(pTHX_ const HEK* hek, const char* str, I32 len, U32 hash);
+STATIC void	S_unshare_hek_or_pvn(pTHX_ const HEK* hek, const char* str, SSize_t len, BIKESHED hash);
 #define PERL_ARGS_ASSERT_UNSHARE_HEK_OR_PVN
 #endif
 #if defined(PERL_IN_HV_C) || defined(PERL_IN_MG_C) || defined(PERL_IN_SV_C)
@@ -5274,7 +5274,7 @@ PERL_CALLCONV bool	Perl_translate_substr_offsets(STRLEN curlen, IV pos1_iv, bool
 	assert(posp); assert(lenp)
 #endif
 #if defined(PERL_IN_MRO_C)
-STATIC void	S_mro_clean_isarev(pTHX_ HV * const isa, const char * const name, const STRLEN len, HV * const exceptions, U32 hash, U32 flags);
+STATIC void	S_mro_clean_isarev(pTHX_ HV * const isa, const char * const name, const STRLEN len, HV * const exceptions, BIKESHED hash, U32 flags);
 #define PERL_ARGS_ASSERT_MRO_CLEAN_ISAREV	\
 	assert(isa); assert(name)
 STATIC void	S_mro_gather_and_rename(pTHX_ HV * const stashes, HV * const seen_stashes, HV *stash, HV *oldstash, SV *namesv);
