@@ -160,7 +160,7 @@
 #define PERL_HASH_INTERNAL(hash,str,len) PERL_HASH(hash,str,len)
 #endif
 
-PERL_STATIC_INLINE U32
+PERL_STATIC_INLINE BIKESHED
 S_perl_hash_with_seed(const U8 * seed, const U8 *str, STRLEN len) {
     __PERL_HASH_WORD_TYPE state[PERL_HASH_STATE_WORDS];
     _PERL_HASH_SEED_STATE(seed,(U8*)state);

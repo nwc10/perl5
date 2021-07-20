@@ -692,7 +692,7 @@ Perl_mro_isa_changed_in(pTHX_ HV* stash)
    Don't call this if isa is already empty. */
 STATIC void
 S_mro_clean_isarev(pTHX_ HV * const isa, const char * const name,
-                         const STRLEN len, HV * const exceptions, U32 hash,
+                         const STRLEN len, HV * const exceptions, BIKESHED hash,
                          U32 flags)
 {
     HE* iter;

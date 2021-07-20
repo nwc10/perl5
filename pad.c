@@ -2012,7 +2012,7 @@ S_cv_clone_pad(pTHX_ CV *proto, CV *cv, CV *outside, HV *cloned,
                         /* my sub */
                         /* Just provide a stub, but name it.  It will be
                            upgraded to the real thing on scope entry. */
-                        U32 hash;
+                        BIKESHED hash;
                         PERL_HASH(hash, PadnamePV(namesv)+1,
                                   PadnameLEN(namesv) - 1);
                         sv = newSV_type(SVt_PVCV);

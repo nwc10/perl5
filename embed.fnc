@@ -1021,18 +1021,18 @@ ApdR	|HV *	|hv_copy_hints_hv|NULLOK HV *const ohv
 Ap	|void	|hv_delayfree_ent|NN HV *hv|NULLOK HE *entry
 AbMdp	|SV*	|hv_delete	|NULLOK HV *hv|NN const char *key|I32 klen \
 				|I32 flags
-AbMdp	|SV*	|hv_delete_ent	|NULLOK HV *hv|NN SV *keysv|I32 flags|U32 hash
+AbMdp	|SV*	|hv_delete_ent	|NULLOK HV *hv|NN SV *keysv|I32 flags|BIKESHED hash
 AbMdRp	|bool	|hv_exists	|NULLOK HV *hv|NN const char *key|I32 klen
-AbMdRp	|bool	|hv_exists_ent	|NULLOK HV *hv|NN SV *keysv|U32 hash
+AbMdRp	|bool	|hv_exists_ent	|NULLOK HV *hv|NN SV *keysv|BIKESHED hash
 AbMdp	|SV**	|hv_fetch	|NULLOK HV *hv|NN const char *key|I32 klen \
 				|I32 lval
-AbMdp	|HE*	|hv_fetch_ent	|NULLOK HV *hv|NN SV *keysv|I32 lval|U32 hash
+AbMdp	|HE*	|hv_fetch_ent	|NULLOK HV *hv|NN SV *keysv|I32 lval|BIKESHED hash
 Cp	|void*	|hv_common	|NULLOK HV *hv|NULLOK SV *keysv \
 				|NULLOK const char* key|STRLEN klen|int flags \
-				|int action|NULLOK SV *val|U32 hash
+				|int action|NULLOK SV *val|BIKESHED hash
 Cp	|void*	|hv_common_key_len|NULLOK HV *hv|NN const char *key \
 				|I32 klen_i32|const int action|NULLOK SV *val \
-				|const U32 hash
+				|const BIKESHED hash
 Apod	|STRLEN	|hv_fill	|NN HV *const hv
 Aidp	|U32	|hv_foreach	|NN HV *hv|U32 flags|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
 pX	|U32	|hv_foreach_magical|NN HV *hv|U32 flags|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
@@ -1054,31 +1054,31 @@ S	|SV *	|refcounted_he_value	|NN const struct refcounted_he *he
 #endif
 Xpd	|HV *	|refcounted_he_chain_2hv|NULLOK const struct refcounted_he *c|U32 flags
 Xpd	|SV *	|refcounted_he_fetch_pvn|NULLOK const struct refcounted_he *chain \
-				|NN const char *keypv|STRLEN keylen|U32 hash|U32 flags
+				|NN const char *keypv|STRLEN keylen|BIKESHED hash|U32 flags
 Xpd	|SV *	|refcounted_he_fetch_pv|NULLOK const struct refcounted_he *chain \
-				|NN const char *key|U32 hash|U32 flags
+				|NN const char *key|BIKESHED hash|U32 flags
 Xpd	|SV *	|refcounted_he_fetch_sv|NULLOK const struct refcounted_he *chain \
-				|NN SV *key|U32 hash|U32 flags
+				|NN SV *key|BIKESHED hash|U32 flags
 Xpd	|struct refcounted_he *|refcounted_he_new_pvn \
 				|NULLOK struct refcounted_he *parent \
 				|NN const char *keypv|STRLEN keylen \
-				|U32 hash|NULLOK SV *value|U32 flags
+				|BIKESHED hash|NULLOK SV *value|U32 flags
 Xpd	|struct refcounted_he *|refcounted_he_new_pv \
 				|NULLOK struct refcounted_he *parent \
 				|NN const char *key \
-				|U32 hash|NULLOK SV *value|U32 flags
+				|BIKESHED hash|NULLOK SV *value|U32 flags
 Xpd	|struct refcounted_he *|refcounted_he_new_sv \
 				|NULLOK struct refcounted_he *parent \
 				|NN SV *key \
-				|U32 hash|NULLOK SV *value|U32 flags
+				|BIKESHED hash|NULLOK SV *value|U32 flags
 Xpd	|void	|refcounted_he_free|NULLOK struct refcounted_he *he
 Xpd	|struct refcounted_he *|refcounted_he_inc|NULLOK struct refcounted_he *he
 ApbMd	|SV**	|hv_store	|NULLOK HV *hv|NULLOK const char *key \
-				|I32 klen|NULLOK SV *val|U32 hash
+				|I32 klen|NULLOK SV *val|BIKESHED hash
 ApbMd	|HE*	|hv_store_ent	|NULLOK HV *hv|NULLOK SV *key|NULLOK SV *val\
-				|U32 hash
+				|BIKESHED hash
 ApbMx	|SV**	|hv_store_flags	|NULLOK HV *hv|NULLOK const char *key \
-				|I32 klen|NULLOK SV *val|U32 hash|int flags
+				|I32 klen|NULLOK SV *val|BIKESHED hash|int flags
 Amd	|void	|hv_undef	|NULLOK HV *hv
 poX	|void	|hv_undef_flags	|NULLOK HV *hv|U32 flags
 AdmP	|I32	|ibcmp		|NN const char* a|NN const char* b|I32 len
@@ -1514,8 +1514,8 @@ ApdR	|SV*	|newSVpv	|NULLOK const char *const s|const STRLEN len
 ApdR	|SV*	|newSVpvn	|NULLOK const char *const buffer|const STRLEN len
 ApdR	|SV*	|newSVpvn_flags	|NULLOK const char *const s|const STRLEN len|const U32 flags
 ApdR	|SV*	|newSVhek	|NULLOK const HEK *const hek
-ApdR	|SV*	|newSVpvn_share	|NULLOK const char* s|I32 len|U32 hash
-ApdR	|SV*	|newSVpv_share	|NULLOK const char* s|U32 hash
+ApdR	|SV*	|newSVpvn_share	|NULLOK const char* s|I32 len|BIKESHED hash
+ApdR	|SV*	|newSVpv_share	|NULLOK const char* s|BIKESHED hash
 AfpdR	|SV*	|newSVpvf	|NN const char *const pat|...
 ApRd	|SV*	|vnewSVpvf	|NN const char *const pat|NULLOK va_list *const args
 Apd	|SV*	|newSVrv	|NN SV *const rv|NULLOK const char *const classname
@@ -1760,7 +1760,7 @@ Axpd	|OP*	|op_scope	|NULLOK OP* o
 : Only used by perl.c/miniperl.c, but defined in caretx.c
 pe	|void	|set_caret_X
 Apd	|void	|setdefout	|NN GV* gv
-Ap	|HEK*	|share_hek	|NN const char* str|SSize_t len|U32 hash
+Ap	|HEK*	|share_hek	|NN const char* str|SSize_t len|BIKESHED hash
 #ifdef PERL_USE_3ARG_SIGHANDLER
 : Used in perl.c
 Tp	|Signal_t |sighandler	|int sig|NULLOK Siginfo_t *info|NULLOK void *uap
@@ -2552,7 +2552,7 @@ AbpdD	|SSize_t|unpack_str	|NN const char *pat|NN const char *patend|NN const cha
 				|I32 ocnt|U32 flags
 Apd	|SSize_t|unpackstring	|NN const char *pat|NN const char *patend|NN const char *s \
 				|NN const char *strend|U32 flags
-Ap	|void	|unsharepvn	|NULLOK const char* sv|I32 len|U32 hash
+Ap	|void	|unsharepvn	|NULLOK const char* sv|SSize_t len|BIKESHED hash
 : Used in gv.c, hv.c
 p	|void	|unshare_hek	|NULLOK HEK* hek
 : Used in perly.y
@@ -2888,17 +2888,17 @@ S	|void	|hsplit		|NN HV *hv|STRLEN const oldsize|STRLEN newsize
 S	|void	|hv_free_entries|NN HV *hv
 S	|SV*	|hv_free_ent_ret|NN HV *hv|NN HE *entry
 SR	|HE*	|new_he
-SaTR	|HEK*	|save_hek_flags	|NN const char *str|I32 len|U32 hash|int flags
+SaTR	|HEK*	|save_hek_flags	|NN const char *str|STRLEN len|BIKESHED hash|U32 flags
 ST	|void	|hv_magic_check	|NN HV *hv|NN bool *needs_copy|NN bool *needs_store
-S	|void	|unshare_hek_or_pvn|NULLOK const HEK* hek|NULLOK const char* str|I32 len|U32 hash
-SR	|HEK*	|share_hek_flags|NN const char *str|STRLEN len|U32 hash|int flags
+S	|void	|unshare_hek_or_pvn|NULLOK const HEK* hek|NULLOK const char* str|SSize_t len|BIKESHED hash
+SR	|HEK*	|share_hek_flags|NN const char *str|STRLEN len|BIKESHED hash|U32 flags
 rS	|void	|hv_notallowed	|int flags|NN const char *key|I32 klen|NN const char *msg
 iT	|U32|ptr_hash|PTRV u
 S	|struct xpvhv_aux*|hv_auxinit|NN HV *hv
 ST	|struct xpvhv_aux*|hv_auxinit_internal|NN struct xpvhv_aux *iter
 Sx	|SV*	|hv_delete_common|NULLOK HV *hv|NULLOK SV *keysv \
 		|NULLOK const char *key|STRLEN klen|int k_flags|I32 d_flags \
-		|U32 hash
+		|BIKESHED hash
 Sx	|void	|clear_placeholders	|NN HV *hv|U32 items
 #endif
 
@@ -3633,7 +3633,7 @@ S	|void	|mro_clean_isarev|NN HV * const isa   \
 				 |NN const char * const name \
 				 |const STRLEN len \
 				 |NULLOK HV * const exceptions \
-				 |U32 hash|U32 flags
+				 |BIKESHED hash|U32 flags
 S	|void	|mro_gather_and_rename|NN HV * const stashes \
 				      |NN HV * const seen_stashes \
 				      |NULLOK HV *stash \

@@ -851,13 +851,13 @@ Perl_pack_cat(pTHX_ SV *cat, const char *pat, const char *patend, SV **beglist, 
 }
 
 HE *
-Perl_hv_store_ent(pTHX_ HV *hv, SV *keysv, SV *val, U32 hash)
+Perl_hv_store_ent(pTHX_ HV *hv, SV *keysv, SV *val, BIKESHED hash)
 {
   return (HE *)hv_common(hv, keysv, NULL, 0, 0, HV_FETCH_ISSTORE, val, hash);
 }
 
 bool
-Perl_hv_exists_ent(pTHX_ HV *hv, SV *keysv, U32 hash)
+Perl_hv_exists_ent(pTHX_ HV *hv, SV *keysv, BIKESHED hash)
 {
     PERL_ARGS_ASSERT_HV_EXISTS_ENT;
 
@@ -865,7 +865,7 @@ Perl_hv_exists_ent(pTHX_ HV *hv, SV *keysv, U32 hash)
 }
 
 HE *
-Perl_hv_fetch_ent(pTHX_ HV *hv, SV *keysv, I32 lval, U32 hash)
+Perl_hv_fetch_ent(pTHX_ HV *hv, SV *keysv, I32 lval, BIKESHED hash)
 {
     PERL_ARGS_ASSERT_HV_FETCH_ENT;
 
@@ -874,7 +874,7 @@ Perl_hv_fetch_ent(pTHX_ HV *hv, SV *keysv, I32 lval, U32 hash)
 }
 
 SV *
-Perl_hv_delete_ent(pTHX_ HV *hv, SV *keysv, I32 flags, U32 hash)
+Perl_hv_delete_ent(pTHX_ HV *hv, SV *keysv, I32 flags, BIKESHED hash)
 {
     PERL_ARGS_ASSERT_HV_DELETE_ENT;
 
@@ -883,7 +883,7 @@ Perl_hv_delete_ent(pTHX_ HV *hv, SV *keysv, I32 flags, U32 hash)
 }
 
 SV**
-Perl_hv_store_flags(pTHX_ HV *hv, const char *key, I32 klen, SV *val, U32 hash,
+Perl_hv_store_flags(pTHX_ HV *hv, const char *key, I32 klen, SV *val, BIKESHED hash,
                     int flags)
 {
     return (SV**) hv_common(hv, NULL, key, klen, flags,
@@ -891,7 +891,7 @@ Perl_hv_store_flags(pTHX_ HV *hv, const char *key, I32 klen, SV *val, U32 hash,
 }
 
 SV**
-Perl_hv_store(pTHX_ HV *hv, const char *key, I32 klen_i32, SV *val, U32 hash)
+Perl_hv_store(pTHX_ HV *hv, const char *key, I32 klen_i32, SV *val, BIKESHED hash)
 {
     STRLEN klen;
     int flags;

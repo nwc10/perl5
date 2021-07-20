@@ -1951,7 +1951,7 @@ common(params)
         int flags = 0;
         int action = 0;
         SV *val = NULL;
-        U32 hash = 0;
+        BIKESHED hash = 0;
         SV **svp;
         CODE:
         if ((svp = hv_fetchs(params, "hv", 0))) {
@@ -2012,7 +2012,7 @@ SV *
 test_share_unshare_pvn(input)
         PREINIT:
         STRLEN len;
-        U32 hash;
+        BIKESHED hash;
         char *pvx;
         char *p;
         INPUT:
