@@ -217,7 +217,7 @@ typedef I64TYPE I64;
 typedef U64TYPE U64;
 #endif
 
-typedef U32TYPE BIKESHED;
+typedef U64TYPE BIKESHED;
 
 /* I8_MAX and I8_MIN constants are not defined, as I8 is an ambiguous type.
    Please search CHAR_MAX in perl.h for further details. */
