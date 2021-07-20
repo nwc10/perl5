@@ -662,6 +662,14 @@ checking.  Alternatively, if you are certain that you're calling the
 function correctly, you may put an ampersand before the name to avoid
 the warning.  See L<perlsub>.
 
+=item Calling hv_%s on the shared string table is no longer supported
+
+(P) XS code attempted to pass the pointer to the internal shared string
+table (C<PL_strtab>) to the regular hash functions. Previously this was
+supported for read-only actions (fetch and exists), although it seems that
+no code on CPAN ever did this. Internals changes mean that this limited
+functionality is no longer viable to support.
+
 =item Cannot chr %f
 
 (F) You passed an invalid number (like an infinity or not-a-number) to C<chr>.

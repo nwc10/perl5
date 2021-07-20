@@ -46,9 +46,6 @@ holds the key and hash value.
 #define DO_HSPLIT(xhv) ( ( ((xhv)->xhv_keys + ((xhv)->xhv_keys >> 1)) > (xhv)->xhv_max ) && \
                            ((xhv)->xhv_max < MAX_BUCKET_MAX) )
 
-static const char S_strtab_error[]
-    = "Cannot modify shared string table in hv_%s";
-
 #ifdef PURIFY
 
 #define new_HE() (HE*)safemalloc(sizeof(HE))
@@ -360,8 +357,19 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
 
     if (!hv)
         return NULL;
-    if (SvTYPE(hv) == (svtype)SVTYPEMASK)
+    if (hv == PL_strtab) {
+        if (flags & HVhek_FREEKEY)
+            Safefree(key);
+        Perl_croak(aTHX_ "Calling hv_%s on the shared string table is no longer supported",
+                   action & HV_FETCH_LVALUE ? "fetch" :
+                   action & HV_FETCH_ISEXISTS ? "exists" :
+                   action & HV_DELETE ? "delete" : "store");
+    }
+    if (SvTYPE(hv) == (svtype)SVTYPEMASK) {
+        if (flags & HVhek_FREEKEY)
+            Safefree(key);
         return NULL;
+    }
 
     assert(SvTYPE(hv) == SVt_PVHV);
 
@@ -705,14 +713,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
                     unshare_hek (HeKEY_hek(entry));
                     HeKEY_hek(entry) = new_hek;
                 }
-                else if (hv == PL_strtab) {
-                    /* PL_strtab is usually the only hash without HvSHAREKEYS,
-                       so putting this test here is cheap  */
-                    if (flags & HVhek_FREEKEY)
-                        Safefree(key);
-                    Perl_croak(aTHX_ S_strtab_error,
-                               action & HV_FETCH_LVALUE ? "fetch" : "store");
-                }
                 else
                     HeKFLAGS(entry) = masked_flags;
                 if (masked_flags & HVhek_ENABLEHVKFLAGS)
@@ -829,14 +829,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
        bad API design.  */
     if (HvSHAREKEYS(hv))
         HeKEY_hek(entry) = share_hek_flags(key, klen, hash, flags);
-    else if (hv == PL_strtab) {
-        /* PL_strtab is usually the only hash without HvSHAREKEYS, so putting
-           this test here is cheap  */
-        if (flags & HVhek_FREEKEY)
-            Safefree(key);
-        Perl_croak(aTHX_ S_strtab_error,
-                   action & HV_FETCH_LVALUE ? "fetch" : "store");
-    }
     else                                       /* gotta do the real thing */
         HeKEY_hek(entry) = save_hek_flags(key, klen, hash, flags);
     HeVAL(entry) = val;
@@ -1277,11 +1269,6 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
             continue;
 
       found:
-        if (hv == PL_strtab) {
-            if (k_flags & HVhek_FREEKEY)
-                Safefree(key);
-            Perl_croak(aTHX_ S_strtab_error, "delete");
-        }
 
         /* if placeholder is here, it's already been deleted.... */
         if (HeVAL(entry) == &PL_sv_placeholder) {
