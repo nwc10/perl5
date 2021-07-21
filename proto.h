@@ -1432,7 +1432,7 @@ PERL_CALLCONV void	Perl_hv_clear_placeholders(pTHX_ HV *hv);
 	assert(hv)
 PERL_CALLCONV void*	Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char* key, STRLEN klen, int flags, int action, SV *val, BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_COMMON
-PERL_CALLCONV void*	Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, I32 klen_i32, const int action, SV *val, const BIKESHED hash);
+PERL_CALLCONV void*	Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, SSize_t klen, const int action, SV *val, const BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN	\
 	assert(key)
 PERL_CALLCONV HV *	Perl_hv_copy_hints_hv(pTHX_ HV *const ohv)
@@ -1443,7 +1443,7 @@ PERL_CALLCONV void	Perl_hv_delayfree_ent(pTHX_ HV *hv, HE *entry);
 #define PERL_ARGS_ASSERT_HV_DELAYFREE_ENT	\
 	assert(hv)
 #ifndef NO_MATHOMS
-PERL_CALLCONV SV*	Perl_hv_delete(pTHX_ HV *hv, const char *key, I32 klen, I32 flags);
+PERL_CALLCONV SV*	Perl_hv_delete(pTHX_ HV *hv, const char *key, SSize_t klen, I32 flags);
 #define PERL_ARGS_ASSERT_HV_DELETE	\
 	assert(key)
 #endif
@@ -1467,7 +1467,7 @@ PERL_CALLCONV void	Perl_hv_ename_delete(pTHX_ HV *hv, const char *name, U32 len,
 #define PERL_ARGS_ASSERT_HV_ENAME_DELETE	\
 	assert(hv); assert(name)
 #ifndef NO_MATHOMS
-PERL_CALLCONV bool	Perl_hv_exists(pTHX_ HV *hv, const char *key, I32 klen)
+PERL_CALLCONV bool	Perl_hv_exists(pTHX_ HV *hv, const char *key, SSize_t klen)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_HV_EXISTS	\
 	assert(key)
@@ -1481,7 +1481,7 @@ PERL_CALLCONV bool	Perl_hv_exists_ent(pTHX_ HV *hv, SV *keysv, BIKESHED hash)
 #endif
 
 #ifndef NO_MATHOMS
-PERL_CALLCONV SV**	Perl_hv_fetch(pTHX_ HV *hv, const char *key, I32 klen, I32 lval);
+PERL_CALLCONV SV**	Perl_hv_fetch(pTHX_ HV *hv, const char *key, SSize_t klen, I32 lval);
 #define PERL_ARGS_ASSERT_HV_FETCH	\
 	assert(key)
 #endif
@@ -1514,10 +1514,10 @@ PERL_STATIC_INLINE U32	S_hv_foreach_with_placeholders(pTHX_ const HV *hv, U32 ra
 PERL_CALLCONV void	Perl_hv_free_ent(pTHX_ HV *hv, HE *entry);
 #define PERL_ARGS_ASSERT_HV_FREE_ENT	\
 	assert(hv)
-PERL_CALLCONV I32	Perl_hv_iterinit(pTHX_ HV *hv);
+PERL_CALLCONV SSize_t	Perl_hv_iterinit(pTHX_ HV *hv);
 #define PERL_ARGS_ASSERT_HV_ITERINIT	\
 	assert(hv)
-PERL_CALLCONV char*	Perl_hv_iterkey(pTHX_ HE* entry, I32* retlen)
+PERL_CALLCONV char*	Perl_hv_iterkey(pTHX_ HE* entry, SSize_t* retlen)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_HV_ITERKEY	\
 	assert(entry); assert(retlen)
@@ -1539,7 +1539,7 @@ PERL_CALLCONV HE*	Perl_hv_iternext_flags(pTHX_ HV *hv, I32 flags)
 #define PERL_ARGS_ASSERT_HV_ITERNEXT_FLAGS	\
 	assert(hv)
 
-PERL_CALLCONV SV*	Perl_hv_iternextsv(pTHX_ HV *hv, char **key, I32 *retlen)
+PERL_CALLCONV SV*	Perl_hv_iternextsv(pTHX_ HV *hv, char **key, SSize_t *retlen)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_HV_ITERNEXTSV	\
 	assert(hv); assert(key); assert(retlen)
@@ -1593,7 +1593,7 @@ PERL_CALLCONV SV*	Perl_hv_scalar(pTHX_ HV *hv)
 	assert(hv)
 
 #ifndef NO_MATHOMS
-PERL_CALLCONV SV**	Perl_hv_store(pTHX_ HV *hv, const char *key, I32 klen, SV *val, BIKESHED hash);
+PERL_CALLCONV SV**	Perl_hv_store(pTHX_ HV *hv, const char *key, SSize_t klen, SV *val, BIKESHED hash);
 #define PERL_ARGS_ASSERT_HV_STORE
 #endif
 #ifndef NO_MATHOMS
@@ -1601,7 +1601,7 @@ PERL_CALLCONV HE*	Perl_hv_store_ent(pTHX_ HV *hv, SV *key, SV *val, BIKESHED has
 #define PERL_ARGS_ASSERT_HV_STORE_ENT
 #endif
 #ifndef NO_MATHOMS
-PERL_CALLCONV SV**	Perl_hv_store_flags(pTHX_ HV *hv, const char *key, I32 klen, SV *val, BIKESHED hash, int flags);
+PERL_CALLCONV SV**	Perl_hv_store_flags(pTHX_ HV *hv, const char *key, SSize_t klen, SV *val, BIKESHED hash, int flags);
 #define PERL_ARGS_ASSERT_HV_STORE_FLAGS
 #endif
 /* PERL_CALLCONV void	hv_undef(pTHX_ HV *hv); */

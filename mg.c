@@ -1408,7 +1408,7 @@ Perl_magic_set_all_env(pTHX_ SV *sv, MAGIC *mg)
         my_clearenv();
         hv_iterinit(MUTABLE_HV(sv));
         while ((entry = hv_iternext(MUTABLE_HV(sv)))) {
-            I32 keylen;
+            SSize_t keylen;
             my_setenv(hv_iterkey(entry, &keylen),
                       SvPV_nolen_const(hv_iterval(MUTABLE_HV(sv), entry)));
         }

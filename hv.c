@@ -326,22 +326,22 @@ information on how to use this function on tied hashes.
 
 /* Common code for hv_delete()/hv_exists()/hv_fetch()/hv_store()  */
 void *
-Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, I32 klen_i32,
+Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, SSize_t klen,
                        const int action, SV *val, const BIKESHED hash)
 {
-    STRLEN klen;
+    STRLEN len;
     int flags;
 
     PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN;
 
-    if (klen_i32 < 0) {
-        klen = -klen_i32;
+    if (klen < 0) {
+        len = -klen;
         flags = HVhek_UTF8;
     } else {
-        klen = klen_i32;
+        len = klen;
         flags = 0;
     }
-    return hv_common(hv, NULL, key, klen, flags, action, val, hash);
+    return hv_common(hv, NULL, key, len, flags, action, val, hash);
 }
 
 void *
@@ -2323,7 +2323,7 @@ value, you can get it through the macro C<HvFILL(hv)>.
 =cut
 */
 
-I32
+SSize_t
 Perl_hv_iterinit(pTHX_ HV *hv)
 {
     PERL_ARGS_ASSERT_HV_ITERINIT;
@@ -2930,7 +2930,7 @@ C<L</hv_iterinit>>.
 */
 
 char *
-Perl_hv_iterkey(pTHX_ HE *entry, I32 *retlen)
+Perl_hv_iterkey(pTHX_ HE *entry, SSize_t *retlen)
 {
     PERL_ARGS_ASSERT_HV_ITERKEY;
 
@@ -3002,7 +3002,7 @@ operation.
 */
 
 SV *
-Perl_hv_iternextsv(pTHX_ HV *hv, char **key, I32 *retlen)
+Perl_hv_iternextsv(pTHX_ HV *hv, char **key, SSize_t *retlen)
 {
     HE * const he = hv_iternext_flags(hv, 0);
 
