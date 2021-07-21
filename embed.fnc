@@ -1019,19 +1019,19 @@ Apd	|void	|hv_clear	|NULLOK HV *hv
 : used in SAVEHINTS() and op.c
 ApdR	|HV *	|hv_copy_hints_hv|NULLOK HV *const ohv
 Ap	|void	|hv_delayfree_ent|NN HV *hv|NULLOK HE *entry
-AbMdp	|SV*	|hv_delete	|NULLOK HV *hv|NN const char *key|I32 klen \
+AbMdp	|SV*	|hv_delete	|NULLOK HV *hv|NN const char *key|SSize_t klen \
 				|I32 flags
 AbMdp	|SV*	|hv_delete_ent	|NULLOK HV *hv|NN SV *keysv|I32 flags|BIKESHED hash
-AbMdRp	|bool	|hv_exists	|NULLOK HV *hv|NN const char *key|I32 klen
+AbMdRp	|bool	|hv_exists	|NULLOK HV *hv|NN const char *key|SSize_t klen
 AbMdRp	|bool	|hv_exists_ent	|NULLOK HV *hv|NN SV *keysv|BIKESHED hash
-AbMdp	|SV**	|hv_fetch	|NULLOK HV *hv|NN const char *key|I32 klen \
+AbMdp	|SV**	|hv_fetch	|NULLOK HV *hv|NN const char *key|SSize_t klen \
 				|I32 lval
 AbMdp	|HE*	|hv_fetch_ent	|NULLOK HV *hv|NN SV *keysv|I32 lval|BIKESHED hash
 Cp	|void*	|hv_common	|NULLOK HV *hv|NULLOK SV *keysv \
 				|NULLOK const char* key|STRLEN klen|int flags \
 				|int action|NULLOK SV *val|BIKESHED hash
 Cp	|void*	|hv_common_key_len|NULLOK HV *hv|NN const char *key \
-				|I32 klen_i32|const int action|NULLOK SV *val \
+				|SSize_t klen|const int action|NULLOK SV *val \
 				|const BIKESHED hash
 Apod	|STRLEN	|hv_fill	|NN HV *const hv
 Aidp	|U32	|hv_foreach	|NN HV *hv|U32 flags|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
@@ -1040,11 +1040,11 @@ isox	|U32	|hv_foreach_no_placeholders|NN const HV *hv|U32 rand|NN HV_FOREACH_CAL
 isox	|U32	|hv_foreach_with_placeholders|NN const HV *hv|U32 rand|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
 Ap	|void	|hv_free_ent	|NN HV *hv|NULLOK HE *entry
 AiTpd	|bool	|HvIS_EMPTY 	|NN const HV *hv
-Apd	|I32	|hv_iterinit	|NN HV *hv
-ApdR	|char*	|hv_iterkey	|NN HE* entry|NN I32* retlen
+Apd	|SSize_t	|hv_iterinit	|NN HV *hv
+ApdR	|char*	|hv_iterkey	|NN HE* entry|NN SSize_t* retlen
 ApdR	|SV*	|hv_iterkeysv	|NN HE* entry
 ApdRbM	|HE*	|hv_iternext	|NN HV *hv
-ApdR	|SV*	|hv_iternextsv	|NN HV *hv|NN char **key|NN I32 *retlen
+ApdR	|SV*	|hv_iternextsv	|NN HV *hv|NN char **key|NN SSize_t *retlen
 ApxdR	|HE*	|hv_iternext_flags|NN HV *hv|I32 flags
 ApdR	|SV*	|hv_iterval	|NN HV *hv|NN HE *entry
 Ap	|void	|hv_ksplit	|NN HV *hv|IV newmax
@@ -1074,11 +1074,11 @@ Xpd	|struct refcounted_he *|refcounted_he_new_sv \
 Xpd	|void	|refcounted_he_free|NULLOK struct refcounted_he *he
 Xpd	|struct refcounted_he *|refcounted_he_inc|NULLOK struct refcounted_he *he
 ApbMd	|SV**	|hv_store	|NULLOK HV *hv|NULLOK const char *key \
-				|I32 klen|NULLOK SV *val|BIKESHED hash
+				|SSize_t klen|NULLOK SV *val|BIKESHED hash
 ApbMd	|HE*	|hv_store_ent	|NULLOK HV *hv|NULLOK SV *key|NULLOK SV *val\
 				|BIKESHED hash
 ApbMx	|SV**	|hv_store_flags	|NULLOK HV *hv|NULLOK const char *key \
-				|I32 klen|NULLOK SV *val|BIKESHED hash|int flags
+				|SSize_t klen|NULLOK SV *val|BIKESHED hash|int flags
 Amd	|void	|hv_undef	|NULLOK HV *hv
 poX	|void	|hv_undef_flags	|NULLOK HV *hv|U32 flags
 AdmP	|I32	|ibcmp		|NN const char* a|NN const char* b|I32 len

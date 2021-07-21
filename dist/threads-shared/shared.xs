@@ -1477,7 +1477,7 @@ FIRSTKEY(SV *obj)
         dTHXc;
         SV *sobj = SHAREDSV_FROM_OBJ(obj);
         char* key = NULL;
-        I32 len = 0;
+        SSize_t len = 0;
         HE* entry;
         ENTER_LOCK;
         SHARED_CONTEXT;
@@ -1502,7 +1502,7 @@ NEXTKEY(SV *obj, SV *oldkey)
         dTHXc;
         SV *sobj = SHAREDSV_FROM_OBJ(obj);
         char* key = NULL;
-        I32 len = 0;
+        SSize_t len = 0;
         HE* entry;
 
         PERL_UNUSED_VAR(oldkey);
