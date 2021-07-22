@@ -15268,6 +15268,12 @@ perl_clone_using(PerlInterpreter *proto_perl, UV flags,
     PL_Proc		= ipP;
 #endif		/* PERL_IMPLICIT_SYS */
 
+    /* FIXME - if the regular hash seed setup was to force a value, we should
+     * use that value again. Otherwise we should make this call here for this
+     * (i)thread's salt using the same randomness source as perl.c uses. */
+    U64 hack;
+    memcpy(&hack, PL_hash_seed, sizeof(U64));
+    jfs64_raninit(&PL_hash_salt_state, hack);
 
     param->flags = flags;
     /* Nothing in the core code uses this, but we make it available to
