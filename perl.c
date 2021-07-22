@@ -332,6 +332,12 @@ perl_construct(pTHXx)
         assert( strlen(PERL_HASH_SEED) >= PERL_HASH_SEED_BYTES );
 #endif
 
+        /* FIXME - merge this with the regular hash seed setup, and don't re-use
+           entropy. */
+        U64 hack;
+        memcpy(&hack, PL_hash_seed, sizeof(U64));
+        jfs64_raninit(&PL_hash_salt_state, hack);
+
         /* now we use the chosen seed to initialize the state -
          * in some configurations this may be a relatively speaking
          * expensive operation, but we only have to do it once at startup */

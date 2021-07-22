@@ -1013,6 +1013,8 @@ PERLVARI(I, InBitmap,	SV *, NULL)
 PERLVAR(I, CCC_non0_non230,	SV *)
 PERLVAR(I, Private_Use,	SV *)
 
+PERLVAR(I, hash_salt_state, struct jfs64_state)
+
 #ifdef HAS_MBRLEN
 PERLVAR(I, mbrlen_ps, mbstate_t)
 #endif

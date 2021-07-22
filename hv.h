@@ -655,6 +655,7 @@ Creates a new HV.  The reference count is set to 1.
 #define newHV()	MUTABLE_HV(newSV_type(SVt_PVHV))
 
 #include "hv_func.h"
+#include "jfs64.h"
 
 typedef U32 (HV_FOREACH_CALLBACK)(pTHX_ HEK *, SV *, void *);
 
