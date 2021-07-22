@@ -2509,7 +2509,7 @@ PERL_CALLCONV SV*	Perl_newSVavdefelem(pTHX_ AV *av, SSize_t ix, bool extendible)
 #define PERL_ARGS_ASSERT_NEWSVAVDEFELEM	\
 	assert(av)
 
-PERL_CALLCONV SV*	Perl_newSVhek(pTHX_ const HEK *const hek)
+PERL_CALLCONV SV*	Perl_newSVhek(pTHX_ HEK *const hek)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVHEK
 
@@ -3768,7 +3768,7 @@ PERL_CALLCONV SV*	Perl_sv_rvweaken(pTHX_ SV *const sv);
 PERL_CALLCONV void	Perl_sv_set_undef(pTHX_ SV *sv);
 #define PERL_ARGS_ASSERT_SV_SET_UNDEF	\
 	assert(sv)
-PERL_CALLCONV void	Perl_sv_sethek(pTHX_ SV *const sv, const HEK *const hek);
+PERL_CALLCONV void	Perl_sv_sethek(pTHX_ SV *const sv, HEK *const hek);
 #define PERL_ARGS_ASSERT_SV_SETHEK	\
 	assert(sv)
 PERL_CALLCONV void	Perl_sv_setiv(pTHX_ SV *const sv, const IV num);

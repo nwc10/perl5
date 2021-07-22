@@ -35,25 +35,20 @@ struct he {
        body arenas  */
     HE		*hent_next;	/* next entry in chain */
     HEK		*hent_hek;	/* hash key */
-    union {
-        SV	*hent_val;	/* scalar value that was hashed */
-        Size_t	hent_refcount;	/* references for this shared hash key */
-    } he_valu;
+    SV          *hent_val;      /* scalar value that was hashed */
 };
 
 /* hash key -- defined separately for use as shared pointer */
 struct hek {
-    BIKESHED    hek_hash;        /* computed hash of key */
-    I32         hek_len;        /* length of the hash key */
+    BIKESHED    hek_hash;       /* computed hash of key */
+    SSize_t     hek_len;        /* length of the hash key */
+    U32         hek_refcount;   /* if shared, or 0 for unshared */
+    U32         hek_flags;
     /* Be careful! Sometimes we store a pointer in the hek_key
      * buffer, which means it must be 8 byte aligned or things
-     * dont work on aligned platforms like HPUX
-     * Also beware, the last byte of the hek_key buffer is a
-     * hidden flags byte about the key. */
+     * dont work on aligned platforms like HPUX */
      char       hek_key[1];        /* variable-length hash key */
     /* the hash-key is \0-terminated */
-    /* after the \0 there is a byte for flags, such as whether the key
-       is UTF-8 or WAS-UTF-8, or an SV */
 };
 
 struct shared_he {
@@ -366,7 +361,7 @@ See L</hv_fill>.
 #define HeKWASUTF8(he)  HEK_WASUTF8(HeKEY_hek(he))
 #define HeKLEN_UTF8(he)  (HeKUTF8(he) ? -HeKLEN(he) : HeKLEN(he))
 #define HeKFLAGS(he)  HEK_FLAGS(HeKEY_hek(he))
-#define HeVAL(he)		(he)->he_valu.hent_val
+#define HeVAL(he)		(he)->hent_val
 #define HeHASH(he)		HEK_HASH(HeKEY_hek(he))
 #define HePV(he,lp)		((HeKLEN(he) == HEf_SVKEY) ?		\
                                  SvPV(HeKEY_sv(he),lp) :		\
@@ -396,7 +391,7 @@ See L</hv_fill>.
 #define HEK_HASH(hek)		(hek)->hek_hash
 #define HEK_LEN(hek)		(hek)->hek_len
 #define HEK_KEY(hek)		(hek)->hek_key
-#define HEK_FLAGS(hek)	(*((unsigned char *)(HEK_KEY(hek))+HEK_LEN(hek)+1))
+#define HEK_FLAGS(hek)          (hek)->hek_flags
 
 #define HVhek_UTF8	0x01 /* Key is utf8 encoded. */
 #define HVhek_WASUTF8	0x02 /* Key is bytes here, but was supplied as utf8. */
@@ -444,12 +439,7 @@ See L</hv_fill>.
 #define Perl_sharepvn(pv, len, hash) HEK_KEY(share_hek(pv, len, hash))
 #define sharepvn(pv, len, hash)	     Perl_sharepvn(pv, len, hash)
 
-#define share_hek_hek(hek)						\
-    (++(((struct shared_he *)(((char *)hek)				\
-                              - STRUCT_OFFSET(struct shared_he,		\
-                                              shared_he_hek)))		\
-        ->shared_he_he.he_valu.hent_refcount),				\
-     hek)
+#define share_hek_hek(hek) (++hek->hek_refcount, hek)
 
 #define hv_store_ent(hv, keysv, val, hash)				\
     ((HE *) hv_common((hv), (keysv), NULL, 0, 0, HV_FETCH_ISSTORE,	\

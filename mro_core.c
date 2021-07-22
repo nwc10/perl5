@@ -225,7 +225,6 @@ S_mro_get_linear_isa_dfs(pTHX_ HV *stash, U32 level)
     GV** gvp;
     GV* gv;
     AV* av;
-    const HEK* stashhek;
     struct mro_meta* meta;
     SV *our_name;
     HV *stored = NULL;
@@ -233,7 +232,7 @@ S_mro_get_linear_isa_dfs(pTHX_ HV *stash, U32 level)
     PERL_ARGS_ASSERT_MRO_GET_LINEAR_ISA_DFS;
     assert(HvAUX(stash));
 
-    stashhek
+    HEK *stashhek
      = HvAUX(stash)->xhv_name_u.xhvnameu_name && HvENAME_HEK_NN(stash)
         ? HvENAME_HEK_NN(stash)
         : HvNAME_HEK(stash);
