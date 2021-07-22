@@ -3000,7 +3000,7 @@ Perl_unshare_hek(pTHX_ HEK *hek)
    are used.  If so, len and hash must both be valid for str.
  */
 STATIC void
-S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, SSize_t len, BIKESHED hash)
+S_unshare_hek_or_pvn(pTHX_ HEK *hek, const char *str, SSize_t len, BIKESHED hash)
 {
     XPVHV* xhv;
     HE *entry;
@@ -3008,23 +3008,26 @@ S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, SSize_t len, BIKESHE
     bool is_utf8 = FALSE;
     int k_flags = 0;
     const char * const save = str;
-    struct shared_he *he = NULL;
 
     if (hek) {
+        if (hek->hek_refcount > 1) {
+            --hek->hek_refcount;
+            return;
+        }
+
         /* Find the shared he which is just before us in memory.  */
-        he = (struct shared_he *)(((char *)hek)
-                                  - STRUCT_OFFSET(struct shared_he,
-                                                  shared_he_hek));
+        struct shared_he *he
+            = (struct shared_he *)(((char *)hek)
+                                   - STRUCT_OFFSET(struct shared_he,
+                                                   shared_he_hek));
 
         /* Assert that the caller passed us a genuine (or at least consistent)
            shared hek  */
         assert (he->shared_he_he.hent_hek == hek);
 
-        if (he->shared_he_he.hent_hek->hek_refcount - 1) {
-            --he->shared_he_he.hent_hek->hek_refcount;
-            return;
-        }
-
+        str = HEK_KEY(hek);
+        len = HEK_LEN(hek);
+        k_flags = HEK_FLAGS(hek) & HVhek_MASK;
         hash = HEK_HASH(hek);
     } else if (len < 0) {
         STRLEN tmplen = -len;
@@ -3046,13 +3049,7 @@ S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, SSize_t len, BIKESHE
     xhv = (XPVHV*)SvANY(PL_strtab);
     /* assert(xhv_array != 0) */
     oentry = &(HvARRAY(PL_strtab))[hash & (I32) HvMAX(PL_strtab)];
-    if (he) {
-        const HE *const he_he = &(he->shared_he_he);
-        for (entry = *oentry; entry; oentry = &HeNEXT(entry), entry = *oentry) {
-            if (entry == he_he)
-                break;
-        }
-    } else {
+    {
         const U32 flags_masked = k_flags & HVhek_MASK;
         for (entry = *oentry; entry; oentry = &HeNEXT(entry), entry = *oentry) {
             if (HeHASH(entry) != hash)		/* strings can't be equal */
@@ -3079,7 +3076,7 @@ S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, SSize_t len, BIKESHE
         Perl_ck_warner_d(aTHX_ packWARN(WARN_INTERNAL),
                          "Attempt to free nonexistent shared string '%s'%s"
                          pTHX__FORMAT,
-                         hek ? HEK_KEY(hek) : str,
+                         str,
                          ((k_flags & HVhek_UTF8) ? " (utf8)" : "") pTHX__VALUE);
     if (k_flags & HVhek_FREEKEY)
         Safefree(str);

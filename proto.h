@@ -5185,7 +5185,7 @@ STATIC HEK*	S_share_hek_flags(pTHX_ const char *str, STRLEN len, BIKESHED hash, 
 #define PERL_ARGS_ASSERT_SHARE_HEK_FLAGS	\
 	assert(str)
 
-STATIC void	S_unshare_hek_or_pvn(pTHX_ const HEK* hek, const char* str, SSize_t len, BIKESHED hash);
+STATIC void	S_unshare_hek_or_pvn(pTHX_ HEK* hek, const char* str, SSize_t len, BIKESHED hash);
 #define PERL_ARGS_ASSERT_UNSHARE_HEK_OR_PVN
 #endif
 #if defined(PERL_IN_HV_C) || defined(PERL_IN_MG_C) || defined(PERL_IN_SV_C)

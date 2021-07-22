@@ -2890,7 +2890,7 @@ S	|SV*	|hv_free_ent_ret|NN HV *hv|NN HE *entry
 SR	|HE*	|new_he
 SaTR	|HEK*	|save_hek_flags	|NN const char *str|STRLEN len|BIKESHED hash|U32 flags
 ST	|void	|hv_magic_check	|NN HV *hv|NN bool *needs_copy|NN bool *needs_store
-S	|void	|unshare_hek_or_pvn|NULLOK const HEK* hek|NULLOK const char* str|SSize_t len|BIKESHED hash
+S	|void	|unshare_hek_or_pvn|NULLOK HEK* hek|NULLOK const char* str|SSize_t len|BIKESHED hash
 SR	|HEK*	|share_hek_flags|NN const char *str|STRLEN len|BIKESHED hash|U32 flags
 rS	|void	|hv_notallowed	|int flags|NN const char *key|I32 klen|NN const char *msg
 iT	|U32|ptr_hash|PTRV u
