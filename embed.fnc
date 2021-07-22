@@ -1513,7 +1513,7 @@ ApdR	|SV*	|newSVnv	|const NV n
 ApdR	|SV*	|newSVpv	|NULLOK const char *const s|const STRLEN len
 ApdR	|SV*	|newSVpvn	|NULLOK const char *const buffer|const STRLEN len
 ApdR	|SV*	|newSVpvn_flags	|NULLOK const char *const s|const STRLEN len|const U32 flags
-ApdR	|SV*	|newSVhek	|NULLOK const HEK *const hek
+ApdR	|SV*	|newSVhek	|NULLOK HEK *const hek
 ApdR	|SV*	|newSVpvn_share	|NULLOK const char* s|I32 len|BIKESHED hash
 ApdR	|SV*	|newSVpv_share	|NULLOK const char* s|BIKESHED hash
 AfpdR	|SV*	|newSVpvf	|NN const char *const pat|...
@@ -1929,7 +1929,7 @@ Apd	|SV*	|sv_setref_pvn	|NN SV *const rv|NULLOK const char *const classname \
 Apd	|void	|sv_setpv	|NN SV *const sv|NULLOK const char *const ptr
 Apd	|void	|sv_setpvn	|NN SV *const sv|NULLOK const char *const ptr|const STRLEN len
 Apd	|char  *|sv_setpv_bufsize|NN SV *const sv|const STRLEN cur|const STRLEN len
-Xp	|void	|sv_sethek	|NN SV *const sv|NULLOK const HEK *const hek
+Xp	|void	|sv_sethek	|NN SV *const sv|NULLOK HEK *const hek
 Apd	|void	|sv_setrv_noinc	|NN SV *const sv|NN SV *const ref
 Apd	|void	|sv_setrv_inc	|NN SV *const sv|NN SV *const ref
 Apd	|void	|sv_setrv_noinc_mg	|NN SV *const sv|NN SV *const ref

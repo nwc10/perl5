@@ -5095,7 +5095,7 @@ Perl_sv_setpv_mg(pTHX_ SV *const sv, const char *const ptr)
 }
 
 void
-Perl_sv_sethek(pTHX_ SV *const sv, const HEK *const hek)
+Perl_sv_sethek(pTHX_ SV *const sv, HEK *const hek)
 {
     PERL_ARGS_ASSERT_SV_SETHEK;
 
@@ -9502,7 +9502,7 @@ SV if C<hek> is NULL.
 */
 
 SV *
-Perl_newSVhek(pTHX_ const HEK *const hek)
+Perl_newSVhek(pTHX_ HEK *const hek)
 {
     if (!hek) {
         SV *sv;
@@ -15101,7 +15101,7 @@ Perl_ss_dup(pTHX_ PerlInterpreter *proto_perl, CLONE_PARAMS* param)
 static void
 do_mark_cloneable_stash(pTHX_ SV *const sv)
 {
-    const HEK * const hvname = HvNAME_HEK((const HV *)sv);
+    HEK * const hvname = HvNAME_HEK((const HV *)sv);
     if (hvname) {
         GV* const cloner = gv_fetchmethod_autoload(MUTABLE_HV(sv), "CLONE_SKIP", 0);
         SvFLAGS(sv) |= SVphv_CLONEABLE; /* clone objects by default */

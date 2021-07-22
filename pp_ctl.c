@@ -1928,7 +1928,6 @@ PP(pp_caller)
     const PERL_CONTEXT *cx;
     const PERL_CONTEXT *dbcx;
     U8 gimme = GIMME_V;
-    const HEK *stash_hek;
     I32 count = 0;
     bool has_arg = MAXARG && TOPs;
     const COP *lcop;
@@ -1950,7 +1949,7 @@ PP(pp_caller)
 
     CX_DEBUG(cx, "CALLER");
     assert(CopSTASH(cx->blk_oldcop));
-    stash_hek = SvTYPE(CopSTASH(cx->blk_oldcop)) == SVt_PVHV
+    HEK *stash_hek = SvTYPE(CopSTASH(cx->blk_oldcop)) == SVt_PVHV
       ? HvNAME_HEK((HV*)CopSTASH(cx->blk_oldcop))
       : NULL;
     if (gimme != G_LIST) {

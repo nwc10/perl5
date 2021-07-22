@@ -87,7 +87,7 @@ S_save_hek_flags(const char *str, STRLEN len, BIKESHED hash, U32 flags)
 
     PERL_ARGS_ASSERT_SAVE_HEK_FLAGS;
 
-    Newx(k, HEK_BASESIZE + len + 2, char);
+    Newx(k, HEK_BASESIZE + len + 1, char);
     hek = (HEK*)k;
     Copy(str, HEK_KEY(hek), len, char);
     HEK_KEY(hek)[len] = 0;
@@ -351,7 +351,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     SV *sv;
     bool is_utf8;
     bool in_collision;
-    int masked_flags;
+    U32 masked_flags;
     const int return_svp = action & HV_FETCH_JUST_SV;
     HEK *keysv_hek = NULL;
 
@@ -671,7 +671,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
          * we fall back to a full search (this should only happen in rare
          * cases).
          */
-        int keysv_flags = HEK_FLAGS(keysv_hek);
+        U32 keysv_flags = HEK_FLAGS(keysv_hek);
         HE  *orig_entry = entry;
 
         for (; entry; entry = HeNEXT(entry)) {
@@ -1242,7 +1242,7 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
          * we fall back to a full search (this should only happen in rare
          * cases).
          */
-        int keysv_flags = HEK_FLAGS(keysv_hek);
+        U32 keysv_flags = HEK_FLAGS(keysv_hek);
 
         for (; entry; oentry = &HeNEXT(entry), entry = *oentry) {
             HEK *hek = HeKEY_hek(entry);
@@ -3019,8 +3019,8 @@ S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, SSize_t len, BIKESHE
            shared hek  */
         assert (he->shared_he_he.hent_hek == hek);
 
-        if (he->shared_he_he.he_valu.hent_refcount - 1) {
-            --he->shared_he_he.he_valu.hent_refcount;
+        if (he->shared_he_he.hent_hek->hek_refcount - 1) {
+            --he->shared_he_he.hent_hek->hek_refcount;
             return;
         }
 
@@ -3052,7 +3052,7 @@ S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, SSize_t len, BIKESHE
                 break;
         }
     } else {
-        const int flags_masked = k_flags & HVhek_MASK;
+        const U32 flags_masked = k_flags & HVhek_MASK;
         for (entry = *oentry; entry; oentry = &HeNEXT(entry), entry = *oentry) {
             if (HeHASH(entry) != hash)		/* strings can't be equal */
                 continue;
@@ -3067,7 +3067,7 @@ S_unshare_hek_or_pvn(pTHX_ const HEK *hek, const char *str, SSize_t len, BIKESHE
     }
 
     if (entry) {
-        if (--entry->he_valu.hent_refcount == 0) {
+        if (--entry->hent_hek->hek_refcount == 0) {
             *oentry = HeNEXT(entry);
             Safefree(entry);
             xhv->xhv_keys--; /* HvTOTALKEYS(hv)-- */
@@ -3123,7 +3123,7 @@ STATIC HEK *
 S_share_hek_flags(pTHX_ const char *str, STRLEN len, BIKESHED hash, U32 flags)
 {
     HE *entry;
-    const int flags_masked = flags & HVhek_MASK;
+    const U32 flags_masked = flags & HVhek_MASK;
     const U32 hindex = hash & (I32) HvMAX(PL_strtab);
     XPVHV * const xhv = (XPVHV*)SvANY(PL_strtab);
 
@@ -3187,7 +3187,7 @@ S_share_hek_flags(pTHX_ const char *str, STRLEN len, BIKESHED hash, U32 flags)
         /* Still "point" to the HEK, so that other code need not know what
            we're up to.  */
         HeKEY_hek(entry) = hek;
-        entry->he_valu.hent_refcount = 0;
+        entry->hent_hek->hek_refcount = 0;
         HeNEXT(entry) = next;
         *head = entry;
 
@@ -3199,7 +3199,7 @@ S_share_hek_flags(pTHX_ const char *str, STRLEN len, BIKESHED hash, U32 flags)
         }
     }
 
-    ++entry->he_valu.hent_refcount;
+    ++entry->hent_hek->hek_refcount;
 
     if (flags & HVhek_FREEKEY)
         Safefree(str);
