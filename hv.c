@@ -63,14 +63,14 @@ S_new_he(pTHX)
         Perl_more_bodies(aTHX_ HE_SVSLOT, sizeof(HE), PERL_ARENA_SIZE);
     he = (HE*) *root;
     assert(he);
-    *root = HeNEXT(he);
+    *root = *(void **)he;
     return he;
 }
 
 #define new_HE() new_he()
 #define del_HE(p) \
     STMT_START { \
-        HeNEXT(p) = (HE*)(PL_body_roots[HE_SVSLOT]);	\
+        *((void **)(p)) = (void *)(PL_body_roots[HE_SVSLOT]);	\
         PL_body_roots[HE_SVSLOT] = p; \
     } STMT_END
 
