@@ -9888,6 +9888,32 @@ Note that the perl-level function is vaguely deprecated.
 =cut
 */
 
+static U32
+sv_reset_callback(pTHX_ HEK *hek, SV *val, void *state)
+{
+    const char *todo = (char *) state;
+
+    if (!todo[(U8)*HEK_KEY(hek)])
+        return 0;
+
+    GV *gv = MUTABLE_GV(val);
+    if (!isGV(gv))
+        return 0;
+
+    SV *sv = GvSV(gv);
+    if (sv && !SvREADONLY(sv)) {
+        SV_CHECK_THINKFIRST_COW_DROP(sv);
+        if (!isGV(sv)) SvOK_off(sv);
+    }
+    if (GvAV(gv)) {
+        av_clear(GvAV(gv));
+    }
+    if (GvHV(gv) && !HvNAME_get(GvHV(gv))) {
+        hv_clear(GvHV(gv));
+    }
+    return 0;
+}
+
 void
 Perl_sv_reset(pTHX_ const char *s, HV *const stash)
 {
@@ -9941,33 +9967,10 @@ Perl_sv_resetpvn(pTHX_ const char *s, STRLEN len, HV * const stash)
         for ( ; i <= max; i++) {
             todo[i] = 1;
         }
-        for (i = 0; i <= (I32) HvMAX(stash); i++) {
-            HE *entry;
-            for (entry = HvARRAY(stash)[i];
-                 entry;
-                 entry = HeNEXT(entry))
-            {
-                GV *gv;
-                SV *sv;
-
-                if (!todo[(U8)*HeKEY(entry)])
-                    continue;
-                gv = MUTABLE_GV(HeVAL(entry));
-                if (!isGV(gv))
-                    continue;
-                sv = GvSV(gv);
-                if (sv && !SvREADONLY(sv)) {
-                    SV_CHECK_THINKFIRST_COW_DROP(sv);
-                    if (!isGV(sv)) SvOK_off(sv);
-                }
-                if (GvAV(gv)) {
-                    av_clear(GvAV(gv));
-                }
-                if (GvHV(gv) && !HvNAME_get(GvHV(gv))) {
-                    hv_clear(GvHV(gv));
-                }
-            }
-        }
+        S_hv_foreach_with_placeholders(aTHX_ stash,
+                                       0,
+                                       sv_reset_callback,
+                                       todo);
     }
 }
 
