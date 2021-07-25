@@ -354,7 +354,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     bool in_collision;
     U32 masked_flags;
     const int return_svp = action & HV_FETCH_JUST_SV;
-    HEK *keysv_hek = NULL;
 
     if (!hv)
         return NULL;
@@ -641,8 +640,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     }
 
     if (keysv && (SvIsCOW_shared_hash(keysv))) {
-        if (HvSHAREKEYS(hv))
-            keysv_hek  = SvSHARED_HEK_FROM_PV(SvPVX_const(keysv));
         hash = SvSHARED_HASH(keysv);
     }
     else if (!hash)
@@ -658,36 +655,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         entry = (HvARRAY(hv))[hash & (I32) HvMAX(hv)];
     }
 
-    if (!entry)
-        goto not_found;
-
-    if (keysv_hek) {
-        /* keysv is actually a HEK in disguise, so we can match just by
-         * comparing the HEK pointers in the HE chain. There is a slight
-         * caveat: on something like "\x80", which has both plain and utf8
-         * representations, perl's hashes do encoding-insensitive lookups,
-         * but preserve the encoding of the stored key. Thus a particular
-         * key could map to two different HEKs in PL_strtab. We only
-         * conclude 'not found' if all the flags are the same; otherwise
-         * we fall back to a full search (this should only happen in rare
-         * cases).
-         */
-        U32 keysv_flags = HEK_FLAGS(keysv_hek);
-        HE  *orig_entry = entry;
-
-        for (; entry; entry = HeNEXT(entry)) {
-            HEK *hek = HeKEY_hek(entry);
-            if (hek == keysv_hek)
-                goto found;
-            if (HEK_FLAGS(hek) != keysv_flags)
-                break; /* need to do full match */
-        }
-        if (!entry)
-            goto not_found;
-        /* failed on shortcut - do full search loop */
-        entry = orig_entry;
-    }
-
     for (; entry; entry = HeNEXT(entry)) {
         if (HeHASH(entry) != hash)		/* strings can't be equal */
             continue;
@@ -698,7 +665,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         if ((HeKFLAGS(entry) ^ masked_flags) & HVhek_UTF8)
             continue;
 
-      found:
         if (action & (HV_FETCH_LVALUE|HV_FETCH_ISSTORE)) {
             if (HeKFLAGS(entry) != masked_flags) {
                 /* We match if HVhek_UTF8 bit in our flags and hash key's
@@ -760,7 +726,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         return entry;
     }
 
-  not_found:
 #ifdef DYNAMIC_ENV_FETCH  /* %ENV lookup?  If so, try to fetch the value now */
     if (!(action & HV_FETCH_ISSTORE) 
         && SvRMAGICAL((const SV *)hv)
@@ -1145,10 +1110,8 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     XPVHV* xhv;
     HE *entry;
     HE **oentry;
-    HE **first_entry;
     bool is_utf8 = cBOOL(k_flags & HVhek_UTF8);
     int masked_flags;
-    HEK *keysv_hek = NULL;
     U8 mro_changes = 0; /* 1 = isa; 2 = package moved */
     SV *sv;
     GV *gv = NULL;
@@ -1217,8 +1180,6 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     }
 
     if (keysv && (SvIsCOW_shared_hash(keysv))) {
-        if (HvSHAREKEYS(hv))
-            keysv_hek  = SvSHARED_HEK_FROM_PV(SvPVX_const(keysv));
         hash = SvSHARED_HASH(keysv);
     }
     else if (!hash)
@@ -1226,38 +1187,8 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
 
     masked_flags = (k_flags & HVhek_MASK);
 
-    first_entry = oentry = &(HvARRAY(hv))[hash & (I32) HvMAX(hv)];
+    oentry = &(HvARRAY(hv))[hash & (I32) HvMAX(hv)];
     entry = *oentry;
-
-    if (!entry)
-        goto not_found;
-
-    if (keysv_hek) {
-        /* keysv is actually a HEK in disguise, so we can match just by
-         * comparing the HEK pointers in the HE chain. There is a slight
-         * caveat: on something like "\x80", which has both plain and utf8
-         * representations, perl's hashes do encoding-insensitive lookups,
-         * but preserve the encoding of the stored key. Thus a particular
-         * key could map to two different HEKs in PL_strtab. We only
-         * conclude 'not found' if all the flags are the same; otherwise
-         * we fall back to a full search (this should only happen in rare
-         * cases).
-         */
-        U32 keysv_flags = HEK_FLAGS(keysv_hek);
-
-        for (; entry; oentry = &HeNEXT(entry), entry = *oentry) {
-            HEK *hek = HeKEY_hek(entry);
-            if (hek == keysv_hek)
-                goto found;
-            if (HEK_FLAGS(hek) != keysv_flags)
-                break; /* need to do full match */
-        }
-        if (!entry)
-            goto not_found;
-        /* failed on shortcut - do full search loop */
-        oentry = first_entry;
-        entry = *oentry;
-    }
 
     for (; entry; oentry = &HeNEXT(entry), entry = *oentry) {
         if (HeHASH(entry) != hash)		/* strings can't be equal */
@@ -1268,8 +1199,6 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
             continue;
         if ((HeKFLAGS(entry) ^ masked_flags) & HVhek_UTF8)
             continue;
-
-      found:
 
         /* if placeholder is here, it's already been deleted.... */
         if (HeVAL(entry) == &PL_sv_placeholder) {
@@ -1425,7 +1354,6 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         return sv;
     }
 
-  not_found:
     if (SvREADONLY(hv)) {
         hv_notallowed(k_flags, key, klen,
                         "Attempt to delete disallowed key '%" SVf "' from"
