@@ -595,26 +595,17 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     } /* SvMAGICAL */
 
     if (!HvARRAY(hv)) {
-        if ((action & (HV_FETCH_LVALUE | HV_FETCH_ISSTORE))
-#ifdef DYNAMIC_ENV_FETCH  /* if it's an %ENV lookup, we may get it on the fly */
-                 || (SvRMAGICAL((const SV *)hv)
-                     && mg_find((const SV *)hv, PERL_MAGIC_env))
-#endif
-                                                                  ) {
-            char *array;
-            Newxz(array,
-                 PERL_HV_ARRAY_ALLOC_BYTES(xhv->xhv_max+1 /* HvMAX(hv)+1 */),
-                 char);
-            HvARRAY(hv) = (HE**)array;
+        if (action & (HV_FETCH_LVALUE | HV_FETCH_ISSTORE)) {
+            /* we're going to create an entry if we don't find one. */
         }
-#ifdef DYNAMIC_ENV_FETCH
-        else if (action & HV_FETCH_ISEXISTS) {
-            /* for an %ENV exists, if we do an insert it's by a recursive
-               store call, so avoid creating HvARRAY(hv) right now.  */
+#ifdef DYNAMIC_ENV_FETCH  /* if it's an %ENV lookup, we may get it on the fly */
+        else if (SvRMAGICAL((const SV *)hv)
+                 && mg_find((const SV *)hv, PERL_MAGIC_env)) {
+            /* regular RVALUE fetch or exists, but an %ENV lookup  */
         }
 #endif
         else {
-            /* XXX remove at some point? */
+            /* RVALUE fetch, exists delete. Not found/nothing to delete. */
             if (flags & HVhek_FREEKEY)
                 Safefree(key);
 
@@ -649,10 +640,8 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
 
     masked_flags = (flags & HVhek_MASK);
 
-#ifdef DYNAMIC_ENV_FETCH
     if (!HvARRAY(hv)) entry = NULL;
     else
-#endif
     {
         entry = (HvARRAY(hv))[hash & (I32) HvMAX(hv)];
     }
@@ -780,9 +769,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     /* Welcome to hv_store...  */
 
     if (!HvARRAY(hv)) {
-        /* Not sure if we can get here.  I think the only case of oentry being
-           NULL is for %ENV with dynamic env fetch.  But that should disappear
-           with magic in the previous code.  */
         char *array;
         Newxz(array,
              PERL_HV_ARRAY_ALLOC_BYTES(xhv->xhv_max+1 /* HvMAX(hv)+1 */),
