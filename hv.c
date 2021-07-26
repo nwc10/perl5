@@ -1212,11 +1212,13 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
                             " a restricted hash");
         }
 
+        sv = HeVAL(entry);
+
         /* If this is a stash and the key ends with ::, then someone is 
          * deleting a package.
          */
-        if (HeVAL(entry) && HvENAME_get(hv)) {
-                gv = (GV *)HeVAL(entry);
+        if (sv && HvENAME_get(hv)) {
+                gv = (GV *)sv;
                 if ((
                      (klen > 1 && key[klen-2] == ':' && key[klen-1] == ':')
                       ||
@@ -1308,8 +1310,6 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         if (k_flags & HVhek_FREEKEY)
             Safefree(key);
 
-        sv = d_flags & G_DISCARD ? HeVAL(entry) : sv_2mortal(HeVAL(entry));
-
         /*
          * If a restricted hash, rather than really deleting the entry, put
          * a placeholder there. This marks the key as being "approved", so
@@ -1344,12 +1344,16 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
             if (isGV(sv) && isGV_with_GP(sv) && GvCVu(sv)
              && HvENAME_get(hv))
                 mro_method_changed_in(hv);
-        }
 
-        if (d_flags & G_DISCARD) {
-            SvREFCNT_dec(sv);
-            sv = NULL;
+            if (d_flags & G_DISCARD) {
+                SvREFCNT_dec(sv);
+                sv = NULL;
+            }
+            else {
+                sv_2mortal(sv);
+            }
         }
+        /* else WTF - surely the value SV should never be NULL in a hash? */
 
         if (mro_changes == 1) mro_isa_changed_in(hv);
         else if (mro_changes == 2)
