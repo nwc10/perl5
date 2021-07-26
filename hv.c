@@ -195,12 +195,14 @@ Perl_he_dup(pTHX_ const HE *e, bool shared, CLONE_PARAMS* param)
 #endif	/* USE_ITHREADS */
 
 static void
-S_hv_notallowed(pTHX_ int flags, const char *key, I32 klen,
-                const char *msg)
+S_hv_notallowed(pTHX_ int flags, const char *key, I32 klen, const char *msg)
 {
     SV * const sv = sv_newmortal();
 
     PERL_ARGS_ASSERT_HV_NOTALLOWED;
+
+    STATIC_ASSERT_STMT(HV_ABH_KEY_UTF8 == HVhek_UTF8);
+    STATIC_ASSERT_STMT(HV_ABH_KEY_WASUTF8 == HVhek_WASUTF8);
 
     if (!(flags & HVhek_FREEKEY)) {
         sv_setpvn(sv, key, klen);
@@ -1107,13 +1109,8 @@ STATIC SV *
 S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
                    int k_flags, I32 d_flags, BIKESHED hash)
 {
-    XPVHV* xhv;
-    HE *entry;
-    HE **oentry;
     bool is_utf8 = cBOOL(k_flags & HVhek_UTF8);
-    int masked_flags;
     U8 mro_changes = 0; /* 1 = isa; 2 = package moved */
-    SV *sv;
     GV *gv = NULL;
     HV *stash = NULL;
 
@@ -1124,10 +1121,10 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
 
         if (needs_copy) {
             SV *sv;
-            entry = (HE *) hv_common(hv, keysv, key, klen,
-                                     k_flags & ~HVhek_FREEKEY,
-                                     HV_FETCH_LVALUE|HV_DISABLE_UVAR_XKEY,
-                                     NULL, hash);
+            HE *entry = (HE *) hv_common(hv, keysv, key, klen,
+                                         k_flags & ~HVhek_FREEKEY,
+                                         HV_FETCH_LVALUE|HV_DISABLE_UVAR_XKEY,
+                                         NULL, hash);
             sv = entry ? HeVAL(entry) : NULL;
             if (sv) {
                 if (SvMAGICAL(sv)) {
@@ -1157,7 +1154,7 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
             }
         }
     }
-    xhv = (XPVHV*)SvANY(hv);
+
     if (!HvTOTALKEYS(hv))
         return NULL;
 
@@ -1185,220 +1182,160 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     else if (!hash)
         PERL_HASH(hash, key, klen);
 
-    masked_flags = (k_flags & HVhek_MASK);
+    SV *sv = Perl_LLH_delete(aTHX_ hv, key, klen, hash,
+                             (k_flags & HV_ABH_KEY_TYPE_MASK)
+                             | (SvREADONLY(hv)
+                                ? (HV_ABH_DELETE_TO_PLACEHOLDER
+                                   |HV_ABH_REFUSE_TO_DELETE_READONLY_VALUES) : 0));
 
-    oentry = &(HvARRAY(hv))[hash & (I32) HvMAX(hv)];
-    entry = *oentry;
 
-    for (; entry; oentry = &HeNEXT(entry), entry = *oentry) {
-        if (HeHASH(entry) != hash)		/* strings can't be equal */
-            continue;
-        if (HeKLEN(entry) != (I32)klen)
-            continue;
-        if (memNE(HeKEY(entry),key,klen))	/* is this it? */
-            continue;
-        if ((HeKFLAGS(entry) ^ masked_flags) & HVhek_UTF8)
-            continue;
-
-        sv = HeVAL(entry);
-
-        /* if placeholder is here, it's already been deleted.... */
-        if (sv == &PL_sv_placeholder) {
-            if (k_flags & HVhek_FREEKEY)
-                Safefree(key);
-            return NULL;
-        }
-        if (SvREADONLY(hv) && sv && SvREADONLY(sv)) {
+    if (UNLIKELY(SvREADONLY(hv))) {
+        if (sv == (SV *)hv) {
             hv_notallowed(k_flags, key, klen,
-                            "Attempt to delete readonly key '%" SVf "' from"
-                            " a restricted hash");
+                          "Attempt to delete readonly key '%" SVf "' from"
+                          " a restricted hash");
         }
-
-        /*
-         * If a restricted hash, rather than really deleting the entry, put
-         * a placeholder there. This marks the key as being "approved", so
-         * we can still access via not-really-existing key without raising
-         * an error.
-         */
-        if (SvREADONLY(hv)) {
-            /* We'll be saving this slot, so the number of allocated keys
-             * doesn't go down, but the number placeholders goes up */
-            HeVAL(entry) = &PL_sv_placeholder;
-            HvPLACEHOLDERS(hv)++;
-        }
-        else {
-            HeVAL(entry) = NULL;
-            *oentry = HeNEXT(entry);
-            if (SvOOK(hv) && entry == HvAUX(hv)->xhv_eiter /* HvEITER(hv) */) {
-                HvLAZYDEL_on(hv);
-            }
-            else {
-                if (SvOOK(hv) && HvLAZYDEL(hv) &&
-                    entry == HeNEXT(HvAUX(hv)->xhv_eiter))
-                    HeNEXT(HvAUX(hv)->xhv_eiter) = HeNEXT(entry);
-                hv_free_ent(hv, entry);
-            }
-            xhv->xhv_keys--; /* HvTOTALKEYS(hv)-- */
-            if (xhv->xhv_keys == 0)
-                HvHASKFLAGS_off(hv);
-        }
-
-        /*
-         * If a restricted hash, rather than really deleting the entry, put
-         * a placeholder there. This marks the key as being "approved", so
-         * we can still access via not-really-existing key without raising
-         * an error.
-         */
-        if (SvREADONLY(hv)) {
-            /* We'll be saving this slot, so the number of allocated keys
-             * doesn't go down, but the number placeholders goes up */
-            HeVAL(entry) = &PL_sv_placeholder;
-            HvPLACEHOLDERS(hv)++;
-        }
-        else {
-            HeVAL(entry) = NULL;
-            *oentry = HeNEXT(entry);
-            if (SvOOK(hv) && entry == HvAUX(hv)->xhv_eiter /* HvEITER(hv) */) {
-                HvLAZYDEL_on(hv);
-            }
-            else {
-                if (SvOOK(hv) && HvLAZYDEL(hv) &&
-                    entry == HeNEXT(HvAUX(hv)->xhv_eiter))
-                    HeNEXT(HvAUX(hv)->xhv_eiter) = HeNEXT(entry);
-                hv_free_ent(hv, entry);
-            }
-            xhv->xhv_keys--; /* HvTOTALKEYS(hv)-- */
-            if (xhv->xhv_keys == 0)
-                HvHASKFLAGS_off(hv);
-        }
-
-        /* If this is a stash and the key ends with ::, then someone is 
-         * deleting a package.
-         */
-        if (sv && HvENAME_get(hv)) {
-                gv = (GV *)sv;
-                if ((
-                     (klen > 1 && key[klen-2] == ':' && key[klen-1] == ':')
-                      ||
-                     (klen == 1 && key[0] == ':')
-                    )
-                 && (klen != 6 || hv!=PL_defstash || memNE(key,"main::",6))
-                 && SvTYPE(gv) == SVt_PVGV && (stash = GvHV((GV *)gv))
-                 && HvENAME_get(stash)) {
-                        /* A previous version of this code checked that the
-                         * GV was still in the symbol table by fetching the
-                         * GV with its name. That is not necessary (and
-                         * sometimes incorrect), as HvENAME cannot be set
-                         * on hv if it is not in the symtab. */
-                        mro_changes = 2;
-                        /* Hang on to it for a bit. */
-                        SvREFCNT_inc_simple_void_NN(
-                         sv_2mortal((SV *)gv)
-                        );
-                }
-                else if (memEQs(key, klen, "ISA") && GvAV(gv)) {
-                    AV *isa = GvAV(gv);
-                    MAGIC *mg = mg_find((SV*)isa, PERL_MAGIC_isa);
-
-                    mro_changes = 1;
-                    if (mg) {
-                        if (mg->mg_obj == (SV*)gv) {
-                            /* This is the only stash this ISA was used for.
-                             * The isaelem magic asserts if there's no
-                             * isa magic on the array, so explicitly
-                             * remove the magic on both the array and its
-                             * elements.  @ISA shouldn't be /too/ large.
-                             */
-                            SV **svp, **end;
-                        strip_magic:
-                            svp = AvARRAY(isa);
-                            end = svp + (AvFILLp(isa)+1);
-                            while (svp < end) {
-                                if (*svp)
-                                    mg_free_type(*svp, PERL_MAGIC_isaelem);
-                                ++svp;
-                            }
-                            mg_free_type((SV*)GvAV(gv), PERL_MAGIC_isa);
-                        }
-                        else {
-                            /* mg_obj is an array of stashes
-                               Note that the array doesn't keep a reference
-                               count on the stashes.
-                             */
-                            AV *av = (AV*)mg->mg_obj;
-                            SV **svp, **arrayp;
-                            SSize_t index;
-                            SSize_t items;
-
-                            assert(SvTYPE(mg->mg_obj) == SVt_PVAV);
-
-                            /* remove the stash from the magic array */
-                            arrayp = svp = AvARRAY(av);
-                            items = AvFILLp(av) + 1;
-                            if (items == 1) {
-                                assert(*arrayp == (SV *)gv);
-                                mg->mg_obj = NULL;
-                                /* avoid a double free on the last stash */
-                                AvFILLp(av) = -1;
-                                /* The magic isn't MGf_REFCOUNTED, so release
-                                 * the array manually.
-                                 */
-                                SvREFCNT_dec_NN(av);
-                                goto strip_magic;
-                            }
-                            else {
-                                while (items--) {
-                                    if (*svp == (SV*)gv)
-                                        break;
-                                    ++svp;
-                                }
-                                index = svp - arrayp;
-                                assert(index >= 0 && index <= AvFILLp(av));
-                                if (index < AvFILLp(av)) {
-                                    arrayp[index] = arrayp[AvFILLp(av)];
-                                }
-                                arrayp[AvFILLp(av)] = NULL;
-                                --AvFILLp(av);
-                            }
-                        }
-                    }
-                }
+        if (!sv) {
+            hv_notallowed(k_flags, key, klen,
+                          "Attempt to delete disallowed key '%" SVf "' from"
+                          " a restricted hash");
         }
 
         if (k_flags & HVhek_FREEKEY)
             Safefree(key);
 
-        if (sv) {
-            /* deletion of method from stash */
-            if (isGV(sv) && isGV_with_GP(sv) && GvCVu(sv)
-             && HvENAME_get(hv))
-                mro_method_changed_in(hv);
+        /* It was already a placeholder, so return "not found": */
+        if (sv == &PL_sv_placeholder)
+            return NULL;
 
-            if (d_flags & G_DISCARD) {
-                SvREFCNT_dec(sv);
-                sv = NULL;
-            }
-            else {
-                sv_2mortal(sv);
-            }
-        }
-
-        if (mro_changes == 1) mro_isa_changed_in(hv);
-        else if (mro_changes == 2)
-            mro_package_moved(NULL, stash, gv, 1);
-
-        return sv;
+        /* If a restricted hash, rather than really deleting the entry, we
+         * have just put a placeholder there. This marks the key as being
+         * "approved", so we can still access via not-really-existing key
+         * without raising an error.
+         */
+        HvPLACEHOLDERS(hv)++;
+        /* Continue with all the regular "key has just been deleted" code... */
+    }
+    else if (!sv) {
+        /* Not found */
+        if (k_flags & HVhek_FREEKEY)
+            Safefree(key);
+        return NULL;
     }
 
-    if (SvREADONLY(hv)) {
-        hv_notallowed(k_flags, key, klen,
-                        "Attempt to delete disallowed key '%" SVf "' from"
-                        " a restricted hash");
+    /* If this is a stash and the key ends with ::, then someone is
+     * deleting a package.
+     */
+    if (HvENAME_get(hv)) {
+        gv = (GV *)sv;
+        if ((
+             (klen > 1 && key[klen-2] == ':' && key[klen-1] == ':')
+             ||
+             (klen == 1 && key[0] == ':')
+             )
+            && (klen != 6 || hv!=PL_defstash || memNE(key,"main::",6))
+            && SvTYPE(gv) == SVt_PVGV && (stash = GvHV((GV *)gv))
+            && HvENAME_get(stash)) {
+            /* A previous version of this code checked that the
+             * GV was still in the symbol table by fetching the
+             * GV with its name. That is not necessary (and
+             * sometimes incorrect), as HvENAME cannot be set
+             * on hv if it is not in the symtab. */
+            mro_changes = 2;
+            /* Hang on to it for a bit. */
+            SvREFCNT_inc_simple_void_NN(
+                                        sv_2mortal((SV *)gv)
+                                        );
+        }
+        else if (memEQs(key, klen, "ISA") && GvAV(gv)) {
+            AV *isa = GvAV(gv);
+            MAGIC *mg = mg_find((SV*)isa, PERL_MAGIC_isa);
+
+            mro_changes = 1;
+            if (mg) {
+                if (mg->mg_obj == (SV*)gv) {
+                    /* This is the only stash this ISA was used for.
+                     * The isaelem magic asserts if there's no
+                     * isa magic on the array, so explicitly
+                     * remove the magic on both the array and its
+                     * elements.  @ISA shouldn't be /too/ large.
+                     */
+                    SV **svp, **end;
+                strip_magic:
+                    svp = AvARRAY(isa);
+                    end = svp + (AvFILLp(isa)+1);
+                    while (svp < end) {
+                        if (*svp)
+                            mg_free_type(*svp, PERL_MAGIC_isaelem);
+                        ++svp;
+                    }
+                    mg_free_type((SV*)GvAV(gv), PERL_MAGIC_isa);
+                }
+                else {
+                    /* mg_obj is an array of stashes
+                       Note that the array doesn't keep a reference
+                       count on the stashes.
+                    */
+                    AV *av = (AV*)mg->mg_obj;
+                    SV **svp, **arrayp;
+                    SSize_t index;
+                    SSize_t items;
+
+                    assert(SvTYPE(mg->mg_obj) == SVt_PVAV);
+
+                    /* remove the stash from the magic array */
+                    arrayp = svp = AvARRAY(av);
+                    items = AvFILLp(av) + 1;
+                    if (items == 1) {
+                        assert(*arrayp == (SV *)gv);
+                        mg->mg_obj = NULL;
+                        /* avoid a double free on the last stash */
+                        AvFILLp(av) = -1;
+                        /* The magic isn't MGf_REFCOUNTED, so release
+                         * the array manually.
+                         */
+                        SvREFCNT_dec_NN(av);
+                        goto strip_magic;
+                    }
+                    else {
+                        while (items--) {
+                            if (*svp == (SV*)gv)
+                                break;
+                            ++svp;
+                        }
+                        index = svp - arrayp;
+                        assert(index >= 0 && index <= AvFILLp(av));
+                        if (index < AvFILLp(av)) {
+                            arrayp[index] = arrayp[AvFILLp(av)];
+                        }
+                        arrayp[AvFILLp(av)] = NULL;
+                        --AvFILLp(av);
+                    }
+                }
+            }
+        }
     }
 
     if (k_flags & HVhek_FREEKEY)
-        Safefree(key);
-    return NULL;
+            Safefree(key);
+
+    /* deletion of method from stash */
+    if (isGV(sv) && isGV_with_GP(sv) && GvCVu(sv) && HvENAME_get(hv))
+        mro_method_changed_in(hv);
+
+    if (d_flags & G_DISCARD) {
+        SvREFCNT_dec(sv);
+        sv = NULL;
+    }
+    else {
+        sv_2mortal(sv);
+    }
+
+    if (mro_changes == 1) mro_isa_changed_in(hv);
+    else if (mro_changes == 2)
+        mro_package_moved(NULL, stash, gv, 1);
+
+    return sv;
 }
 
 
