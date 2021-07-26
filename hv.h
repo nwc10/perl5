@@ -628,6 +628,22 @@ instead of a string/length pair, and no precomputed hash.
 /* Must not conflict with HVhek_UTF8 */
 #define HV_NAME_SETALL		0x02
 
+/* Internal hash flags. */
+
+#define HV_ABH_KEY_8BIT                         0x00
+#define HV_ABH_KEY_UTF8                         0x01
+#define HV_ABH_KEY_WASUTF8                      0x02
+#define HV_ABH_KEY_HEK                          0x03 /* Not yet implemented */
+#define HV_ABH_KEY_TYPE_MASK                    0x03
+
+#define HV_ABH_DELETE_TO_PLACEHOLDER            0x04
+#define HV_ABH_DELETE_RELEASES_HEK              0x08
+#define HV_ABH_DELETE_ACTION_MASK               0x0C
+
+#define HV_ABH_REFUSE_TO_DELETE_READONLY_VALUES 0x10
+
+#define HV_ABH_FREEKEY                  HVhek_FREEKEY
+
 /*
 =for apidoc newHV
 

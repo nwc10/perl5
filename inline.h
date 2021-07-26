@@ -341,6 +341,88 @@ Perl_hv_foreach(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, void *sta
         : S_hv_foreach_no_placeholders(aTHX_ hv, rand, callback, state);
 }
 
+PERL_STATIC_INLINE SV *
+Perl_LLH_delete(pTHX_ HV *hv, const char *key, STRLEN klen, BIKESHED hash,
+                U32 flags)
+{
+    XPVHV *xhv = (XPVHV*)SvANY(hv);
+    if (!HvARRAY(hv))
+        return NULL;
+
+    bool replace_with_placeholder
+        = (flags & HV_ABH_DELETE_ACTION_MASK) == HV_ABH_DELETE_TO_PLACEHOLDER;
+    /* Restricted hashes are really annoying: */
+    bool refuse_to_delete_readonly_values
+        = cBOOL(flags & HV_ABH_REFUSE_TO_DELETE_READONLY_VALUES);
+
+    U32 kflags = flags & HV_ABH_KEY_TYPE_MASK;
+
+    if (kflags == HV_ABH_KEY_HEK) {
+        Perl_croak(aTHX_ "panic: hash flag HV_ABH_KEY_HEK Not Yet Implemented");
+    }
+
+    HE **oentry = &(HvARRAY(hv))[hash & (I32) HvMAX(hv)];
+    HE *entry = *oentry;
+
+    for (; entry; oentry = &HeNEXT(entry), entry = *oentry) {
+        if (HeHASH(entry) != hash)		/* strings can't be equal */
+            continue;
+        if (HeKLEN(entry) != (I32)klen)
+            continue;
+        if (memNE(HeKEY(entry),key,klen))	/* is this it? */
+            continue;
+        if ((HeKFLAGS(entry) ^ kflags) & HVhek_UTF8)
+            continue;
+
+        /* Found! */
+
+        SV *sv = HeVAL(entry);
+
+        if (replace_with_placeholder && sv == &PL_sv_placeholder) {
+            /* if placeholder is here, it's already been "deleted".... */
+            return &PL_sv_placeholder;
+        }
+
+        if (refuse_to_delete_readonly_values && SvREADONLY(sv)) {
+            /* Aaargh, restricted hashes suck.
+             * This seems the easiest way to return a sentinel value that can't
+             * be confused with anything else. */
+            return (SV *) hv;
+        }
+
+        /*
+         * If a restricted hash, rather than really deleting the entry, put
+         * a placeholder there. This marks the key as being "approved", so
+         * we can still access via not-really-existing key without raising
+         * an error.
+         */
+        if (replace_with_placeholder) {
+            HeVAL(entry) = &PL_sv_placeholder;
+            return sv;
+        }
+
+        HeVAL(entry) = NULL;
+        *oentry = HeNEXT(entry);
+        if (SvOOK(hv) && entry == HvAUX(hv)->xhv_eiter /* HvEITER(hv) */) {
+            HvLAZYDEL_on(hv);
+        }
+        else {
+            if (SvOOK(hv) && HvLAZYDEL(hv) &&
+                entry == HeNEXT(HvAUX(hv)->xhv_eiter))
+                HeNEXT(HvAUX(hv)->xhv_eiter) = HeNEXT(entry);
+            hv_free_ent(hv, entry);
+        }
+        xhv->xhv_keys--; /* HvTOTALKEYS(hv)-- */
+        if (xhv->xhv_keys == 0) {
+            HvHASKFLAGS_off(hv);
+        }
+
+        return sv;
+    }
+
+    return NULL;
+}
+
 /* ------------------------------- mg.h ------------------------------- */
 
 #if defined(PERL_CORE) || defined(PERL_EXT)
