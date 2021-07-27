@@ -353,7 +353,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     HE **oentry;
     SV *sv;
     bool is_utf8;
-    bool in_collision;
     U32 masked_flags;
     const int return_svp = action & HV_FETCH_JUST_SV;
 
@@ -594,13 +593,19 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         } /* ISSTORE */
     } /* SvMAGICAL */
 
+#ifdef DYNAMIC_ENV_FETCH  /* if it's an %ENV lookup, we may get it on the fly */
+    bool do_dynamic_env_fetch
+        = !(action & HV_FETCH_ISSTORE)
+        && SvRMAGICAL((const SV *)hv)
+        && mg_find((const SV *)hv, PERL_MAGIC_env);
+#endif
+
     if (HvIS_EMPTY(hv)) {
         if (action & (HV_FETCH_LVALUE | HV_FETCH_ISSTORE)) {
             /* we're going to create an entry if we don't find one. */
         }
 #ifdef DYNAMIC_ENV_FETCH  /* if it's an %ENV lookup, we may get it on the fly */
-        else if (SvRMAGICAL((const SV *)hv)
-                 && mg_find((const SV *)hv, PERL_MAGIC_env)) {
+        else if (do_dynamic_env_fetch) {
             /* regular RVALUE fetch or exists, but an %ENV lookup  */
         }
 #endif
@@ -639,6 +644,9 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         PERL_HASH(hash, key, klen);
 
     masked_flags = (flags & HVhek_MASK);
+
+    bool will_recurse_because_magical
+        = (action & HV_FETCH_LVALUE) && SvMAGICAL(hv);
 
     entry = Perl_LLH_fetch(aTHX_ hv, key, klen, hash, masked_flags);
 
@@ -706,9 +714,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
 
  faking_not_found:
 #ifdef DYNAMIC_ENV_FETCH  /* %ENV lookup?  If so, try to fetch the value now */
-    if (!(action & HV_FETCH_ISSTORE) 
-        && SvRMAGICAL((const SV *)hv)
-        && mg_find((const SV *)hv, PERL_MAGIC_env)) {
+    if (do_dynamic_env_fetch) {
         unsigned long len;
         const char * const env = PerlEnv_ENVgetenv_len(key,&len);
         if (env) {
@@ -734,7 +740,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     }
     if (action & HV_FETCH_LVALUE) {
         val = action & HV_FETCH_EMPTY_HE ? NULL : newSV(0);
-        if (SvMAGICAL(hv)) {
+        if (will_recurse_because_magical) {
             /* At this point the old hv_fetch code would call to hv_store,
                which in turn might do some tied magic. So we need to make that
                magic check happen.  */
@@ -781,7 +787,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
      * making it harder to see if there is a collision. We also
      * reset the iterator randomizer if there is one.
      */
-    in_collision = *oentry != NULL;
     if ( *oentry && PL_HASH_RAND_BITS_ENABLED) {
         PL_hash_rand_bits++;
         PL_hash_rand_bits= ROTL_UV(PL_hash_rand_bits,1);
@@ -824,7 +829,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         HvHASKFLAGS_on(hv);
 
     xhv->xhv_keys++; /* HvTOTALKEYS(hv)++ */
-    if ( in_collision && DO_HSPLIT(xhv) ) {
+    if ( HeNEXT(HvARRAY(hv)[hash & (I32) xhv->xhv_max]) && DO_HSPLIT(xhv) ) {
         const STRLEN oldsize = xhv->xhv_max + 1;
         const U32 items = (U32)HvPLACEHOLDERS_get(hv);
 
