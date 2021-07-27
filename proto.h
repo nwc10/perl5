@@ -2602,6 +2602,10 @@ PERL_CALLCONV CV *	Perl_newXS_flags(pTHX_ const char *name, XSUBADDR_t subaddr, 
 PERL_CALLCONV CV *	Perl_newXS_len_flags(pTHX_ const char *name, STRLEN len, XSUBADDR_t subaddr, const char *const filename, const char *const proto, SV **const_svp, U32 flags);
 #define PERL_ARGS_ASSERT_NEWXS_LEN_FLAGS	\
 	assert(subaddr)
+PERL_CALLCONV HE*	Perl_new_he(pTHX)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_NEW_HE
+
 PERL_CALLCONV PERL_SI*	Perl_new_stackinfo(pTHX_ I32 stitems, I32 cxitems)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEW_STACKINFO
@@ -5162,10 +5166,6 @@ PERL_STATIC_NO_RET void	S_hv_notallowed(pTHX_ int flags, const char *key, I32 kl
 			__attribute__noreturn__;
 #define PERL_ARGS_ASSERT_HV_NOTALLOWED	\
 	assert(key); assert(msg)
-
-STATIC HE*	S_new_he(pTHX)
-			__attribute__warn_unused_result__;
-#define PERL_ARGS_ASSERT_NEW_HE
 
 #ifndef PERL_NO_INLINE_FUNCTIONS
 PERL_STATIC_INLINE U32	S_ptr_hash(PTRV u);
