@@ -3138,7 +3138,8 @@ HV *
 Perl_refcounted_he_chain_2hv(pTHX_ const struct refcounted_he *chain, U32 flags)
 {
     HV *hv;
-    U32 placeholders, max;
+    Size_t placeholders = 0;
+    Size_t keys = 0;
 
     if (flags)
         Perl_croak(aTHX_ "panic: refcounted_he_chain_2hv bad flags %" UVxf,
@@ -3148,84 +3149,54 @@ Perl_refcounted_he_chain_2hv(pTHX_ const struct refcounted_he *chain, U32 flags)
        and call ksplit.  But for now we'll make a potentially inefficient
        hash with only 8 entries in its array.  */
     hv = newHV();
-    max = HvMAX(hv);
-    if (!HvARRAY(hv)) {
-        char *array;
-        Newxz(array, PERL_HV_ARRAY_ALLOC_BYTES(max + 1), char);
-        HvARRAY(hv) = (HE**)array;
-    }
 
-    placeholders = 0;
     while (chain) {
 #ifdef USE_ITHREADS
         BIKESHED hash = chain->refcounted_he_hash;
+        STRLEN len = chain->refcounted_he_keylen;
+        const char *key = REF_HE_KEY(chain);
+        int flags = chain->refcounted_he_data[0] & HVhek_UTF8;
 #else
         BIKESHED hash = HEK_HASH(chain->refcounted_he_hek);
+        STRLEN len = HEK_LEN(chain->refcounted_he_hek);
+        const char *key = HEK_KEY(chain->refcounted_he_hek);
+        int flags = HEK_UTF8(chain->refcounted_he_hek);
 #endif
-        HE **oentry = &((HvARRAY(hv))[hash & max]);
-        HE *entry = *oentry;
-        SV *value;
+        HE *entry = Perl_LLH_lvalue_fetch(aTHX_ hv, key, len, hash, flags);
 
-        for (; entry; entry = HeNEXT(entry)) {
-            if (HeHASH(entry) == hash) {
-                /* We might have a duplicate key here.  If so, entry is older
-                   than the key we've already put in the hash, so if they are
-                   the same, skip adding entry.  */
-#ifdef USE_ITHREADS
-                const STRLEN klen = HeKLEN(entry);
-                const char *const key = HeKEY(entry);
-                if (klen == chain->refcounted_he_keylen
-                    && (!!HeKUTF8(entry)
-                        == !!(chain->refcounted_he_data[0] & HVhek_UTF8))
-                    && memEQ(key, REF_HE_KEY(chain), klen))
-                    goto next_please;
-#else
-                if (HeKEY_hek(entry) == chain->refcounted_he_hek)
-                    goto next_please;
-                if (HeKLEN(entry) == HEK_LEN(chain->refcounted_he_hek)
-                    && HeKUTF8(entry) == HEK_UTF8(chain->refcounted_he_hek)
-                    && memEQ(HeKEY(entry), HEK_KEY(chain->refcounted_he_hek),
-                             HeKLEN(entry)))
-                    goto next_please;
-#endif
-            }
+        if (entry->hent_hek) {
+            /* We have a "duplicate" key here. This entry is "older" than the
+               the value we've already put in the hash for this key. So skip
+               instead of "updating" this entry's HE with the older value. */
         }
-        assert (!entry);
-        entry = new_HE();
-
+        else {
+            SV *value = refcounted_he_value(chain);
+            if (value == &PL_sv_placeholder) {
+                placeholders++;
+            }
+            else {
+                keys++;
+            }
+            HeVAL(entry) = value;
 #ifdef USE_ITHREADS
-        HeKEY_hek(entry)
-            = share_hek_flags(REF_HE_KEY(chain),
-                              chain->refcounted_he_keylen,
-                              chain->refcounted_he_hash,
-                              (chain->refcounted_he_data[0]
-                               & (HVhek_UTF8|HVhek_WASUTF8)));
+            HeKEY_hek(entry) = share_hek_flags(key, len, hash, flags);
 #else
-        HeKEY_hek(entry) = share_hek_hek(chain->refcounted_he_hek);
+            HeKEY_hek(entry) = share_hek_hek(chain->refcounted_he_hek);
 #endif
-        value = refcounted_he_value(chain);
-        if (value == &PL_sv_placeholder)
-            placeholders++;
-        HeVAL(entry) = value;
+        }
 
-        /* Link it into the chain.  */
-        HeNEXT(entry) = *oentry;
-        *oentry = entry;
-
-        HvTOTALKEYS(hv)++;
-
-    next_please:
         chain = chain->refcounted_he_next;
-    }
-
-    if (placeholders) {
-        clear_placeholders(hv, placeholders);
     }
 
     /* We could check in the loop to see if we encounter any keys with key
        flags, but it's probably not worth it, as this per-hash flag is only
        really meant as an optimisation for things like Storable.  */
     HvHASKFLAGS_on(hv);
+    HvTOTALKEYS(hv) = keys + placeholders;
+    if (placeholders) {
+        clear_placeholders(hv, placeholders);
+    }
+
     DEBUG_A(Perl_hv_assert(aTHX_ hv));
 
     return hv;
