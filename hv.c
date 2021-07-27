@@ -53,8 +53,8 @@ holds the key and hash value.
 
 #else
 
-STATIC HE*
-S_new_he(pTHX)
+HE*
+Perl_new_he(pTHX)
 {
     HE* he;
     void ** const root = &PL_body_roots[HE_SVSLOT];
@@ -350,7 +350,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
 {
     XPVHV* xhv;
     HE *entry;
-    HE **oentry;
     SV *sv;
     bool is_utf8;
     U32 masked_flags;
@@ -648,9 +647,27 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     bool will_recurse_because_magical
         = (action & HV_FETCH_LVALUE) && SvMAGICAL(hv);
 
-    entry = Perl_LLH_fetch(aTHX_ hv, key, klen, hash, masked_flags);
+    bool lvalue = (action & (HV_FETCH_LVALUE|HV_FETCH_ISSTORE))
+        && !will_recurse_because_magical
+#ifdef DYNAMIC_ENV_FETCH
+        && !do_dynamic_env_fetch
+#endif
+        && !SvREADONLY(hv);
 
-    if (entry) {
+    /* This ordering is currently slightly twisted, as it reflects the old
+     * structure where it was cheap to store a new entry if the fetch returned
+     * not found. */
+
+    entry = lvalue
+        ? Perl_LLH_lvalue_fetch(aTHX_ hv, key, klen, hash, masked_flags)
+        : Perl_LLH_fetch(aTHX_ hv, key, klen, hash, masked_flags);
+
+    if (!lvalue && entry) {
+        assert(entry->hent_hek);
+    }
+
+    if (entry && entry->hent_hek) {
+        /* Existing entry. */
         if (action & (HV_FETCH_LVALUE|HV_FETCH_ISSTORE)) {
             if (HeKFLAGS(entry) != masked_flags) {
                 /* We match if HVhek_UTF8 bit in our flags and hash key's
@@ -761,67 +778,15 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
     }
 
     /* Welcome to hv_store...  */
-
-    if (!HvARRAY(hv)) {
-        char *array;
-        Newxz(array,
-             PERL_HV_ARRAY_ALLOC_BYTES(xhv->xhv_max+1 /* HvMAX(hv)+1 */),
-             char);
-        HvARRAY(hv) = (HE**)array;
-    }
-
-    oentry = &(HvARRAY(hv))[hash & (I32) xhv->xhv_max];
-
-    entry = new_HE();
+    assert(entry->hent_hek == NULL);
     /* share_hek_flags will do the free for us.  This might be considered
        bad API design.  */
     if (HvSHAREKEYS(hv))
         HeKEY_hek(entry) = share_hek_flags(key, klen, hash, flags);
     else                                       /* gotta do the real thing */
         HeKEY_hek(entry) = save_hek_flags(key, klen, hash, flags);
+    assert(HeVAL(entry) == NULL);
     HeVAL(entry) = val;
-
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-    /* This logic semi-randomizes the insert order in a bucket.
-     * Either we insert into the top, or the slot below the top,
-     * making it harder to see if there is a collision. We also
-     * reset the iterator randomizer if there is one.
-     */
-    if ( *oentry && PL_HASH_RAND_BITS_ENABLED) {
-        PL_hash_rand_bits++;
-        PL_hash_rand_bits= ROTL_UV(PL_hash_rand_bits,1);
-        if ( PL_hash_rand_bits & 1 ) {
-            HeNEXT(entry) = HeNEXT(*oentry);
-            HeNEXT(*oentry) = entry;
-        } else {
-            HeNEXT(entry) = *oentry;
-            *oentry = entry;
-        }
-    } else
-#endif
-    {
-        HeNEXT(entry) = *oentry;
-        *oentry = entry;
-    }
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-    if (SvOOK(hv)) {
-        /* Currently this makes various tests warn in annoying ways.
-         * So Silenced for now. - Yves | bogus end of comment =>* /
-        if (HvAUX(hv)->xhv_riter != -1) {
-            Perl_ck_warner_d(aTHX_ packWARN(WARN_INTERNAL),
-                             "[TESTING] Inserting into a hash during each() traversal results in undefined behavior"
-                             pTHX__FORMAT
-                             pTHX__VALUE);
-        }
-        */
-        if (PL_HASH_RAND_BITS_ENABLED) {
-            if (PL_HASH_RAND_BITS_ENABLED == 1)
-                PL_hash_rand_bits += (PTRV)entry + 1;  /* we don't bother to use ptr_hash here */
-            PL_hash_rand_bits= ROTL_UV(PL_hash_rand_bits,1);
-        }
-        HvAUX(hv)->xhv_rand= (U32)PL_hash_rand_bits;
-    }
-#endif
 
     if (val == &PL_sv_placeholder)
         HvPLACEHOLDERS(hv)++;

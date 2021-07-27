@@ -2887,7 +2887,6 @@ po	|SV*	|hfree_next_entry	|NN HV *hv|NN STRLEN *indexp
 S	|void	|hsplit		|NN HV *hv|STRLEN const oldsize|STRLEN newsize
 S	|void	|hv_free_entries|NN HV *hv
 S	|SV*	|hv_free_ent_ret|NN HV *hv|NN HE *entry
-SR	|HE*	|new_he
 SaTR	|HEK*	|save_hek_flags	|NN const char *str|STRLEN len|BIKESHED hash|U32 flags
 ST	|void	|hv_magic_check	|NN HV *hv|NN bool *needs_copy|NN bool *needs_store
 S	|void	|unshare_hek_or_pvn|NULLOK HEK* hek|NULLOK const char* str|SSize_t len|BIKESHED hash
@@ -2900,6 +2899,7 @@ Sx	|SV*	|hv_delete_common|NULLOK HV *hv|NULLOK SV *keysv \
 		|BIKESHED hash
 Sx	|void	|clear_placeholders	|NN HV *hv|U32 items
 #endif
+pR	|HE*	|new_he
 
 #if defined(PERL_IN_MG_C)
 S	|void	|save_magic_flags|I32 mgs_ix|NN SV *sv|U32 flags

@@ -452,6 +452,86 @@ Perl_LLH_fetch(pTHX_ HV *hv, const char *key, STRLEN klen, BIKESHED hash,
     return NULL;
 }
 
+/* Returns the existing hash entry, or creates a new one.
+ * If returning a new entry, HeKEY() is NULL.
+ * *Caller* is responsible for filling this in.
+ * Until the caller does this, the hash is in an illegal state. */
+PERL_STATIC_INLINE HE *
+Perl_LLH_lvalue_fetch(pTHX_ HV *hv, const char *key, STRLEN klen, BIKESHED hash,
+                      U32 flags)
+{
+    if (HvARRAY(hv)) {
+        HE *entry = Perl_LLH_fetch(aTHX_ hv, key, klen, hash, flags);
+
+        if (entry) {
+            if (!HeVAL(entry)) {
+                /* Oi! This wasn't a valid hash entry. It's not kosher to store
+                 * NULL. We need to fix this. */
+                HeVAL(entry) = newSV(0);
+            }
+            return entry;
+        }
+    }
+    else {
+        char *array;
+        Newxz(array,
+              PERL_HV_ARRAY_ALLOC_BYTES(HvMAX(hv)+1 /* HvMAX(hv)+1 */),
+              char);
+        HvARRAY(hv) = (HE**)array;
+    }
+
+    HE **oentry = &(HvARRAY(hv))[hash & (I32) HvMAX(hv)];
+
+    HE *entry = Perl_new_he(aTHX);
+    HeVAL(entry) = NULL;
+    /* This signals to our caller that this is a freshly allocated entry: */
+    entry->hent_hek = NULL;
+
+#ifdef PERL_HASH_RANDOMIZE_KEYS
+    /* This logic semi-randomizes the insert order in a bucket.
+     * Either we insert into the top, or the slot below the top,
+     * making it harder to see if there is a collision. We also
+     * reset the iterator randomizer if there is one.
+     */
+    if ( *oentry && PL_HASH_RAND_BITS_ENABLED) {
+        PL_hash_rand_bits++;
+        PL_hash_rand_bits= ROTL_UV(PL_hash_rand_bits,1);
+        if ( PL_hash_rand_bits & 1 ) {
+            HeNEXT(entry) = HeNEXT(*oentry);
+            HeNEXT(*oentry) = entry;
+        } else {
+            HeNEXT(entry) = *oentry;
+            *oentry = entry;
+        }
+    } else
+#endif
+    {
+        HeNEXT(entry) = *oentry;
+        *oentry = entry;
+    }
+#ifdef PERL_HASH_RANDOMIZE_KEYS
+    if (SvOOK(hv)) {
+        /* Currently this makes various tests warn in annoying ways.
+         * So Silenced for now. - Yves | bogus end of comment =>* /
+        if (HvAUX(hv)->xhv_riter != -1) {
+            Perl_ck_warner_d(aTHX_ packWARN(WARN_INTERNAL),
+                             "[TESTING] Inserting into a hash during each() traversal results in undefined behavior"
+                             pTHX__FORMAT
+                             pTHX__VALUE);
+        }
+        */
+        if (PL_HASH_RAND_BITS_ENABLED) {
+            if (PL_HASH_RAND_BITS_ENABLED == 1)
+                PL_hash_rand_bits += (PTRV)entry + 1;  /* we don't bother to use ptr_hash here */
+            PL_hash_rand_bits= ROTL_UV(PL_hash_rand_bits,1);
+        }
+        HvAUX(hv)->xhv_rand= (U32)PL_hash_rand_bits;
+    }
+#endif
+
+    return entry;
+}
+
 /* ------------------------------- mg.h ------------------------------- */
 
 #if defined(PERL_CORE) || defined(PERL_EXT)
