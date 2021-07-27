@@ -640,22 +640,9 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
 
     masked_flags = (flags & HVhek_MASK);
 
-    if (!HvARRAY(hv)) entry = NULL;
-    else
-    {
-        entry = (HvARRAY(hv))[hash & (I32) HvMAX(hv)];
-    }
+    entry = Perl_LLH_fetch(aTHX_ hv, key, klen, hash, masked_flags);
 
-    for (; entry; entry = HeNEXT(entry)) {
-        if (HeHASH(entry) != hash)		/* strings can't be equal */
-            continue;
-        if (HeKLEN(entry) != (I32)klen)
-            continue;
-        if (memNE(HeKEY(entry),key,klen))	/* is this it? */
-            continue;
-        if ((HeKFLAGS(entry) ^ masked_flags) & HVhek_UTF8)
-            continue;
-
+    if (entry) {
         if (action & (HV_FETCH_LVALUE|HV_FETCH_ISSTORE)) {
             if (HeKFLAGS(entry) != masked_flags) {
                 /* We match if HVhek_UTF8 bit in our flags and hash key's
@@ -689,7 +676,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
                            caused a call into hv_store, which in turn would
                            check magic, and if there is no magic end up pretty
                            much back at this point (in hv_store's code).  */
-                        break;
+                        goto faking_not_found;
                     }
                     /* LVAL fetch which actually needs a store.  */
                     val = newSV(0);
@@ -707,7 +694,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         } else if (HeVAL(entry) == &PL_sv_placeholder) {
             /* if we find a placeholder, we pretend we haven't found
                anything */
-            break;
+            goto faking_not_found;
         }
         if (flags & HVhek_FREEKEY)
             Safefree(key);
@@ -717,6 +704,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         return entry;
     }
 
+ faking_not_found:
 #ifdef DYNAMIC_ENV_FETCH  /* %ENV lookup?  If so, try to fetch the value now */
     if (!(action & HV_FETCH_ISSTORE) 
         && SvRMAGICAL((const SV *)hv)

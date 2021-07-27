@@ -423,6 +423,35 @@ Perl_LLH_delete(pTHX_ HV *hv, const char *key, STRLEN klen, BIKESHED hash,
     return NULL;
 }
 
+PERL_STATIC_INLINE HE *
+Perl_LLH_fetch(pTHX_ HV *hv, const char *key, STRLEN klen, BIKESHED hash,
+                U32 flags)
+{
+    if (!HvARRAY(hv))
+        return NULL;
+
+    U32 kflags = flags & HV_ABH_KEY_TYPE_MASK;
+
+    if (kflags == HV_ABH_KEY_HEK) {
+        Perl_croak(aTHX_ "panic: hash flag HV_ABH_KEY_HEK Not Yet Implemented");
+    }
+
+    HE *entry = (HvARRAY(hv))[hash & (I32) HvMAX(hv)];
+    for (; entry; entry = HeNEXT(entry)) {
+        if (HeHASH(entry) != hash)		/* strings can't be equal */
+            continue;
+        if (HeKLEN(entry) != (I32)klen)
+            continue;
+        if (memNE(HeKEY(entry),key,klen))	/* is this it? */
+            continue;
+        if ((HeKFLAGS(entry) ^ kflags) & HVhek_UTF8)
+            continue;
+
+        return entry;
+    }
+    return NULL;
+}
+
 /* ------------------------------- mg.h ------------------------------- */
 
 #if defined(PERL_CORE) || defined(PERL_EXT)
