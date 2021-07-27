@@ -594,7 +594,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         } /* ISSTORE */
     } /* SvMAGICAL */
 
-    if (!HvARRAY(hv)) {
+    if (HvIS_EMPTY(hv)) {
         if (action & (HV_FETCH_LVALUE | HV_FETCH_ISSTORE)) {
             /* we're going to create an entry if we don't find one. */
         }
@@ -605,7 +605,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         }
 #endif
         else {
-            /* RVALUE fetch, exists delete. Not found/nothing to delete. */
+            /* exists or RVALUE fetch. Nothing there, so not found. */
             if (flags & HVhek_FREEKEY)
                 Safefree(key);
 
