@@ -4758,6 +4758,8 @@ hints/uwin.sh			Hints for named architecture
 hints/vos.sh			Hints for named architecture
 hv.c				Hash value code
 hv.h				Hash value header
+hv_abh.c			A Better Hash code
+hv_abh.h			A Better Hash header and inline functions
 hv_func.h			Hash value static inline function header
 hv_macro.h			Macros used by hv_func.h
 inline.h			Static inline functions
