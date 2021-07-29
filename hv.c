@@ -1453,7 +1453,7 @@ Perl_newHVhv(pTHX_ HV *ohv)
         return hv;
     hv_max = HvMAX(ohv);
 
-    if (UNLIKELY(SvMAGICAL((const SV *)ohv))) {
+    if (1 || UNLIKELY(SvMAGICAL((const SV *)ohv))) {
         /* Iterate over ohv, copying keys and values one at a time. */
         STRLEN hv_keys = HvTOTALKEYS(ohv);
 
@@ -1463,6 +1463,7 @@ Perl_newHVhv(pTHX_ HV *ohv)
                                 newHVhv_callback, hv);
     }
     else {
+        abort();
         /* It's an ordinary hash, so copy it fast. AMS 20010804 */
         STRLEN i;
         const bool shared = !!HvSHAREKEYS(ohv);
