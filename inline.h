@@ -532,6 +532,51 @@ Perl_LLH_lvalue_fetch(pTHX_ HV *hv, const char *key, STRLEN klen, BIKESHED hash,
     return entry;
 }
 
+PERL_STATIC_INLINE void *
+Perl_ABH_fetch(pTHX_ Perl_ABH_Table *hashtable,
+               const char *key, STRLEN klen, BIKESHED hash, U32 flags)
+{
+    if (UNLIKELY(S_ABH_is_empty(hashtable))) {
+        return NULL;
+    }
+
+    U32 kflags = flags & HV_ABH_KEY_TYPE_MASK;
+    if (kflags == HV_ABH_KEY_HEK) {
+        Perl_croak(aTHX_ "panic: hash flag HV_ABH_KEY_HEK Not Yet Implemented");
+    }
+
+    struct Perl_ABH_loop_state ls = S_ABH_create_loop_state(hashtable, hash);
+
+    while (1) {
+        if (*ls.metadata == ls.probe_distance) {
+            HEK **entry = (HEK **) ls.entry_raw;
+            HEK *hek = *entry;
+            if (HEK_HASH(hek) == hash
+                && (STRLEN) HEK_LEN(hek) == klen
+                && memEQ(HEK_KEY(hek), key, klen)
+                && HEK_FLAGS(hek) == kflags) {
+                return entry;
+            }
+        }
+        /* There's a sentinel at the end. This will terminate: */
+        else if (*ls.metadata < ls.probe_distance) {
+            /* So, if we hit 0, the bucket is empty. "Not found".
+               If we hit something with a lower probe distance then...
+               consider what would have happened had this key been inserted into
+               the hash table - it would have stolen this slot, and the key we
+               find here now would have been displaced further on. Hence, the
+               key we seek can't be in the hash table. */
+            return NULL;
+        }
+        ls.probe_distance += ls.metadata_increment;
+        ++ls.metadata;
+        ls.entry_raw -= ls.entry_size;
+        assert(ls.probe_distance < (hashtable->max_probe_distance + 2) * ls.metadata_increment);
+        assert(ls.metadata < Perl_ABH_metadata(hashtable) + Perl_ABH_get_official_size(hashtable) + Perl_ABH_calc_max_items(hashtable));
+        assert(ls.metadata < Perl_ABH_metadata(hashtable) + Perl_ABH_get_official_size(hashtable) + 256);
+    }
+}
+
 /* ------------------------------- mg.h ------------------------------- */
 
 #if defined(PERL_CORE) || defined(PERL_EXT)
