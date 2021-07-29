@@ -650,8 +650,8 @@ Perl_sv_clean_objs(pTHX)
 static void
 do_clean_all(pTHX_ SV *const sv)
 {
-    if (sv == (const SV *) PL_fdpid || sv == (const SV *)PL_strtab) {
-        /* don't clean pid table and strtab */
+    if (sv == (const SV *) PL_fdpid) {
+        /* don't clean pid table */
         return;
     }
     DEBUG_D((PerlIO_printf(Perl_debug_log, "Cleaning loops: SV at 0x%" UVxf "\n", PTR2UV(sv)) ));
@@ -15533,10 +15533,8 @@ perl_clone_using(PerlInterpreter *proto_perl, UV flags,
     ptr_table_store(PL_ptr_table, &proto_perl->Ipadname_const,
                     &PL_padname_const);
 
-    /* create (a non-shared!) shared string table */
-    PL_strtab		= newHV();
-    HvSHAREKEYS_off(PL_strtab);
-    hv_ksplit(PL_strtab, HvTOTALKEYS(proto_perl->Istrtab));
+    /* create shared string table */
+    Perl_ABH_build(aTHX_ &PL_strtab, sizeof(HEK *), S_ABH_count(proto_perl->Istrtab));
     ptr_table_store(PL_ptr_table, proto_perl->Istrtab, PL_strtab);
 
     Zero(PL_sv_consts, SV_CONSTS_COUNT, SV*);

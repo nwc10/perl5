@@ -364,15 +364,7 @@ perl_construct(pTHXx)
     /* Allow PL_strtab to be pre-initialized before calling perl_construct.
     * can use a custom optimized PL_strtab hash before calling perl_construct */
     if (!PL_strtab) {
-        /* Note that strtab is a rather special HV.  Assumptions are made
-           about not iterating on it, and not adding tie magic to it.
-           It is properly deallocated in perl_destruct() */
-        PL_strtab = newHV();
-
-        /* SHAREKEYS tells us that the hash has its keys shared with PL_strtab,
-         * which is not the case with PL_strtab itself */
-        HvSHAREKEYS_off(PL_strtab);			/* mandatory */
-        hv_ksplit(PL_strtab, 1 << 11);
+        Perl_ABH_build(aTHX_ &PL_strtab, sizeof(HEK *), 1 << 11);
     }
 
     Zero(PL_sv_consts, SV_CONSTS_COUNT, SV*);
@@ -1294,8 +1286,8 @@ perl_destruct(pTHXx)
 
     /* Now absolutely destruct everything, somehow or other, loops or no. */
 
-    /* the 2 is for PL_fdpid and PL_strtab */
-    while (sv_clean_all() > 2)
+    /* the 1 is for PL_fdpid */
+    while (sv_clean_all() > 1)
         ;
 
 #ifdef USE_ITHREADS
@@ -1316,6 +1308,7 @@ perl_destruct(pTHXx)
         PL_sv_consts[i] = NULL;
     }
 
+#if LUNCH
     /* Destruct the global string table. */
     {
         /* Yell and reset the HeVAL() slots that are still holding refcounts,
@@ -1349,7 +1342,9 @@ perl_destruct(pTHXx)
         HvARRAY(PL_strtab) = 0;
         HvTOTALKEYS(PL_strtab) = 0;
     }
-    SvREFCNT_dec(PL_strtab);
+#endif
+    Perl_ABH_demolish(aTHX_ &PL_strtab);
+    PL_strtab = NULL;
 
 #ifdef USE_ITHREADS
     /* free the pointer tables used for cloning */

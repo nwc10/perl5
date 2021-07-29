@@ -2909,13 +2909,6 @@ mycroak(sv)
         Perl_croak(aTHX_ NULL);
     }
 
-SV*
-strtab()
-   CODE:
-   RETVAL = newRV_inc((SV*)PL_strtab);
-   OUTPUT:
-   RETVAL
-
 int
 my_cxt_getint()
     CODE:

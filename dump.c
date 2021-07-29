@@ -2244,10 +2244,13 @@ Perl_do_sv_dump(pTHX_ I32 level, PerlIO *file, SV *sv, I32 nest, I32 maxnest, bo
                             PerlIO_printf(file, "[CURRENT] ");
                         PerlIO_printf(file, "HASH = 0x%" UVxf, (UV) hash);
 
+#if LUNCH
                         if (sv == (SV*)PL_strtab)
                             PerlIO_printf(file, " REFCNT = 0x%" UVxf "\n",
                                 (UV)he->hent_hek->hek_refcount );
-                        else {
+                        else
+#endif
+                            {
                             (void)PerlIO_putc(file, '\n');
                             do_sv_dump(level+1, file, elt, nest+1, maxnest, dumpops, pvlim);
                         }

@@ -357,7 +357,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
 
     if (!hv)
         return NULL;
-    if (hv == PL_strtab) {
+    if (hv == (HV *) PL_strtab) {
         if (flags & HVhek_FREEKEY)
             Safefree(key);
         Perl_croak(aTHX_ "Calling hv_%s on the shared string table is no longer supported",
@@ -2841,10 +2841,6 @@ Perl_unshare_hek(pTHX_ HEK *hek)
 STATIC void
 S_unshare_hek_or_pvn(pTHX_ HEK *hek, const char *str, SSize_t len, BIKESHED hash)
 {
-    XPVHV* xhv;
-    HE *entry;
-    HE **oentry;
-    bool is_utf8 = FALSE;
     int k_flags = 0;
     const char * const save = str;
 
@@ -2854,64 +2850,27 @@ S_unshare_hek_or_pvn(pTHX_ HEK *hek, const char *str, SSize_t len, BIKESHED hash
             return;
         }
 
-        /* Find the shared he which is just before us in memory.  */
-        struct shared_he *he
-            = (struct shared_he *)(((char *)hek)
-                                   - STRUCT_OFFSET(struct shared_he,
-                                                   shared_he_hek));
-
-        /* Assert that the caller passed us a genuine (or at least consistent)
-           shared hek  */
-        assert (he->shared_he_he.hent_hek == hek);
-
         str = HEK_KEY(hek);
         len = HEK_LEN(hek);
         k_flags = HEK_FLAGS(hek) & HVhek_MASK;
         hash = HEK_HASH(hek);
     } else if (len < 0) {
         STRLEN tmplen = -len;
-        is_utf8 = TRUE;
+        bool is_utf8 = TRUE;
         /* See the note in hv_fetch(). --jhi */
         str = (char*)bytes_from_utf8((U8*)str, &tmplen, &is_utf8);
         len = tmplen;
         if (is_utf8)
             k_flags = HVhek_UTF8;
-        if (str != save)
-            k_flags |= HVhek_WASUTF8 | HVhek_FREEKEY;
-    }
-
-    /* what follows was the moral equivalent of:
-    if ((Svp = hv_fetch(PL_strtab, tmpsv, FALSE, hash))) {
-        if (--*Svp == NULL)
-            hv_delete(PL_strtab, str, len, G_DISCARD, hash);
-    } */
-    xhv = (XPVHV*)SvANY(PL_strtab);
-    /* assert(xhv_array != 0) */
-    oentry = &(HvARRAY(PL_strtab))[hash & (I32) HvMAX(PL_strtab)];
-    {
-        const U32 flags_masked = k_flags & HVhek_MASK;
-        for (entry = *oentry; entry; oentry = &HeNEXT(entry), entry = *oentry) {
-            if (HeHASH(entry) != hash)		/* strings can't be equal */
-                continue;
-            if (HeKLEN(entry) != len)
-                continue;
-            if (HeKEY(entry) != str && memNE(HeKEY(entry),str,len))	/* is this it? */
-                continue;
-            if (HeKFLAGS(entry) != flags_masked)
-                continue;
-            break;
+        if (str != save) {
+            k_flags = HVhek_WASUTF8 | HVhek_FREEKEY;
+            PERL_HASH(hash, str, len);
         }
     }
 
-    if (entry) {
-        if (--entry->hent_hek->hek_refcount == 0) {
-            *oentry = HeNEXT(entry);
-            Safefree(entry);
-            xhv->xhv_keys--; /* HvTOTALKEYS(hv)-- */
-        }
-    }
-
-    if (!entry)
+    void *found = Perl_ABH_delete(aTHX_ &PL_strtab, str, len, hash,
+                                  k_flags | HV_ABH_DELETE_RELEASES_HEK);
+    if (!found)
         Perl_ck_warner_d(aTHX_ packWARN(WARN_INTERNAL),
                          "Attempt to free nonexistent shared string '%s'%s"
                          pTHX__FORMAT,
@@ -2959,89 +2918,37 @@ Perl_share_hek(pTHX_ const char *str, SSize_t len, BIKESHED hash)
 STATIC HEK *
 S_share_hek_flags(pTHX_ const char *str, STRLEN len, BIKESHED hash, U32 flags)
 {
-    HE *entry;
     const U32 flags_masked = flags & HVhek_MASK;
-    const U32 hindex = hash & (I32) HvMAX(PL_strtab);
-    XPVHV * const xhv = (XPVHV*)SvANY(PL_strtab);
 
     PERL_ARGS_ASSERT_SHARE_HEK_FLAGS;
 
-    if (UNLIKELY(len > (STRLEN) I32_MAX)) {
-        Perl_croak_nocontext("Sorry, hash keys must be smaller than 2**31 bytes");
+    HEK **entry = (HEK **)Perl_ABH_lvalue_fetch(aTHX_ &PL_strtab, str, len, hash, flags);
+    HEK *hek;
+
+    if (*entry) {
+        hek = *entry;
+        ++hek->hek_refcount;
     }
-
-    /* what follows is the moral equivalent of:
-
-    if (!(Svp = hv_fetch(PL_strtab, str, len, FALSE)))
-        hv_store(PL_strtab, str, len, NULL, hash);
-
-        Can't rehash the shared string table, so not sure if it's worth
-        counting the number of entries in the linked list
-    */
-
-    /* assert(xhv_array != 0) */
-    entry = (HvARRAY(PL_strtab))[hindex];
-    for (;entry; entry = HeNEXT(entry)) {
-        if (HeHASH(entry) != hash)		/* strings can't be equal */
-            continue;
-        if (HeKLEN(entry) != (SSize_t) len)
-            continue;
-        if (HeKEY(entry) != str && memNE(HeKEY(entry),str,len))	/* is this it? */
-            continue;
-        if (HeKFLAGS(entry) != flags_masked)
-            continue;
-        break;
-    }
-
-    if (!entry) {
-        /* What used to be head of the list.
-           If this is NULL, then we're the first entry for this slot, which
-           means we need to increate fill.  */
-        struct shared_he *new_entry;
-        HEK *hek;
+    else {
         char *k;
-        HE **const head = &HvARRAY(PL_strtab)[hindex];
-        HE *const next = *head;
-
-        /* We don't actually store a HE from the arena and a regular HEK.
-           Instead we allocate one chunk of memory big enough for both,
-           and put the HEK straight after the HE. This way we can find the
-           HE directly from the HEK.
-        */
-
-        Newx(k, STRUCT_OFFSET(struct shared_he,
-                                shared_he_hek.hek_key[0]) + len + 2, char);
-        new_entry = (struct shared_he *)k;
-        entry = &(new_entry->shared_he_he);
-        hek = &(new_entry->shared_he_hek);
+        Newx(k, STRUCT_OFFSET(struct hek, hek_key[0]) + len + 1, char);
+        hek = (HEK*) k;
 
         Copy(str, HEK_KEY(hek), len, char);
         HEK_KEY(hek)[len] = 0;
         HEK_LEN(hek) = len;
         HEK_HASH(hek) = hash;
-        HEK_FLAGS(hek) = (unsigned char)flags_masked;
+        HEK_FLAGS(hek) = flags_masked;
+        hek->hek_refcount = 1;
 
-        /* Still "point" to the HEK, so that other code need not know what
-           we're up to.  */
-        HeKEY_hek(entry) = hek;
-        entry->hent_hek->hek_refcount = 0;
-        HeNEXT(entry) = next;
-        *head = entry;
-
-        xhv->xhv_keys++; /* HvTOTALKEYS(hv)++ */
-        if (!next) {			/* initial entry? */
-        } else if ( DO_HSPLIT(xhv) ) {
-            const STRLEN oldsize = xhv->xhv_max + 1;
-            hsplit(PL_strtab, oldsize, oldsize * 2);
-        }
+        *entry = hek;
     }
 
-    ++entry->hent_hek->hek_refcount;
 
     if (flags & HVhek_FREEKEY)
         Safefree(str);
 
-    return HeKEY_hek(entry);
+    return hek;
 }
 
 SSize_t *
