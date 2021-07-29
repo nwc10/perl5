@@ -154,7 +154,8 @@ bucket_info(rhv)
     if (SvROK(rhv) && SvTYPE(SvRV(rhv))==SVt_PVHV && !SvMAGICAL(SvRV(rhv))) {
         hv = (const HV *) SvRV(rhv);
     } else if (!SvOK(rhv)) {
-        hv = PL_strtab;
+        Perl_croak(aTHX_ "panic: LUNCH - PL_strtab passed to bucket_info");
+        /*hv = PL_strtab;*/
     }
     if (hv) {
         U32 max_bucket_index= HvMAX(hv);
@@ -214,7 +215,8 @@ bucket_array(rhv)
     if (SvROK(rhv) && SvTYPE(SvRV(rhv))==SVt_PVHV && !SvMAGICAL(SvRV(rhv))) {
         hv = (const HV *) SvRV(rhv);
     } else if (!SvOK(rhv)) {
-        hv = PL_strtab;
+        Perl_croak(aTHX_ "panic: LUNCH - PL_strtab passed to bucket_array");
+        /*hv = PL_strtab;*/
     }
     if (hv) {
         HE **he_ptr= HvARRAY(hv);

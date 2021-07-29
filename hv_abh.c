@@ -388,7 +388,7 @@ S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
             HEK **old_entry = (HEK **) entry_raw;
             HEK **new_entry = S_hash_insert_internal(aTHX_ hashtable, NULL, 0,
                                                      (*old_entry)->hek_hash, 0);
-            assert((*new_entry)->hek_key == NULL);
+            assert(*new_entry == NULL);
 
             /* The `memcpy` in the else is equivalent to this, and quite
              * possibly its implementation starts with a jump-table based on

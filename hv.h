@@ -48,11 +48,6 @@ struct hek {
     /* the hash-key is \0-terminated */
 };
 
-struct shared_he {
-    struct he shared_he_he;
-    struct hek shared_he_hek;
-};
-
 /* Subject to change.
    Don't access this directly.
    Use the funcs in mro_core.c
@@ -399,7 +394,7 @@ See L</hv_fill>.
 #define HVhek_KEYCANONICAL 0x400 /* Internal flag - key is in canonical form.
                                     If the string is UTF-8, it cannot be
                                     converted to bytes. */
-#define HVhek_MASK	0xFF
+#define HVhek_MASK      (HVhek_UTF8 | HVhek_WASUTF8)
 
 #define HVhek_ENABLEHVKFLAGS        HVhek_MASK
 
