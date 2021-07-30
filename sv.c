@@ -6614,8 +6614,10 @@ Perl_sv_clear(pTHX_ SV *const orig_sv)
     SV* iter_sv = NULL;
     SV* next_sv = NULL;
     SV *sv = orig_sv;
+#if 0
     STRLEN hash_index = 0; /* initialise to make Coverity et al happy.
                               Not strictly necessary */
+#endif
 
     PERL_ARGS_ASSERT_SV_CLEAR;
 
@@ -6701,6 +6703,9 @@ Perl_sv_clear(pTHX_ SV *const orig_sv)
                 sv_del_backref(MUTABLE_SV(stash), sv);
             goto freescalar;
         case SVt_PVHV:
+#if 0
+            /* Replace this with code that uses Perl_ABH_first() etc storing
+             * that iterator state within SvANY(sv))->xmg_u.xmg_hash_index */
             if (HvTOTALKEYS((HV*)sv) > 0) {
                 const HEK *hek;
                 /* this statement should match the one at the beginning of
@@ -6733,6 +6738,7 @@ Perl_sv_clear(pTHX_ SV *const orig_sv)
                 next_sv = Perl_hfree_next_entry(aTHX_ (HV*)sv, &hash_index);
                 goto get_next_sv; /* process this new sv */
             }
+#endif
             /* free empty hash */
             Perl_hv_undef_flags(aTHX_ MUTABLE_HV(sv), HV_NAME_SETALL);
             assert(!HvARRAY((HV*)sv));
@@ -6909,6 +6915,8 @@ Perl_sv_clear(pTHX_ SV *const orig_sv)
                     goto free_body;
                 }
             } else if (SvTYPE(iter_sv) == SVt_PVHV) {
+                abort();
+#if 0
                 sv = Perl_hfree_next_entry(aTHX_ (HV*)iter_sv, &hash_index);
                 if (!sv && !HvTOTALKEYS((HV *)iter_sv)) {
                     /* no more elements of current HV to free */
@@ -6930,6 +6938,7 @@ Perl_sv_clear(pTHX_ SV *const orig_sv)
                     assert(!HvARRAY((HV*)sv));
                     goto free_body;
                 }
+#endif
             }
 
             /* unrolled SvREFCNT_dec and sv_free2 follows: */
