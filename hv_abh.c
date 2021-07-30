@@ -292,7 +292,7 @@ S_hash_insert_internal(pTHX_ Perl_ABH_Table *hashtable,
             HEK *hek = *entry;
             if (HEK_HASH(hek) == hash
                 && (STRLEN) HEK_LEN(hek) == klen
-                && memEQ(HEK_KEY(hek), key, klen)
+                && (HEK_KEY(hek) == key || memEQ(HEK_KEY(hek), key, klen))
                 && HEK_FLAGS(hek) == kflags) {
                 /* Existing entry for this key: */
                 return entry;
@@ -498,7 +498,7 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
             HEK *hek = *entry;
             if (HEK_HASH(hek) == hash
                 && (STRLEN) HEK_LEN(hek) == klen
-                && memEQ(HEK_KEY(hek), key, klen)
+                && (HEK_KEY(hek) == key || memEQ(HEK_KEY(hek), key, klen))
                 && HEK_FLAGS(hek) == kflags) {
                 /* Target acquired. */
 
