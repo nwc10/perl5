@@ -222,3 +222,39 @@ PERL_STATIC_INLINE U32 Perl_ABH_foreach(pTHX_ Perl_ABH_Table *hashtable,
     }
     return 0;
 }
+
+/* iterators are stored as unsigned values, metadata index plus one.
+ * This is clearly an internal implementation detail. Don't cheat.
+ */
+PERL_STATIC_INLINE Perl_ABH_Iterator
+Perl_ABH_next(const Perl_ABH_Table *hashtable, Perl_ABH_Iterator iterator) {
+    while (--iterator > 0) {
+        if (Perl_ABH_metadata_const(hashtable)[iterator - 1]) {
+            return iterator;
+        }
+    }
+    return 0;
+}
+
+PERL_STATIC_INLINE Perl_ABH_Iterator
+Perl_ABH_first(const Perl_ABH_Table *hashtable) {
+    Perl_ABH_Iterator iterator = Perl_ABH_kompromat(hashtable);
+    if (Perl_ABH_metadata_const(hashtable)[iterator - 1]) {
+        return iterator;
+    }
+    return Perl_ABH_next(hashtable, iterator);
+}
+
+PERL_STATIC_INLINE void *
+Perl_ABH_current(Perl_ABH_Table *hashtable, Perl_ABH_Iterator iterator) {
+    /* Clearly for the production version this should be a bit more forgiving,
+     * and return NULL (probably also warning. */
+    assert(Perl_ABH_metadata(hashtable)[iterator - 1]);
+    return Perl_ABH_entries(hashtable) - hashtable->entry_size * (iterator - 1);
+}
+
+PERL_STATIC_INLINE bool
+Perl_ABH_at_end(const Perl_ABH_Table *hashtable, Perl_ABH_Iterator iterator) {
+    PERL_UNUSED_ARG(hashtable);
+    return iterator == 0;
+}
