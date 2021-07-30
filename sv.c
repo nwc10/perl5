@@ -6783,9 +6783,10 @@ Perl_sv_clear(pTHX_ SV *const orig_sv)
             break;
         case SVt_PVLV:
             if (LvTYPE(sv) == 'T') { /* for tie: return HE to pool */
-                SvREFCNT_dec(HeKEY_sv((HE*)LvTARG(sv)));
-                HeNEXT((HE*)LvTARG(sv)) = PL_hv_fetch_ent_mh;
-                PL_hv_fetch_ent_mh = (HE*)LvTARG(sv);
+                HE *he = (HE*)LvTARG(sv);
+                SvREFCNT_dec(HeKEY_sv(he));
+                *(HE **)&(he->hent_val) = PL_hv_fetch_ent_mh;
+                PL_hv_fetch_ent_mh = he;
             }
             else if (LvTYPE(sv) != 't') /* unless tie: unrefcnted fake SV**  */
                 SvREFCNT_dec(LvTARG(sv));
