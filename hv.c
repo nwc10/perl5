@@ -1571,27 +1571,6 @@ Perl_hv_copy_hints_hv(pTHX_ HV *const ohv)
 }
 #undef HV_SET_MAX_ADJUSTED_FOR_KEYS
 
-/* like hv_free_ent, but returns the SV rather than freeing it */
-STATIC SV*
-S_hv_free_ent_ret(pTHX_ HV *hv, HE *entry)
-{
-    SV *val;
-
-    PERL_ARGS_ASSERT_HV_FREE_ENT_RET;
-
-    val = HeVAL(entry);
-    if (HeKLEN(entry) == HEf_SVKEY) {
-        SvREFCNT_dec(HeKEY_sv(entry));
-        Safefree(HeKEY_hek(entry));
-    }
-    else if (HvSHAREKEYS(hv))
-        unshare_hek(HeKEY_hek(entry));
-    else
-        Safefree(HeKEY_hek(entry));
-    del_HE(entry);
-    return val;
-}
-
 
 void
 Perl_hv_free_ent(pTHX_ HV *hv, HE *entry)
@@ -1602,7 +1581,16 @@ Perl_hv_free_ent(pTHX_ HV *hv, HE *entry)
 
     if (!entry)
         return;
-    val = hv_free_ent_ret(hv, entry);
+    val = HeVAL(entry);
+    if (HeKLEN(entry) == HEf_SVKEY) {
+        SvREFCNT_dec(HeKEY_sv(entry));
+        Safefree(HeKEY_hek(entry));
+    }
+    else if (HvSHAREKEYS(hv))
+        unshare_hek(HeKEY_hek(entry));
+    else
+        Safefree(HeKEY_hek(entry));
+    del_HE(entry);
     SvREFCNT_dec(val);
 }
 
@@ -1829,8 +1817,7 @@ S_hv_free_entries(pTHX_ HV *hv)
                                   );
             }
         }
-        SV *sv = hv_free_ent_ret(hv, entry);
-        SvREFCNT_dec(sv);
+        hv_free_ent(hv, entry);
     }
 }
 
