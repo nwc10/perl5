@@ -553,7 +553,7 @@ Perl_ABH_fetch(pTHX_ Perl_ABH_Table *hashtable,
             HEK *hek = *entry;
             if (HEK_HASH(hek) == hash
                 && (STRLEN) HEK_LEN(hek) == klen
-                && memEQ(HEK_KEY(hek), key, klen)
+                && (HEK_KEY(hek) == key || memEQ(HEK_KEY(hek), key, klen))
                 && HEK_FLAGS(hek) == kflags) {
                 return entry;
             }
