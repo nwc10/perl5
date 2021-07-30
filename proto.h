@@ -5193,11 +5193,6 @@ PERL_CALLCONV void	Perl_sv_kill_backrefs(pTHX_ SV *const sv, AV *const av);
 #define PERL_ARGS_ASSERT_SV_KILL_BACKREFS	\
 	assert(sv)
 #endif
-#if defined(PERL_IN_HV_C) || defined(PERL_IN_SV_C)
-PERL_CALLCONV SV*	Perl_hfree_next_entry(pTHX_ HV *hv, STRLEN *indexp);
-#define PERL_ARGS_ASSERT_HFREE_NEXT_ENTRY	\
-	assert(hv); assert(indexp)
-#endif
 #if defined(PERL_IN_LOCALE_C)
 #ifndef PERL_NO_INLINE_FUNCTIONS
 PERL_STATIC_INLINE const char *	S_save_to_buffer(const char * string, char **buf, Size_t *buf_size, const Size_t offset)
