@@ -395,7 +395,6 @@ See L</hv_fill>.
 
 #define HVhek_UTF8	0x01 /* Key is utf8 encoded. */
 #define HVhek_WASUTF8	0x02 /* Key is bytes here, but was supplied as utf8. */
-#define HVhek_UNSHARED	0x08 /* This key isn't a shared hash key. */
 /* the following flags are options for functions, they are not stored in heks */
 #define HVhek_FREEKEY	0x100 /* Internal flag to say key is Newx()ed.  */
 #define HVhek_PLACEHOLD	0x200 /* Internal flag to create placeholder.
@@ -405,7 +404,7 @@ See L</hv_fill>.
                                     converted to bytes. */
 #define HVhek_MASK	0xFF
 
-#define HVhek_ENABLEHVKFLAGS        (HVhek_MASK & ~(HVhek_UNSHARED))
+#define HVhek_ENABLEHVKFLAGS        HVhek_MASK
 
 #define HEK_UTF8(hek)		(HEK_FLAGS(hek) & HVhek_UTF8)
 #define HEK_UTF8_on(hek)	(HEK_FLAGS(hek) |= HVhek_UTF8)
@@ -439,7 +438,13 @@ See L</hv_fill>.
 #define Perl_sharepvn(pv, len, hash) HEK_KEY(share_hek(pv, len, hash))
 #define sharepvn(pv, len, hash)	     Perl_sharepvn(pv, len, hash)
 
-#define share_hek_hek(hek) (++hek->hek_refcount, hek)
+PERL_STATIC_INLINE HEK *share_hek_hek(HEK *hek)
+{
+    /* It is shared? */
+    assert(hek->hek_refcount);
+    ++hek->hek_refcount;
+    return hek;
+}
 
 #define hv_store_ent(hv, keysv, val, hash)				\
     ((HE *) hv_common((hv), (keysv), NULL, 0, 0, HV_FETCH_ISSTORE,	\
