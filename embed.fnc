@@ -2879,10 +2879,6 @@ S	|void	|require_tie_mod|NN GV *gv|NN const char varname \
 				|const U32 flags
 #endif
 
-#if defined(PERL_IN_HV_C) || defined(PERL_IN_SV_C)
-po	|SV*	|hfree_next_entry	|NN HV *hv|NN STRLEN *indexp
-#endif
-
 #if defined(PERL_IN_HV_C)
 S	|void	|hsplit		|NN HV *hv|STRLEN const oldsize|STRLEN newsize
 S	|void	|hv_free_entries|NN HV *hv

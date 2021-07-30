@@ -1773,84 +1773,65 @@ S_hv_free_entries(pTHX_ HV *hv)
 {
     STRLEN index = 0;
     XPVHV * const xhv = (XPVHV*)SvANY(hv);
-    SV *sv;
 
     PERL_ARGS_ASSERT_HV_FREE_ENTRIES;
 
-    while ((sv = Perl_hfree_next_entry(aTHX_ hv, &index))||xhv->xhv_keys) {
+    while (1) {
+        struct xpvhv_aux *iter;
+        if (SvOOK(hv) && ((iter = HvAUX(hv)))) {
+            HE *entry = iter->xhv_eiter;
+            if (entry) {
+                /* the iterator may get resurrected after each
+                 * destructor call, so check each time */
+                if (entry && HvLAZYDEL(hv)) {	/* was deleted earlier? */
+                    HvLAZYDEL_off(hv);
+                    hv_free_ent(hv, entry);
+                    /* warning: at this point HvARRAY may have been
+                     * re-allocated, HvMAX changed etc */
+                }
+                iter = HvAUX(hv); /* may have been realloced */
+                iter->xhv_riter = -1; 	/* HvRITER(hv) = -1 */
+                iter->xhv_eiter = NULL;	/* HvEITER(hv) = NULL */
+#ifdef PERL_HASH_RANDOMIZE_KEYS
+                iter->xhv_last_rand = iter->xhv_rand;
+#endif
+            }
+        }
+
+        if (!xhv->xhv_keys)
+            break;
+
+        HE **array = HvARRAY(hv);
+        assert(array);
+#ifdef DEBUGGING
+        STRLEN orig_index = index;
+#endif
+        HE *entry;
+        while ( ! ((entry = array[index])) ) {
+            if (index++ >= HvMAX(hv))
+                index = 0;
+            assert(index != orig_index);
+        }
+        array[index] = HeNEXT(entry);
+        xhv->xhv_keys--;
+
+        if (   PL_phase != PERL_PHASE_DESTRUCT && HvENAME(hv)
+               && HeVAL(entry) && isGV(HeVAL(entry))
+               && GvHV(HeVAL(entry)) && HvENAME(GvHV(HeVAL(entry)))
+               ) {
+            STRLEN klen;
+            const char * const key = HePV(entry,klen);
+            if ((klen > 1 && key[klen-1]==':' && key[klen-2]==':')
+                || (klen == 1 && key[0] == ':')) {
+                mro_package_moved(
+                                  NULL, GvHV(HeVAL(entry)),
+                                  (GV *)HeVAL(entry), 0
+                                  );
+            }
+        }
+        SV *sv = hv_free_ent_ret(hv, entry);
         SvREFCNT_dec(sv);
     }
-}
-
-
-/* hfree_next_entry()
- * For use only by S_hv_free_entries() and sv_clear().
- * Delete the next available HE from hv and return the associated SV.
- * Returns null on empty hash. Nevertheless null is not a reliable
- * indicator that the hash is empty, as the deleted entry may have a
- * null value.
- * indexp is a pointer to the current index into HvARRAY. The index should
- * initially be set to 0. hfree_next_entry() may update it.  */
-
-SV*
-Perl_hfree_next_entry(pTHX_ HV *hv, STRLEN *indexp)
-{
-    struct xpvhv_aux *iter;
-    HE *entry;
-    HE ** array;
-#ifdef DEBUGGING
-    STRLEN orig_index = *indexp;
-#endif
-
-    PERL_ARGS_ASSERT_HFREE_NEXT_ENTRY;
-
-    if (SvOOK(hv) && ((iter = HvAUX(hv)))) {
-        if ((entry = iter->xhv_eiter)) {
-            /* the iterator may get resurrected after each
-             * destructor call, so check each time */
-            if (entry && HvLAZYDEL(hv)) {	/* was deleted earlier? */
-                HvLAZYDEL_off(hv);
-                hv_free_ent(hv, entry);
-                /* warning: at this point HvARRAY may have been
-                 * re-allocated, HvMAX changed etc */
-            }
-            iter = HvAUX(hv); /* may have been realloced */
-            iter->xhv_riter = -1; 	/* HvRITER(hv) = -1 */
-            iter->xhv_eiter = NULL;	/* HvEITER(hv) = NULL */
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-            iter->xhv_last_rand = iter->xhv_rand;
-#endif
-        }
-    }
-
-    if (!((XPVHV*)SvANY(hv))->xhv_keys)
-        return NULL;
-
-    array = HvARRAY(hv);
-    assert(array);
-    while ( ! ((entry = array[*indexp])) ) {
-        if ((*indexp)++ >= HvMAX(hv))
-            *indexp = 0;
-        assert(*indexp != orig_index);
-    }
-    array[*indexp] = HeNEXT(entry);
-    ((XPVHV*) SvANY(hv))->xhv_keys--;
-
-    if (   PL_phase != PERL_PHASE_DESTRUCT && HvENAME(hv)
-        && HeVAL(entry) && isGV(HeVAL(entry))
-        && GvHV(HeVAL(entry)) && HvENAME(GvHV(HeVAL(entry)))
-    ) {
-        STRLEN klen;
-        const char * const key = HePV(entry,klen);
-        if ((klen > 1 && key[klen-1]==':' && key[klen-2]==':')
-         || (klen == 1 && key[0] == ':')) {
-            mro_package_moved(
-             NULL, GvHV(HeVAL(entry)),
-             (GV *)HeVAL(entry), 0
-            );
-        }
-    }
-    return hv_free_ent_ret(hv, entry);
 }
 
 
