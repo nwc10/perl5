@@ -1308,41 +1308,19 @@ perl_destruct(pTHXx)
         PL_sv_consts[i] = NULL;
     }
 
-#if LUNCH
     /* Destruct the global string table. */
     {
-        /* Yell and reset the HeVAL() slots that are still holding refcounts,
-         * so that sv_free() won't fail on them.
-         * Now that the global string table is using a single hunk of memory
-         * for both HE and HEK, we either need to explicitly unshare it the
-         * correct way, or actually free things here.
-         */
-        I32 riter = 0;
-        const I32 max = HvMAX(PL_strtab);
-        HE * const * const array = HvARRAY(PL_strtab);
-        HE *hent = array[0];
-
-        for (;;) {
-            if (hent && ckWARN_d(WARN_INTERNAL)) {
-                HE * const next = HeNEXT(hent);
-                Perl_warner(aTHX_ packWARN(WARN_INTERNAL),
-                     "Unbalanced string table refcount: (%ld) for \"%s\"",
-                     (long)hent->hent_hek->hek_refcount, HeKEY(hent));
-                Safefree(hent);
-                hent = next;
-            }
-            if (!hent) {
-                if (++riter > max)
-                    break;
-                hent = array[riter];
-            }
+        Perl_ABH_Iterator iterator = Perl_ABH_first(PL_strtab);
+        while (!Perl_ABH_at_end(PL_strtab, iterator)) {
+            HEK **entry = (HEK **) Perl_ABH_current(PL_strtab, iterator);
+            HEK *hek = *entry;
+            Perl_warner(aTHX_ packWARN(WARN_INTERNAL),
+                        "Unbalanced string table refcount: (%ld) for \"%" HEKf "\"",
+                        (long)hek->hek_refcount, hek);
+            Safefree(hek);
+            iterator = Perl_ABH_next(PL_strtab, iterator);
         }
-
-        Safefree(array);
-        HvARRAY(PL_strtab) = 0;
-        HvTOTALKEYS(PL_strtab) = 0;
     }
-#endif
     Perl_ABH_demolish(aTHX_ &PL_strtab);
     PL_strtab = NULL;
 
