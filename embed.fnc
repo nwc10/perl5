@@ -2882,7 +2882,6 @@ S	|void	|require_tie_mod|NN GV *gv|NN const char varname \
 #if defined(PERL_IN_HV_C)
 S	|void	|hsplit		|NN HV *hv|STRLEN const oldsize|STRLEN newsize
 S	|void	|hv_free_entries|NN HV *hv
-S	|SV*	|hv_free_ent_ret|NN HV *hv|NN HE *entry
 SaTR	|HEK*	|save_hek_flags	|NN const char *str|STRLEN len|BIKESHED hash|U32 flags
 ST	|void	|hv_magic_check	|NN HV *hv|NN bool *needs_copy|NN bool *needs_store
 S	|void	|unshare_hek_or_pvn|NULLOK HEK* hek|NULLOK const char* str|SSize_t len|BIKESHED hash
