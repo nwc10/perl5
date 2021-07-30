@@ -111,7 +111,7 @@ Perl_free_tied_hv_pool(pTHX)
     while (he) {
         HE * const ohe = he;
         Safefree(HeKEY_hek(he));
-        he = HeNEXT(he);
+        he = (HE *)he->hent_val;
         del_HE(ohe);
     }
     PL_hv_fetch_ent_mh = NULL;
@@ -437,7 +437,7 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
                 /* grab a fake HE/HEK pair from the pool or make a new one */
                 entry = PL_hv_fetch_ent_mh;
                 if (entry)
-                    PL_hv_fetch_ent_mh = HeNEXT(entry);
+                    PL_hv_fetch_ent_mh = (HE *)entry->hent_val;
                 else {
                     char *k;
                     entry = new_HE();
