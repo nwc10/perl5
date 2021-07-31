@@ -2015,8 +2015,11 @@ Perl_do_sv_dump(pTHX_ I32 level, PerlIO *file, SV *sv, I32 nest, I32 maxnest, bo
             Perl_dump_indent(aTHX_ level, file, "  AUX_FLAGS = %" UVuf "\n",
                              (UV)aux->xhv_aux_flags);
         }
+#if LUNCH
         Perl_dump_indent(aTHX_ level, file, "  ARRAY = 0x%" UVxf, PTR2UV(HvARRAY(sv)));
+#endif
         totalkeys = HvTOTALKEYS(MUTABLE_HV(sv));
+#if LUNCH
         if (totalkeys) {
             /* Show distribution of HEs in the ARRAY */
             int freq[200];
@@ -2073,10 +2076,12 @@ Perl_do_sv_dump(pTHX_ I32 level, PerlIO *file, SV *sv, I32 nest, I32 maxnest, bo
                                    NVff "%%", theoret/sum*100);
         }
         (void)PerlIO_putc(file, '\n');
+#endif
         Perl_dump_indent(aTHX_ level, file, "  KEYS = %" IVdf "\n",
                                (IV)totalkeys);
         {
             STRLEN count = 0;
+#if LUNCH
             HE **ents = HvARRAY(sv);
 
             if (ents) {
@@ -2088,6 +2093,7 @@ Perl_do_sv_dump(pTHX_ I32 level, PerlIO *file, SV *sv, I32 nest, I32 maxnest, bo
                         --count;
                 } while (++ents <= last);
             }
+#endif
 
             Perl_dump_indent(aTHX_ level, file, "  FILL = %" UVuf "\n",
                              (UV)count);
@@ -2216,6 +2222,7 @@ Perl_do_sv_dump(pTHX_ I32 level, PerlIO *file, SV *sv, I32 nest, I32 maxnest, bo
             }
         }
         if (nest < maxnest) {
+#if LUNCH
             HV * const hv = MUTABLE_HV(sv);
 
             if (HvTOTALKEYS(hv)) {
@@ -2258,6 +2265,7 @@ Perl_do_sv_dump(pTHX_ I32 level, PerlIO *file, SV *sv, I32 nest, I32 maxnest, bo
                 }
               DONEHV:;
             }
+#endif
         }
         break;
     } /* case SVt_PVHV */

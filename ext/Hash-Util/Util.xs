@@ -158,6 +158,7 @@ bucket_info(rhv)
         /*hv = PL_strtab;*/
     }
     if (hv) {
+#if LUNCH
         U32 max_bucket_index= HvMAX(hv);
         U32 total_keys= HvUSEDKEYS(hv);
         HE **bucket_array= HvARRAY(hv);
@@ -192,6 +193,7 @@ bucket_info(rhv)
             XSRETURN( max_chain_length + 1 ); /* max_chain_length is the index of the last item on the stack, so we add 1 */
         }
 #undef BUCKET_INFO_ITEMS_ON_STACK
+#endif
     }
     XSRETURN(0);
 }
@@ -219,6 +221,7 @@ bucket_array(rhv)
         /*hv = PL_strtab;*/
     }
     if (hv) {
+#if LUNCH
         HE **he_ptr= HvARRAY(hv);
         if (!he_ptr) {
             XSRETURN(0);
@@ -273,6 +276,7 @@ bucket_array(rhv)
             }
         }
         XSRETURN(1);
+#endif
     }
     XSRETURN(0);
 }
@@ -304,12 +308,14 @@ num_buckets(rhv)
     PROTOTYPE: \%
     PPCODE:
 {
+#if LUNCH
     if (SvROK(rhv)) {
         rhv= SvRV(rhv);
         if ( SvTYPE(rhv)==SVt_PVHV ) {
             XSRETURN_UV(HvMAX((HV*)rhv)+1);
         }
     }
+#endif
     XSRETURN_UNDEF;
 }
 
@@ -319,12 +325,14 @@ used_buckets(rhv)
     PROTOTYPE: \%
     PPCODE:
 {
+#if LUNCH
     if (SvROK(rhv)) {
         rhv= SvRV(rhv);
         if ( SvTYPE(rhv)==SVt_PVHV ) {
             XSRETURN_UV(HvFILL((HV*)rhv));
         }
     }
+#endif
     XSRETURN_UNDEF;
 }
 
