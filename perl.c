@@ -418,9 +418,13 @@ perl_construct(pTHXx)
 
     PL_osname = Perl_savepvn(aTHX_ STR_WITH_LEN(OSNAME));
 
+    /* LUNCH */
     PL_registered_mros = newHV();
-    /* Start with 1 bucket, for DFS.  It's unlikely we'll need more.  */
-    HvMAX(PL_registered_mros) = 0;
+    /* The historical comment was "We'd like to start with 1 bucket, for DFS,
+     * as it's unlikely we'll need more."
+     * Since then, Moo (and 320 other distributions) use c3, meaning that it's
+     * likely we'll need *two* buckets. But we don't have a way to efficiently
+     * generate tiny hashes. */
 
 #ifdef USE_POSIX_2008_LOCALE
     PL_C_locale_obj = newlocale(LC_ALL_MASK, "C", NULL);

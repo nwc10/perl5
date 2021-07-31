@@ -189,6 +189,9 @@ typedef enum {
 /* typedefs to eliminate some typing */
 typedef struct he HE;
 typedef struct hek HEK;
+typedef struct Perl_ABH_Table Perl_ABH_Table;
+typedef size_t Perl_ABH_Iterator;
+
 
 /* Using C's structural equivalence to help emulate C++ inheritance here... */
 
@@ -212,7 +215,7 @@ typedef struct hek HEK;
         _NV_BODYLESS_UNION		\
         SV*     svu_rv;		/* pointer to another SV */		\
         SV**    svu_array;		\
-        HE**	svu_hash;		\
+        Perl_ABH_Table *svu_abh;        \
         GP*	svu_gp;			\
         PerlIO *svu_fp;			\
     }	sv_u				\

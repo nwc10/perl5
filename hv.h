@@ -32,7 +32,6 @@
 struct he {
     HEK		*hent_hek;	/* hash key */
     SV          *hent_val;      /* scalar value that was hashed */
-    HE		*hent_next;	/* next entry in chain */
 };
 
 /* hash key -- defined separately for use as shared pointer */
@@ -95,8 +94,8 @@ union _xhvnameu {
 struct xpvhv_aux {
     union _xhvnameu xhv_name_u;	/* name, if a symbol table */
     AV		*xhv_backreferences; /* back references for weak references */
-    HE		*xhv_eiter;	/* current entry of iterator */
-    I32		xhv_riter;	/* current root of iterator */
+    HE		*xhv_eiter;	/* for tied hashes */
+    Perl_ABH_Iterator xhv_iterator;     /* hash's own iterator (non tied hashes) */
 
 /* Concerning xhv_name_count: When non-zero, xhv_name_u contains a pointer 
  * to an array of HEK pointers, this being the length. The first element is
@@ -116,14 +115,13 @@ struct xpvhv_aux {
 
 #define HvAUXf_SCAN_STASH   0x1   /* stash is being scanned by gv_check */
 #define HvAUXf_NO_DEREF     0x2   /* @{}, %{} etc (and nomethod) not present */
+#define HvAUXf_ITER_INIT_DONE 0x4 /* iterinit was called. */
 
 /* hash structure: */
 /* This structure must match the beginning of struct xpvmg in sv.h. */
 struct xpvhv {
     HV*		xmg_stash;	/* class package */
     union _xmgu	xmg_u;
-    STRLEN      xhv_keys;       /* total keys, including placeholders */
-    STRLEN      xhv_max;        /* subscript of last element of xhv_array */
     struct xpvhv_aux xhv_aux;
 };
 
@@ -236,7 +234,7 @@ C<SV*>.
 #ifndef PERL_CORE
 #  define Nullhv Null(HV*)
 #endif
-#define HvARRAY(hv)	((hv)->sv_u.svu_hash)
+#define HvABH(hv)       ((hv)->sv_u.svu_abh)
 
 /*
 
@@ -248,7 +246,7 @@ See L</hv_fill>.
 
 */
 #define HvFILL(hv)	Perl_hv_fill(aTHX_ MUTABLE_HV(hv))
-#define HvMAX(hv)	((XPVHV*)  SvANY(hv))->xhv_max
+#define HvMAX(hv)	0
 /* This quite intentionally does no flag checking first. That's your
    responsibility.  */
 #define HvAUX(hv)	(&(((XPVHV*)  SvANY(hv))->xhv_aux))
@@ -258,7 +256,8 @@ See L</hv_fill>.
 #endif
 #define HvRITER_set(hv,r)	Perl_hv_riter_set(aTHX_ MUTABLE_HV(hv), r)
 #define HvEITER_set(hv,e)	Perl_hv_eiter_set(aTHX_ MUTABLE_HV(hv), e)
-#define HvRITER_get(hv)	(SvOOK(hv) ? HvAUX(hv)->xhv_riter : -1)
+/* This is a hack, but will it be good enough? */
+#define HvRITER_get(hv)	(SvOOK(hv) ? (SSize_t)HvAUX(hv)->xhv_iterator - 1 : -1)
 #define HvEITER_get(hv)	(SvOOK(hv) ? HvAUX(hv)->xhv_eiter : NULL)
 #define HvRAND_get(hv)	(SvOOK(hv) ? HvAUX(hv)->xhv_rand : 0)
 #define HvLASTRAND_get(hv)	(SvOOK(hv) ? HvAUX(hv)->xhv_last_rand : 0)
@@ -318,7 +317,7 @@ See L</hv_fill>.
  */
 #define HvKEYS(hv)		HvUSEDKEYS(hv)
 #define HvUSEDKEYS(hv)		(HvTOTALKEYS(hv) - HvPLACEHOLDERS_get(hv))
-#define HvTOTALKEYS(hv)         (((XPVHV*) SvANY(hv))->xhv_keys)
+#define HvTOTALKEYS(hv)		S_ABH_count(HvABH(hv))
 #define HvPLACEHOLDERS(hv)	(*Perl_hv_placeholders_p(aTHX_ MUTABLE_HV(hv)))
 #define HvPLACEHOLDERS_get(hv)	(SvMAGIC(hv) ? Perl_hv_placeholders_get(aTHX_ (const HV *)hv) : 0)
 #define HvPLACEHOLDERS_set(hv,p)	Perl_hv_placeholders_set(aTHX_ MUTABLE_HV(hv), p)
@@ -346,7 +345,7 @@ See L</hv_fill>.
 #ifndef PERL_CORE
 #  define Nullhe Null(HE*)
 #endif
-#define HeNEXT(he)		(he)->hent_next
+#define HeNEXT(he)		0
 #define HeKEY_hek(he)		(he)->hent_hek
 #define HeKEY(he)		HEK_KEY(HeKEY_hek(he))
 #define HeKEY_sv(he)		(*(SV**)HeKEY(he))

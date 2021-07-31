@@ -241,24 +241,20 @@ PERL_STATIC_INLINE U32
 S_hv_foreach_with_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state)
 {
     PERL_ARGS_ASSERT_HV_FOREACH_WITH_PLACEHOLDERS;
+    PERL_UNUSED_ARG(rand);
 
     if (!HvTOTALKEYS(hv))
         return 0;
 
-    XPVHV* xhv = (XPVHV*)SvANY(hv);
-    U32 max = xhv->xhv_max;
-
-    HE **array = HvARRAY(hv);
-
-    for (U32 i = 0; i <= (Size_t)max; i++) {
-        HE *entry = array[ (i ^ rand) & max ];
-        while (entry) {
-            U32 retval = callback(aTHX_ HeKEY_hek(entry), HeVAL(entry), state);
-            if (retval)
-                return retval;
-
-            entry = HeNEXT(entry);
-        }
+    Perl_ABH_Table *table = HvABH(hv);
+    Perl_ABH_Iterator iterator = Perl_ABH_first(table);
+    while (!Perl_ABH_at_end(table, iterator)) {
+        HE *entry = (HE *) Perl_ABH_current(table, iterator);
+        SV *val = HeVAL(entry);
+        U32 retval = callback(aTHX_ HeKEY_hek(entry), val, state);
+        if (retval)
+            return retval;
+        iterator = Perl_ABH_next(table, iterator);
     }
     return 0;
 }
@@ -267,47 +263,32 @@ PERL_STATIC_INLINE U32
 S_hv_foreach_no_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state)
 {
     PERL_ARGS_ASSERT_HV_FOREACH_NO_PLACEHOLDERS;
+    PERL_UNUSED_ARG(rand);
 
     if (!HvTOTALKEYS(hv))
         return 0;
 
-    XPVHV* xhv = (XPVHV*)SvANY(hv);
-    U32 max = xhv->xhv_max;
-
-    HE **array = HvARRAY(hv);
-
-    for (U32 i = 0; i <= (Size_t)max; i++) {
-        HE *entry = array[ (i ^ rand) & max ];
-        while (entry) {
-            SV *val = HeVAL(entry);
-            if (val != &PL_sv_placeholder) {
-                U32 retval = callback(aTHX_ HeKEY_hek(entry), val, state);
-                if (retval)
-                    return retval;
-            }
-
-            entry = HeNEXT(entry);
+    Perl_ABH_Table *table = HvABH(hv);
+    Perl_ABH_Iterator iterator = Perl_ABH_first(table);
+    while (!Perl_ABH_at_end(table, iterator)) {
+        HE *entry = (HE *) Perl_ABH_current(table, iterator);
+        SV *val = HeVAL(entry);
+        if (val != &PL_sv_placeholder) {
+            U32 retval = callback(aTHX_ HeKEY_hek(entry), val, state);
+            if (retval)
+                return retval;
         }
+        iterator = Perl_ABH_next(table, iterator);
     }
     return 0;
 }
 
+/* LUNCH - nuke this. */
 PERL_STATIC_INLINE U32
 S_hv_get_rand(pTHX_ HV *hv)
 {
-#ifdef PERL_PERTURB_KEYS_DISABLED
+    PERL_UNUSED_ARG(hv);
     return 0;
-#else
-    /* If no aux struct is allocated we need to call hv_iterinit()
-     * (instead of just picking some random 32 bit value for rand)
-     * because we need to store this value (and hence the ordering that it
-     * implies) so that each() reports values in the same order as us. */
-    if (!SvOOK(hv)) {
-        hv_iterinit(hv);
-    }
-    struct xpvhv_aux *iter = HvAUX(hv);
-    return iter->xhv_rand;
-#endif
 }
 
 PERL_STATIC_INLINE U32
@@ -321,26 +302,16 @@ Perl_hv_foreach(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, void *sta
     if (!HvTOTALKEYS(hv))
         return 0;
 
-    U32 rand;
-    if (flags & HV_ITERNEXT_EXPOSE_HASH_ORDER) {
-        /* This is not the order that each() will report.
-         * (So will break code if you expose it to Perl space. As well as being
-         * insecure). */
-        rand = 0;
-    }
-    else {
-        rand = S_hv_get_rand(aTHX_ hv);
-    }
-
     /* I assume that we will be called with a constant for flags, and as we are
      * an inlined function, the compiler will discard whichever side is dead
      * code: */
 
     return (flags & HV_ITERNEXT_WANTPLACEHOLDERS)
-        ? S_hv_foreach_with_placeholders(aTHX_ hv, rand, callback, state)
-        : S_hv_foreach_no_placeholders(aTHX_ hv, rand, callback, state);
+        ? S_hv_foreach_with_placeholders(aTHX_ hv, 0, callback, state)
+        : S_hv_foreach_no_placeholders(aTHX_ hv, 0, callback, state);
 }
 
+#if 0
 PERL_STATIC_INLINE SV *
 Perl_LLH_delete(pTHX_ HV *hv, const char *key, STRLEN klen, BIKESHED hash,
                 U32 flags)
@@ -531,6 +502,7 @@ Perl_LLH_lvalue_fetch(pTHX_ HV *hv, const char *key, STRLEN klen, BIKESHED hash,
 
     return entry;
 }
+#endif
 
 PERL_STATIC_INLINE void *
 Perl_ABH_fetch(pTHX_ Perl_ABH_Table *hashtable,

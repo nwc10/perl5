@@ -68,9 +68,11 @@ Perl_mro_set_private_data(pTHX_ struct mro_meta *const smeta,
             smeta->mro_linear_current = data;
             return data;
         } else {
+            /* LUNCH */
             HV *const hv = newHV();
-            /* Start with 2 buckets. It's unlikely we'll need more. */
-            HvMAX(hv) = 1;
+            /* "Start with 2 buckets. It's unlikely we'll need more."
+             * We don't (yet) have a good way to request small non-empty hashes.
+             */
             smeta->mro_linear_all = hv;
 
             if (smeta->mro_linear_current) {

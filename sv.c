@@ -1007,7 +1007,7 @@ static const struct body_details bodies_by_type[] = {
       FIT_ARENA(0, sizeof(ALIGNED_TYPE_NAME(XPVAV))) },
 
     { sizeof(ALIGNED_TYPE_NAME(XPVHV)),
-      copy_length(XPVHV, xhv_max),
+      copy_length(XPVHV, xmg_u),
       0,
       SVt_PVHV, TRUE, NONV, HASARENA,
       FIT_ARENA(0, sizeof(ALIGNED_TYPE_NAME(XPVHV))) },
@@ -1375,8 +1375,6 @@ Perl_sv_upgrade(pTHX_ SV *const sv, svtype new_type)
 #ifndef NODEFAULT_SHAREKEYS
             HvSHAREKEYS_on(sv);         /* key-sharing on by default */
 #endif
-            /* start with PERL_HASH_DEFAULT_HvMAX+1 buckets: */
-            HvMAX(sv) = PERL_HASH_DEFAULT_HvMAX;
         }
 
         /* SVt_NULL isn't the only thing upgraded to AV or HV.
@@ -6741,7 +6739,7 @@ Perl_sv_clear(pTHX_ SV *const orig_sv)
 #endif
             /* free empty hash */
             Perl_hv_undef_flags(aTHX_ MUTABLE_HV(sv), HV_NAME_SETALL);
-            assert(!HvARRAY((HV*)sv));
+            assert(!HvABH((HV*)sv));
             break;
         case SVt_PVAV:
             {
