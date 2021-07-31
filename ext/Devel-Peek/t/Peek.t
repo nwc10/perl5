@@ -40,6 +40,12 @@ sub do_test {
     my $repeat_todo = $_[4];
     my $pattern = $_[2];
     my $do_eval = $_[5];
+    if ($pattern =~ /PVHV/) {
+      SKIP: {
+            skip "LUNCH: $_[0]", 2;
+        }
+        return;
+    }
     if (open(OUT,'>', "peek$$")) {
         my $setup_stderr = sub { open(STDERR, ">&OUT") or die "Can't dup OUT: $!" };
         if ($do_eval) {

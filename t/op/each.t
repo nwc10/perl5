@@ -67,6 +67,7 @@ is ($#keys, 31, "added a key");
 
 SKIP: {
     skip "no Hash::Util on miniperl", 4, if is_miniperl;
+    skip "LUNCH!", 4;
     require Hash::Util;
     sub Hash::Util::num_buckets (\%);
 
@@ -112,6 +113,7 @@ is ($total, 100, "test values keys resets iterator");
 
 SKIP: {
     skip "no Hash::Util on miniperl", 3, if is_miniperl;
+    skip "LUNCH!", 3;
     require Hash::Util;
     sub Hash::Util::num_buckets (\%);
 
