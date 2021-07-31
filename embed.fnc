@@ -2880,7 +2880,6 @@ S	|void	|require_tie_mod|NN GV *gv|NN const char varname \
 #endif
 
 #if defined(PERL_IN_HV_C)
-S	|void	|hsplit		|NN HV *hv|STRLEN const oldsize|STRLEN newsize
 S	|void	|hv_free_entries|NN HV *hv
 SaTR	|HEK*	|save_hek_flags	|NN const char *str|STRLEN len|BIKESHED hash|U32 flags
 ST	|void	|hv_magic_check	|NN HV *hv|NN bool *needs_copy|NN bool *needs_store

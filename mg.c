@@ -2178,7 +2178,7 @@ Perl_magic_scalarpack(pTHX_ HV *hv, MAGIC *mg)
         /* no xhv_eiter so now use FIRSTKEY */
         key = sv_newmortal();
         magic_nextpack(MUTABLE_SV(hv), mg, key);
-        HvEITER_set(hv, NULL);     /* need to reset iterator */
+        /* FIXME in blead - *NO* need to reset iterator */
         return SvOK(key) ? &PL_sv_yes : &PL_sv_no;
     }
    

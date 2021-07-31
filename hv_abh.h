@@ -42,7 +42,7 @@ The only optimisation left is to change iterator metadata processing to be
 word-at-a-time when possible. And even that might not be worth it.
 */
 
-typedef struct Perl_ABH_Table {
+struct Perl_ABH_Table {
     U64 salt;
     /* If cur_items and max_items are *both* 0 then we only allocated a control
        structure. All of the other entries in the struct are bogus, apart from
@@ -68,9 +68,7 @@ typedef struct Perl_ABH_Table {
        to cache it as we have the space. */
     U8 max_probe_distance_limit;
     U8 metadata_hash_bits;
-} Perl_ABH_Table;
-
-typedef size_t Perl_ABH_Iterator;
+};
 
 void Perl_ABH_build(pTHX_ Perl_ABH_Table **hashtable_p,
                     size_t entry_size,
@@ -89,12 +87,12 @@ void *Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
 
 PERL_STATIC_INLINE bool
 S_ABH_is_empty(const Perl_ABH_Table *hashtable) {
-    return hashtable->cur_items == 0;
+    return hashtable ? hashtable->cur_items == 0 : TRUE;
 }
 
 PERL_STATIC_INLINE size_t
 S_ABH_count(const Perl_ABH_Table *hashtable) {
-    return hashtable->cur_items;
+    return hashtable ? hashtable->cur_items : 0;
 }
 
 
@@ -231,6 +229,15 @@ PERL_STATIC_INLINE U32 Perl_ABH_foreach(pTHX_ Perl_ABH_Table *hashtable,
 /* iterators are stored as unsigned values, metadata index plus one.
  * This is clearly an internal implementation detail. Don't cheat.
  */
+
+/* Returns an iterator that is already exhausted. This turns out to be very
+ * useful to store as a default value. */
+PERL_STATIC_INLINE Perl_ABH_Iterator
+Perl_ABH_end(const Perl_ABH_Table *hashtable) {
+    PERL_UNUSED_ARG(hashtable);
+    return 0;
+}
+
 PERL_STATIC_INLINE Perl_ABH_Iterator
 Perl_ABH_next(const Perl_ABH_Table *hashtable, Perl_ABH_Iterator iterator) {
     while (--iterator > 0) {
