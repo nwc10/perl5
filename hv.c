@@ -2105,6 +2105,7 @@ Perl_hv_iterinit(pTHX_ HV *hv)
     return HvTOTALKEYS(hv);
 }
 
+#if LUNCH
 I32 *
 Perl_hv_riter_p(pTHX_ HV *hv) {
     struct xpvhv_aux *iter;
@@ -2124,6 +2125,7 @@ Perl_hv_eiter_p(pTHX_ HV *hv) {
     iter = SvOOK(hv) ? HvAUX(hv) : hv_auxinit(hv);
     return &(iter->xhv_eiter);
 }
+#endif
 
 void
 Perl_hv_riter_set(pTHX_ HV *hv, I32 riter) {
