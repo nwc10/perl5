@@ -540,12 +540,13 @@ Perl_ABH_fetch(pTHX_ Perl_ABH_Table *hashtable,
         return NULL;
     }
 
-    U32 kflags = flags & HV_ABH_KEY_TYPE_MASK;
-    if (kflags == HV_ABH_KEY_HEK) {
+    U32 type = flags & HV_ABH_KEY_TYPE_MASK;
+    if (type == HV_ABH_KEY_HEK) {
         Perl_croak(aTHX_ "panic: hash flag HV_ABH_KEY_HEK Not Yet Implemented");
     }
 
     struct Perl_ABH_loop_state ls = S_ABH_create_loop_state(hashtable, hash);
+    const U32 kflags = type & ls.key_mask;
 
     while (1) {
         if (*ls.metadata == ls.probe_distance) {
@@ -554,7 +555,7 @@ Perl_ABH_fetch(pTHX_ Perl_ABH_Table *hashtable,
             if (HEK_HASH(hek) == hash
                 && (STRLEN) HEK_LEN(hek) == klen
                 && (HEK_KEY(hek) == key || memEQ(HEK_KEY(hek), key, klen))
-                && HEK_FLAGS(hek) == kflags) {
+                && (HEK_FLAGS(hek) & ls.key_mask) == kflags) {
                 return entry;
             }
         }
