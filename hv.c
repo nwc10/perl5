@@ -149,7 +149,6 @@ Perl_he_dup(pTHX_ const HE *e, bool shared, CLONE_PARAMS* param)
     ret = new_HE();
     ptr_table_store(PL_ptr_table, e, ret);
 
-    HeNEXT(ret) = he_dup(HeNEXT(e),shared, param);
     if (HeKLEN(e) == HEf_SVKEY) {
         char *k;
         Newx(k, HEK_BASESIZE + sizeof(const SV *), char);
@@ -180,6 +179,57 @@ Perl_he_dup(pTHX_ const HE *e, bool shared, CLONE_PARAMS* param)
     HeVAL(ret) = sv_dup_inc(HeVAL(e), param);
     return ret;
 }
+
+Perl_ABH_Table *
+Perl_abh_dup(pTHX_ Perl_ABH_Table *src, bool shared, CLONE_PARAMS *param)
+{
+    Perl_ABH_Table *dest;
+
+    PERL_ARGS_ASSERT_ABH_DUP;
+
+    Perl_ABH_build(aTHX_ &dest, sizeof(HE), S_ABH_count(src));
+
+    if (!S_ABH_count(src))
+        return dest;
+
+    Perl_ABH_Iterator iterator = Perl_ABH_first(src);
+    if (shared) {
+        while (!Perl_ABH_at_end(src, iterator)) {
+            HE *src_entry = (HE *) Perl_ABH_current(src, iterator);
+            HEK *src_hek = src_entry->hent_hek;
+
+            BIKESHED hash = HEK_HASH(src_hek);
+            STRLEN len = HEK_LEN(src_hek);
+            const char *key = HEK_KEY(src_hek);
+            int flags = HEK_UTF8(src_hek);
+
+            HE *dest_entry = (HE *)Perl_ABH_lvalue_fetch(aTHX_ &dest, key, len, hash, flags);
+
+            assert(!dest_entry->hent_hek);
+
+            HEK *dest_hek = (HEK*)ptr_table_fetch(PL_ptr_table, src_hek);
+            if (dest_hek) {
+                /* We already shared this hash key.  */
+                (void)share_hek_hek(dest_hek);
+            }
+            else {
+                dest_hek = share_hek_flags(HEK_KEY(src_hek), HEK_LEN(src_hek),
+                                           HEK_HASH(src_hek), HEK_FLAGS(src_hek));
+                ptr_table_store(PL_ptr_table, src_hek, dest_hek);
+            }
+
+            dest_entry->hent_hek = dest_hek;
+            dest_entry->hent_val = sv_dup_inc(src_entry->hent_val, param);
+
+            iterator = Perl_ABH_next(src, iterator);
+        }
+    }
+    else {
+        abort(); // LUNCH
+    }
+    return dest;
+}
+
 #endif	/* USE_ITHREADS */
 
 static void
