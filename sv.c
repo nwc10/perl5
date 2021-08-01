@@ -14444,21 +14444,13 @@ S_sv_dup_common(pTHX_ const SV *const ssv, CLONE_PARAMS *const param)
                 }
                 break;
             case SVt_PVHV:
-                if (HvARRAY((const HV *)ssv)) {
-                    STRLEN i = 0;
-                    const bool sharekeys = !!HvSHAREKEYS(ssv);
-                    XPVHV * const dxhv = (XPVHV*)SvANY(dsv);
-                    XPVHV * const sxhv = (XPVHV*)SvANY(ssv);
-                    char *darray;
-                    Newx(darray, PERL_HV_ARRAY_ALLOC_BYTES(dxhv->xhv_max+1),
-                        char);
-                    HvARRAY(dsv) = (HE**)darray;
-                    while (i <= sxhv->xhv_max) {
-                        const HE * const source = HvARRAY(ssv)[i];
-                        HvARRAY(dsv)[i] = source
-                            ? he_dup(source, sharekeys, param) : 0;
-                        ++i;
-                    }
+                {
+                    Perl_ABH_Table *src = HvABH((const HV *)ssv);
+                    if (src) {
+                        HvABH(MUTABLE_HV(dsv)) = abh_dup(src, cBOOL(HvSHAREKEYS(ssv)), param);
+                    } else
+                        HvABH(MUTABLE_HV(dsv)) = NULL;
+
                     if (SvOOK(ssv)) {
                         const struct xpvhv_aux * const saux = HvAUX(ssv);
                         struct xpvhv_aux * const daux = HvAUX(dsv);
@@ -14492,7 +14484,7 @@ S_sv_dup_common(pTHX_ const SV *const ssv, CLONE_PARAMS *const param)
                         daux->xhv_rand = saux->xhv_rand;
                         daux->xhv_last_rand = saux->xhv_last_rand;
 #endif
-                        daux->xhv_riter = saux->xhv_riter;
+                        daux->xhv_iterator = 0; // LUNCH FIXME IMPOSSIBLE?
                         daux->xhv_eiter = saux->xhv_eiter
                             ? he_dup(saux->xhv_eiter,
                                         cBOOL(HvSHAREKEYS(ssv)), param) : 0;
@@ -14525,8 +14517,6 @@ S_sv_dup_common(pTHX_ const SV *const ssv, CLONE_PARAMS *const param)
                             av_push(param->stashes, dsv);
                     }
                 }
-                else
-                    HvARRAY(MUTABLE_HV(dsv)) = NULL;
                 break;
             case SVt_PVCV:
                 if (!(param->flags & CLONEf_COPY_STACKS)) {

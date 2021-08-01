@@ -6807,6 +6807,11 @@ PERL_CALLCONV void	Perl_dtrace_probe_phase(pTHX_ enum perl_phase phase);
 #define PERL_ARGS_ASSERT_DTRACE_PROBE_PHASE
 #endif
 #if defined(USE_ITHREADS)
+PERL_CALLCONV Perl_ABH_Table *	Perl_abh_dup(pTHX_ Perl_ABH_Table *src, bool shared, CLONE_PARAMS *param)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_ABH_DUP	\
+	assert(src); assert(param)
+
 PERL_CALLCONV PADOFFSET	Perl_alloccopstash(pTHX_ HV *hv);
 #define PERL_ARGS_ASSERT_ALLOCCOPSTASH	\
 	assert(hv)
