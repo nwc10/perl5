@@ -636,6 +636,7 @@ lis [&mykeys([ 1..4 ])], [0..3], '&mykeys(\@array) in list cx';
 
 SKIP: {
   skip "no Hash::Util on miniperl", 2, if is_miniperl;
+  skip "LUNCH", 2;
   require Hash::Util;
   sub Hash::Util::bucket_ratio (\%);
 

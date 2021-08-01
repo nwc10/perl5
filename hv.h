@@ -115,7 +115,6 @@ struct xpvhv_aux {
 
 #define HvAUXf_SCAN_STASH   0x1   /* stash is being scanned by gv_check */
 #define HvAUXf_NO_DEREF     0x2   /* @{}, %{} etc (and nomethod) not present */
-#define HvAUXf_ITER_INIT_DONE 0x4 /* iterinit was called. */
 
 /* hash structure: */
 /* This structure must match the beginning of struct xpvmg in sv.h. */

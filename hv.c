@@ -643,12 +643,18 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
      * structure where it was cheap to store a new entry if the fetch returned
      * not found. */
 
-    entry = lvalue
-        ? (HE *)Perl_ABH_lvalue_fetch(aTHX_ &HvABH(hv), key, klen, hash, masked_flags)
-        : (HE *)Perl_ABH_fetch(aTHX_ HvABH(hv), key, klen, hash, masked_flags);
-
-    if (!lvalue && entry) {
-        assert(entry->hent_hek);
+    if (lvalue) {
+        if (!HvABH(hv)) {
+            Perl_ABH_build(aTHX_ &HvABH(hv), sizeof(HE), 0);
+        }
+        entry = (HE *)Perl_ABH_lvalue_fetch(aTHX_ &HvABH(hv), key, klen, hash,
+                                            masked_flags);
+    } else {
+        entry = (HE *)Perl_ABH_fetch(aTHX_ HvABH(hv), key, klen, hash,
+                                     masked_flags);
+        if (entry) {
+            assert(entry->hent_hek);
+        }
     }
 
     if (entry && entry->hent_hek) {
@@ -770,7 +776,6 @@ Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
         HeKEY_hek(entry) = share_hek_flags(key, klen, hash, flags);
     else                                       /* gotta do the real thing */
         HeKEY_hek(entry) = save_hek_flags(key, klen, hash, flags);
-    assert(HeVAL(entry) == NULL);
     HeVAL(entry) = val;
 
     if (val == &PL_sv_placeholder)
@@ -1094,7 +1099,7 @@ S_hv_delete_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
                                          |HV_ABH_REFUSE_TO_DELETE_READONLY_VALUES) : 0));
 
     if (UNLIKELY(SvREADONLY(hv))) {
-        if (sv == (SV *)hv) {
+        if ((void *)sv == (void *)HvABH(hv)) {
             hv_notallowed(k_flags, key, klen,
                           "Attempt to delete readonly key '%" SVf "' from"
                           " a restricted hash");
@@ -1248,9 +1253,10 @@ Perl_hv_ksplit(pTHX_ HV *hv, IV newmax)
 {
     PERL_ARGS_ASSERT_HV_KSPLIT;
 
-    if (!HvABH(hv)) {
+    if (HvABH(hv)) {
 #if LUNCH
-        /* Muttley, do somthing! */
+        /* Muttley, do something! */
+        NYI
 #endif
         return;
     }
@@ -1261,7 +1267,7 @@ Perl_hv_ksplit(pTHX_ HV *hv, IV newmax)
         wantsize = 0;
     }
 
-    Perl_ABH_build(aTHX_ &HvABH(hv), sizeof(HE *), wantsize);
+    Perl_ABH_build(aTHX_ &HvABH(hv), sizeof(HE), wantsize);
 }
 
 static U32
@@ -1477,14 +1483,14 @@ Perl_hv_clear(pTHX_ HV *hv)
                         HvABH(hv) = table;
                         Perl_croak(aTHX_
                                    "Attempt to delete readonly key '%" HEKf "' from a restricted hash",
-                                   HeKEY(entry));
+                                   HeKEY_hek(entry));
                     }
                     SvREFCNT_dec_NN(HeVAL(entry));
                 }
                 HeVAL(entry) = &PL_sv_placeholder;
                 HvPLACEHOLDERS(hv)++;
-                iterator = Perl_ABH_next(table, iterator);
             }
+            iterator = Perl_ABH_next(table, iterator);
         } while (!Perl_ABH_at_end(table, iterator));
         HvABH(hv) = table;
     }
@@ -1500,7 +1506,9 @@ Perl_hv_clear(pTHX_ HV *hv)
     if (SvOOK(hv)) {
         if(HvENAME_get(hv))
             mro_isa_changed_in(hv);
-        HvEITER_set(hv, NULL);
+        struct xpvhv_aux *iter = HvAUX(hv);
+        iter->xhv_iterator = Perl_ABH_end(HvABH(hv));
+        iter->xhv_eiter = NULL;
     }
     /* disarm hv's premature free guard */
     if (LIKELY(PL_tmps_ix == orig_ix))
@@ -1591,7 +1599,7 @@ S_hv_free_entries(pTHX_ HV *hv)
                     /* warning: at this point HvARRAY may have been
                      * re-allocated, HvMAX changed etc */
                 }
-                iter->xhv_aux_flags &= ~HvAUXf_ITER_INIT_DONE;
+                iter->xhv_iterator = Perl_ABH_end(HvABH(hv));
                 iter->xhv_eiter = NULL;	/* HvEITER(hv) = NULL */
 #ifdef PERL_HASH_RANDOMIZE_KEYS
                 iter->xhv_last_rand = iter->xhv_rand;
@@ -1628,9 +1636,16 @@ S_hv_free_entries(pTHX_ HV *hv)
                                   );
             }
         }
-        SvREFCNT_dec(entry->hent_val);
-        Perl_ABH_delete(aTHX_ &table, HeKEY(entry), HeKLEN(entry),
-                        HeHASH(entry), HeKFLAGS(entry) & HV_ABH_KEY_TYPE_MASK);
+        SV *val = entry->hent_val;
+        SV *got = (SV *)Perl_ABH_delete(aTHX_ &table,
+                                        HeKEY(entry),
+                                        HeKLEN(entry),
+                                        HeHASH(entry),
+                                        HeKFLAGS(entry) & HV_ABH_KEY_TYPE_MASK);
+        assert(got == val);
+        /* This might trigger destructors - the hash needs to be consistent
+         * before we fire them: */
+        SvREFCNT_dec(val);
 
         iterator = Perl_ABH_next(table, iterator);
     }
@@ -1687,7 +1702,9 @@ Perl_hv_undef_flags(pTHX_ HV *hv, U32 flags)
         PL_tmps_stack[++PL_tmps_ix] = SvREFCNT_inc_simple_NN(hv);
         orig_ix = PL_tmps_ix;
     }
+
     hv_free_entries(hv);
+
     if (SvOOK(hv)) {
       struct mro_meta *meta;
       const char *name;
@@ -1731,6 +1748,10 @@ Perl_hv_undef_flags(pTHX_ HV *hv, U32 flags)
       }
       if (!HvAUX(hv)->xhv_name_u.xhvnameu_name && ! HvAUX(hv)->xhv_backreferences)
         SvFLAGS(hv) &= ~SVf_OOK;
+    }
+    if (HvABH(hv)) {
+        Perl_ABH_demolish(aTHX_ &HvABH(hv));
+        HvABH(hv) = NULL;
     }
     /* if we're freeing the HV, the SvMAGIC field has been reused for
      * other purposes, and so there can't be any placeholder magic */
@@ -2408,27 +2429,31 @@ Perl_hv_iternext_flags(pTHX_ HV *hv, I32 flags)
     }
 #endif
 
-    /* FIXME - can I reach this by starting an iteration on a tied hash and then
-       calling untie, and then iterating on the underlying hash? */
     assert(!HvLAZYDEL(hv));
 
+    Perl_ABH_Table *table = HvABH(hv);
+
     if (HvIS_EMPTY(hv)) {
+        /* This is needed to pass the test in t/op/hash.t:
+         * "each on apparently empty hash does not leave RITER set"
+         * I'm not sure if this is the best place: */
+        iter->xhv_iterator = Perl_ABH_end(table);
         return NULL;
     }
     if (!(flags & HV_ITERNEXT_WANTPLACEHOLDERS) && HvUSEDKEYS(hv) == 0) {
         /* It's just placeholders. */
+        /* Logically we need that reset here too: */
+        iter->xhv_iterator = Perl_ABH_end(table);
         return NULL;
     }
 
-    Perl_ABH_Table *table = HvABH(hv);
     assert(table);
 
-    if (iter->xhv_aux_flags & HvAUXf_ITER_INIT_DONE) {
-        iter->xhv_iterator = Perl_ABH_next(table, iter->xhv_iterator);
-    }
-    else {
-        iter->xhv_aux_flags |= HvAUXf_ITER_INIT_DONE;
+    if (Perl_ABH_at_end(table, iter->xhv_iterator)) {
+        /* Round we go again... */
         iter->xhv_iterator = Perl_ABH_first(table);
+    } else {
+        iter->xhv_iterator = Perl_ABH_next(table, iter->xhv_iterator);
     }
 
     if (Perl_ABH_at_end(table, iter->xhv_iterator)) {

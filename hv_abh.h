@@ -240,6 +240,12 @@ Perl_ABH_end(const Perl_ABH_Table *hashtable) {
 
 PERL_STATIC_INLINE Perl_ABH_Iterator
 Perl_ABH_next(const Perl_ABH_Table *hashtable, Perl_ABH_Iterator iterator) {
+    if (iterator == 0) {
+        /* You naughty thing. You're calling next on an iterator that's already
+         * exhausted. */
+        assert(iterator);
+        return 0;
+    }
     while (--iterator > 0) {
         if (Perl_ABH_metadata_const(hashtable)[iterator - 1]) {
             return iterator;

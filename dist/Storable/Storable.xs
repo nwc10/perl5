@@ -1629,7 +1629,9 @@ static void init_store_context(pTHX_
 
     cxt->hclass = newHV();		/* Where seen classnames are stored */
 
+#if LUNCH
     HvMAX(cxt->hclass) = HBUCKETS - 1;	/* keys %hclass = $HBUCKETS; */
+#endif
 
     /*
      * The 'hook' hash table is used to keep track of the references on
