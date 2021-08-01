@@ -1290,65 +1290,22 @@ newHVhv_callback(pTHX_ HEK *key, SV *val, void *state)
 HV *
 Perl_newHVhv(pTHX_ HV *ohv)
 {
+    HV * const hv = newHV();
     if (!ohv || (!HvTOTALKEYS(ohv) && !SvMAGICAL((const SV *)ohv)))
-        return newHV();
+        return hv;
 
-    if (1 || UNLIKELY(SvMAGICAL((const SV *)ohv))) {
+    if (UNLIKELY(SvMAGICAL((const SV *)ohv)) || UNLIKELY(!HvSHAREKEYS(ohv))) {
         /* Iterate over ohv, copying keys and values one at a time. */
-        // STRLEN hv_keys = HvTOTALKEYS(ohv); FIXME for size for new
-        HV * const hv = newHV();
+        // STRLEN hv_keys = HvTOTALKEYS(ohv); LUNCH FIXME for size for new
 
         Perl_hv_foreach_magical(aTHX_ ohv, HV_ITERNEXT_EXPOSE_HASH_ORDER,
                                 newHVhv_callback, hv);
-        return hv;
+
     }
-    abort();
-#if LUNCH
-        /* It's an ordinary hash, so copy it fast. AMS 20010804 */
-        STRLEN i;
-        const bool shared = !!HvSHAREKEYS(ohv);
-        HE **ents, ** const oents = (HE **)HvARRAY(ohv);
-        char *a;
-        Newx(a, PERL_HV_ARRAY_ALLOC_BYTES(hv_max+1), char);
-        ents = (HE**)a;
-
-        /* In each bucket... */
-        for (i = 0; i <= hv_max; i++) {
-            HE *prev = NULL;
-            HE *oent = oents[i];
-
-            if (!oent) {
-                ents[i] = NULL;
-                continue;
-            }
-
-            /* Copy the linked list of entries. */
-            for (; oent; oent = HeNEXT(oent)) {
-                const BIKESHED hash   = HeHASH(oent);
-                const char * const key = HeKEY(oent);
-                const STRLEN len = HeKLEN(oent);
-                const int flags  = HeKFLAGS(oent);
-                HE * const ent   = new_HE();
-                SV *const val    = HeVAL(oent);
-
-                HeVAL(ent) = SvIMMORTAL(val) ? val : newSVsv(val);
-                HeKEY_hek(ent)
-                    = shared ? share_hek_flags(key, len, hash, flags)
-                             :  save_hek_flags(key, len, hash, flags);
-                if (prev)
-                    HeNEXT(prev) = ent;
-                else
-                    ents[i] = ent;
-                prev = ent;
-                HeNEXT(ent) = NULL;
-            }
-        }
-
-        HvMAX(hv)   = hv_max;
-        HvTOTALKEYS(hv)  = HvTOTALKEYS(ohv);
-        HvARRAY(hv) = ents;
-#endif
-    return NULL;
+    else {
+        HvABH(hv) = Perl_ABH_fast_HV_copy(aTHX_ HvABH(ohv));
+    }
+    return hv;
 }
 
 /*

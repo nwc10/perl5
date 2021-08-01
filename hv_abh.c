@@ -719,6 +719,43 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
     }
 }
 
+Perl_ABH_Table *
+Perl_ABH_fast_HV_copy(pTHX_ Perl_ABH_Table *source) {
+    assert(!(source->cur_items == 0 && source->max_items == 0));
+    assert(source->entry_size == sizeof(HE));
+
+    size_t allocated_items = get_allocated_items(source);
+    size_t entries_size = source->entry_size * allocated_items;
+    size_t metadata_size = round_size_up(allocated_items + 1);
+    size_t copy_size = sizeof (struct Perl_ABH_Table) + metadata_size;
+    size_t total_size = entries_size + copy_size;
+    char *target = (char *) malloc(total_size);
+    /* Copy the control structure and the metadata: */
+    Perl_ABH_Table *dest = (Perl_ABH_Table *)(target + entries_size);
+    memcpy(dest, source, copy_size);
+
+    HE *dest_entry = (HE *)Perl_ABH_entries(dest);
+
+    size_t entries_in_use = Perl_ABH_kompromat(source);
+    HE *source_entry = (HE *)Perl_ABH_entries(source);
+
+    U8 *metadata = Perl_ABH_metadata(source);
+    size_t bucket = 0;
+    while (bucket < entries_in_use) {
+        if (*metadata) {
+            dest_entry->hent_hek = share_hek_hek(source_entry->hent_hek);
+            SV *val = source_entry->hent_val;
+            dest_entry->hent_val = SvIMMORTAL(val) ? val : newSVsv(val);
+        }
+        ++bucket;
+        ++metadata;
+        --dest_entry;
+        --source_entry;
+    }
+
+    return dest;
+}
+
 /* This is not part of the public API, and subject to change at any point.
    (possibly in ways that are actually incompatible but won't generate compiler
    warnings.) */

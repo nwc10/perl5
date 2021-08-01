@@ -196,6 +196,8 @@ S_ABH_create_loop_state(struct Perl_ABH_Table *hashtable, BIKESHED hash_val)
     return retval;
 }
 
+Perl_ABH_Table *Perl_ABH_fast_HV_copy(pTHX_ Perl_ABH_Table *source);
+
 /* Executes the given callback function on each element of the hashtable.
  * Passes the callback (entry, arg) or (my_perl, entry, arg)
  * By declaring this inline, the optimiser may be able to inline the callback,
