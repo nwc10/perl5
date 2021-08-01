@@ -184,6 +184,7 @@ Perl_ABH_build(pTHX_ Perl_ABH_Table **hashtable_p,
                                               (8 * sizeof(U64) - initial_size_base2),
                                               initial_size_base2);
     }
+    (*hashtable_p)->key_mask = ~HVhek_WASUTF8;
 }
 
 PERL_STATIC_INLINE HEK **
@@ -196,9 +197,10 @@ S_hash_insert_internal(pTHX_ Perl_ABH_Table *hashtable,
                    hashtable->cur_items, hashtable->max_items, key);
     }
 
-    U32 kflags = flags & HV_ABH_KEY_TYPE_MASK;
+    U32 type = flags & HV_ABH_KEY_TYPE_MASK;
 
     struct Perl_ABH_loop_state ls = S_ABH_create_loop_state(hashtable, hash);
+    const U32 kflags = type & ls.key_mask;
 
     while (1) {
         if (*ls.metadata < ls.probe_distance) {
@@ -314,6 +316,7 @@ S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
             = S_hash_allocate_common(aTHX_ hashtable->entry_size,
                                      (8 * sizeof(U64) - ABH_MIN_SIZE_BASE_2),
                                      ABH_MIN_SIZE_BASE_2);
+        hashtable_new->key_mask = hashtable->key_mask;
         free(hashtable);
         return hashtable_new;
     }
@@ -379,6 +382,7 @@ S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
     hashtable = S_hash_allocate_common(aTHX_ entry_size,
                                        hashtable_orig->key_right_shift - 1,
                                        hashtable_orig->official_size_log2 + 1);
+    hashtable->key_mask = hashtable_orig->key_mask;
 
     char *entry_raw = entry_raw_orig;
     U8 *metadata = metadata_orig;
@@ -452,7 +456,14 @@ Perl_ABH_lvalue_fetch(pTHX_ Perl_ABH_Table **hashtable_p,
     }
 
     Perl_ABH_Table *hashtable = *hashtable_p;
-    if (UNLIKELY(hashtable->cur_items >= hashtable->max_items)) {
+
+    if (UNLIKELY(!hashtable)) {
+        /* This *is* a special case, but it is a lot easier if we assume this as
+         *  a default. */
+        Perl_ABH_build(aTHX_ hashtable_p, sizeof(HE), 8);
+        hashtable = *hashtable_p;
+    }
+    else if (UNLIKELY(hashtable->cur_items >= hashtable->max_items)) {
         /* We should avoid growing the hash if we don't need to.
          * It's expensive, and for hashes with iterators, growing the hash
          * invalidates iterators. Which is buggy behaviour if the fetch doesn't
@@ -483,8 +494,8 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
         return NULL;
     }
 
-    U32 kflags = flags & HV_ABH_KEY_TYPE_MASK;
-    if (kflags == HV_ABH_KEY_HEK) {
+    U32 type = flags & HV_ABH_KEY_TYPE_MASK;
+    if (type == HV_ABH_KEY_HEK) {
         Perl_croak(aTHX_ "panic: hash flag HV_ABH_KEY_HEK Not Yet Implemented");
     }
 
@@ -492,6 +503,8 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
         = (flags & HV_ABH_DELETE_ACTION_MASK) == HV_ABH_DELETE_RELEASES_HEK;
 
     struct Perl_ABH_loop_state ls = S_ABH_create_loop_state(hashtable, hash);
+    const U32 kflags = type & ls.key_mask;
+
     while (1) {
         if (*ls.metadata == ls.probe_distance) {
             HEK **entry = (HEK **) ls.entry_raw;
@@ -499,7 +512,7 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
             if (HEK_HASH(hek) == hash
                 && (STRLEN) HEK_LEN(hek) == klen
                 && (HEK_KEY(hek) == key || memEQ(HEK_KEY(hek), key, klen))
-                && HEK_FLAGS(hek) == kflags) {
+                && (HEK_FLAGS(hek) & ls.key_mask) == kflags) {
                 /* Target acquired. */
 
                 if (release_hek) {

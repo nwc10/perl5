@@ -53,9 +53,12 @@ typedef struct Perl_ABH_Table {
        result, and insert will immediately allocate the default minimum size. */
     size_t cur_items;
     size_t max_items; /* hit this and we grow */
+    /* defaults to sizeof(HE) if you don't set it before the first insert: */
+    U8 entry_size;
+    /* 0 for the shared string table. Defaults to HVhek_WASUTF8: */
+    U8 key_mask;
     U8 official_size_log2;
     U8 key_right_shift;
-    U8 entry_size;
     /* This is the maximum probe distance we can use without updating the
        metadata. It might not *yet* be the maximum probe distance possible for
        the official_size. */
@@ -149,6 +152,7 @@ struct Perl_ABH_loop_state {
     unsigned int max_probe_distance;
     unsigned int probe_distance;
     U8 entry_size;
+    U8 key_mask;
 };
 
 PERL_STATIC_INLINE BIKESHED
@@ -174,6 +178,7 @@ S_ABH_create_loop_state(struct Perl_ABH_Table *hashtable, BIKESHED hash_val)
     BIKESHED mixed = S_ABH_salt_and_mix(hashtable, hash_val);
     struct Perl_ABH_loop_state retval;
     retval.entry_size = hashtable->entry_size;
+    retval.key_mask = hashtable->key_mask;
     retval.metadata_increment = 1 << hashtable->metadata_hash_bits;
     retval.metadata_hash_mask = retval.metadata_increment - 1;
     retval.probe_distance_shift = hashtable->metadata_hash_bits;

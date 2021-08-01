@@ -15523,6 +15523,7 @@ perl_clone_using(PerlInterpreter *proto_perl, UV flags,
 
     /* create shared string table */
     Perl_ABH_build(aTHX_ &PL_strtab, sizeof(HEK *), S_ABH_count(proto_perl->Istrtab));
+    PL_strtab->key_mask = ~0;
     ptr_table_store(PL_ptr_table, proto_perl->Istrtab, PL_strtab);
 
     Zero(PL_sv_consts, SV_CONSTS_COUNT, SV*);

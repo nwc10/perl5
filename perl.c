@@ -365,6 +365,7 @@ perl_construct(pTHXx)
     * can use a custom optimized PL_strtab hash before calling perl_construct */
     if (!PL_strtab) {
         Perl_ABH_build(aTHX_ &PL_strtab, sizeof(HEK *), 1 << 11);
+        PL_strtab->key_mask = ~0;
     }
 
     Zero(PL_sv_consts, SV_CONSTS_COUNT, SV*);
