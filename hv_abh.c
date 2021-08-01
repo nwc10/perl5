@@ -1,4 +1,4 @@
-/*    hv_abhc.c
+/*    hv_abh.c
  *
  *    Copyright (C) 2020, 2021 by Nicholas Clark
  *
@@ -295,7 +295,7 @@ S_hash_insert_internal(pTHX_ Perl_ABH_Table *hashtable,
             if (HEK_HASH(hek) == hash
                 && (STRLEN) HEK_LEN(hek) == klen
                 && (HEK_KEY(hek) == key || memEQ(HEK_KEY(hek), key, klen))
-                && HEK_FLAGS(hek) == kflags) {
+                && (HEK_FLAGS(hek) & ls.key_mask) == kflags) {
                 /* Existing entry for this key: */
                 return entry;
             }
@@ -501,6 +501,11 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
 
     bool release_hek
         = (flags & HV_ABH_DELETE_ACTION_MASK) == HV_ABH_DELETE_RELEASES_HEK;
+    /* Restricted hashes are really annoying: */
+    bool replace_with_placeholder
+        = (flags & HV_ABH_DELETE_ACTION_MASK) == HV_ABH_DELETE_TO_PLACEHOLDER;
+    bool refuse_to_delete_readonly_values
+        = cBOOL(flags & HV_ABH_REFUSE_TO_DELETE_READONLY_VALUES);
 
     struct Perl_ABH_loop_state ls = S_ABH_create_loop_state(hashtable, hash);
     const U32 kflags = type & ls.key_mask;
@@ -515,17 +520,64 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
                 && (HEK_FLAGS(hek) & ls.key_mask) == kflags) {
                 /* Target acquired. */
 
+                void *retval;
+
+                if (ls.entry_size >= sizeof(HE)) {
+                    HE *he = (HE *) ls.entry_raw;
+                    SV *val = he->hent_val;
+                    retval = val;
+
+                    if (replace_with_placeholder && val == &PL_sv_placeholder) {
+                        /* if placeholder is here, it's already been "deleted".... */
+                        return &PL_sv_placeholder;
+                    }
+
+                    if (refuse_to_delete_readonly_values && SvREADONLY(val)) {
+                        /* Aaargh, restricted hashes suck.
+                         * This seems the easiest way to return a sentinel value
+                         * that can't be confused with anything else. */
+                        return hashtable;
+                    }
+
+                    /* If a restricted hash, rather than really deleting the
+                     * entry, put a placeholder there. This marks the key as
+                     * being "approved", so we can still access via
+                     * not-really-existing key without raising an error. */
+                    if (replace_with_placeholder) {
+                        he->hent_val = &PL_sv_placeholder;
+                        return val;
+                    }
+                }
+                else {
+                    /* This is a hack, but I want to return something that
+                       is not-NULL, and we know that this is not-NULL */
+                    retval = hashtable;
+                }
+
                 if (release_hek) {
                     if (hek->hek_refcount > 1) {
                         --hek->hek_refcount;
-                        /* This is a hack, but I want to return something that
-                           is not-NULL, and we know that this is not-NULL */
-                        return hashtable;
+                        return retval;
                     }
                     /* else it's either a shared hek that needs freeing, or
                      * (erroneously) it's an unshared hek. */
-                    
                     Safefree(hek);
+                }
+                else {
+                    /* We're not in the shared string table.
+                     * Writing the code this way means that we can support
+                     * maps using shared keys - ie entry_size == sizeof(HEK **)
+                     * no value, and only set/exists/delete are interesting. */
+                    if (hek->hek_refcount > 1) {
+                        --hek->hek_refcount;
+                    }
+                    else if (LIKELY(hek->hek_refcount == 1)) {
+                        unshare_hek(hek);
+                    }
+                    else {
+                        /* not shared keys. */
+                        Safefree(hek);
+                    }
                 }
 
                 U8 *metadata_target = ls.metadata;
@@ -645,12 +697,7 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
                 }
 
                 /* Job's a good 'un. */
-                if (release_hek) {
-                    /* This is a hack, but I want to return something that is
-                       not-NULL, and we know that this is not-NULL */
-                    return hashtable;
-                }
-                return NULL;
+                return retval;
             }
         }
         /* There's a sentinel at the end. This will terminate: */
@@ -714,35 +761,35 @@ Perl_ABH_fsck(pTHX_ Perl_ABH_Table **hashtable_p, U32 mode) {
                 }
                 ++errors;
                 prev_offset = 0;
-                continue;
             }
+            else {
+                BIKESHED mixed = S_ABH_salt_and_mix(hashtable, HEK_HASH(*entry));
 
-            BIKESHED mixed = S_ABH_salt_and_mix(hashtable, HEK_HASH(*entry));
+                size_t ideal_bucket = mixed >> hashtable->key_right_shift;
+                I64 offset = 1 + bucket - ideal_bucket;
+                I64 actual_bucket = *metadata >> metadata_hash_bits;
+                char wrong_bucket = offset == actual_bucket ? ' ' : '?';
+                char wrong_order;
+                if (offset < 1) {
+                    wrong_order = '<';
+                } else if (offset > hashtable->max_probe_distance) {
+                    wrong_order = '>';
+                } else if (offset > prev_offset + 1) {
+                    wrong_order = '!';
+                } else {
+                    wrong_order = ' ';
+                }
+                int error_count = (wrong_bucket != ' ') + (wrong_order != ' ');
 
-            size_t ideal_bucket = mixed >> hashtable->key_right_shift;
-            I64 offset = 1 + bucket - ideal_bucket;
-            I64 actual_bucket = *metadata >> metadata_hash_bits;
-            char wrong_bucket = offset == actual_bucket ? ' ' : '?';
-            char wrong_order;
-            if (offset < 1) {
-                wrong_order = '<';
-            } else if (offset > hashtable->max_probe_distance) {
-                wrong_order = '>';
-            } else if (offset > prev_offset + 1) {
-                wrong_order = '!';
-            } else {
-                wrong_order = ' ';
+                if (display == 2 || (display == 1 && error_count)) {
+                    PerlIO_printf(PerlIO_stderr(),
+                                  "%s%3zX%c%3" PRIx64 "%c%08" PRIx64 " %" HEKf "\n",
+                                  prefix_hashes, bucket, wrong_bucket, offset,
+                                  wrong_order, mixed, *entry);
+                    errors += error_count;
+                }
+                prev_offset = offset;
             }
-            int error_count = (wrong_bucket != ' ') + (wrong_order != ' ');
-
-            if (display == 2 || (display == 1 && error_count)) {
-                PerlIO_printf(PerlIO_stderr(),
-                              "%s%3zX%c%3" PRIx64 "%c%08" PRIx64 " %" HEKf "\n",
-                              prefix_hashes, bucket, wrong_bucket, offset,
-                              wrong_order, mixed, *entry);
-                errors += error_count;
-            }
-            prev_offset = offset;
         }
         ++bucket;
         ++metadata;

@@ -2692,7 +2692,7 @@ Perl_gv_check(pTHX_ HV *stash)
     if (!SvOOK(stash))
         return;
 
-    assert(HvABH(stash));
+    /* HvABH(stash) might be NULL if a stash is empty. */
 
     /* mark stash is being scanned, to avoid recursing */
     struct xpvhv_aux *iter = HvAUX(stash);
