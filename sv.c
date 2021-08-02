@@ -9580,7 +9580,7 @@ C<SvPVX_const == HeKEY> and hash lookup will avoid string compare.
 */
 
 SV *
-Perl_newSVpvn_share(pTHX_ const char *src, I32 len, BIKESHED hash)
+Perl_newSVpvn_share2(pTHX_ const char *src, SSize_t len, BIKESHED hash)
 {
     SV *sv;
     bool is_utf8 = FALSE;
@@ -9621,7 +9621,7 @@ string/length pair.
 */
 
 SV *
-Perl_newSVpv_share(pTHX_ const char *src, BIKESHED hash)
+Perl_newSVpv_share2(pTHX_ const char *src, BIKESHED hash)
 {
     return newSVpvn_share(src, strlen(src), hash);
 }

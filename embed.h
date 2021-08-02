@@ -241,6 +241,11 @@
 #define gv_stashpv(a,b)		Perl_gv_stashpv(aTHX_ a,b)
 #define gv_stashpvn(a,b,c)	Perl_gv_stashpvn(aTHX_ a,b,c)
 #define gv_stashsv(a,b)		Perl_gv_stashsv(aTHX_ a,b)
+#define hv2_common(a,b,c,d,e,f,g,h)	Perl_hv2_common(aTHX_ a,b,c,d,e,f,g,h)
+#define hv2_common_key_len(a,b,c,d,e,f)	Perl_hv2_common_key_len(aTHX_ a,b,c,d,e,f)
+#define hv2_iterinit(a)		Perl_hv2_iterinit(aTHX_ a)
+#define hv2_iterkey(a,b)	Perl_hv2_iterkey(aTHX_ a,b)
+#define hv2_iternextsv(a,b,c)	Perl_hv2_iternextsv(aTHX_ a,b,c)
 #define hv_bucket_ratio(a)	Perl_hv_bucket_ratio(aTHX_ a)
 #define hv_clear(a)		Perl_hv_clear(aTHX_ a)
 #define hv_clear_placeholders(a)	Perl_hv_clear_placeholders(aTHX_ a)
@@ -393,12 +398,14 @@
 #define newSVnv(a)		Perl_newSVnv(aTHX_ a)
 #define newSVpv(a,b)		Perl_newSVpv(aTHX_ a,b)
 #define newSVpv_share(a,b)	Perl_newSVpv_share(aTHX_ a,b)
+#define newSVpv_share2(a,b)	Perl_newSVpv_share2(aTHX_ a,b)
 #ifndef MULTIPLICITY
 #define newSVpvf		Perl_newSVpvf
 #endif
 #define newSVpvn(a,b)		Perl_newSVpvn(aTHX_ a,b)
 #define newSVpvn_flags(a,b,c)	Perl_newSVpvn_flags(aTHX_ a,b,c)
 #define newSVpvn_share(a,b,c)	Perl_newSVpvn_share(aTHX_ a,b,c)
+#define newSVpvn_share2(a,b,c)	Perl_newSVpvn_share2(aTHX_ a,b,c)
 #define newSVrv(a,b)		Perl_newSVrv(aTHX_ a,b)
 #define newSVsv_flags(a,b)	Perl_newSVsv_flags(aTHX_ a,b)
 #define newSVuv(a)		Perl_newSVuv(aTHX_ a)
@@ -567,6 +574,7 @@
 #define set_context		Perl_set_context
 #define setdefout(a)		Perl_setdefout(aTHX_ a)
 #define share_hek(a,b,c)	Perl_share_hek(aTHX_ a,b,c)
+#define share_hek2(a,b,c)	Perl_share_hek2(aTHX_ a,b,c)
 #define single_1bit_pos32	Perl_single_1bit_pos32
 #define sortsv(a,b,c)		Perl_sortsv(aTHX_ a,b,c)
 #define sortsv_flags(a,b,c,d)	Perl_sortsv_flags(aTHX_ a,b,c,d)
@@ -743,6 +751,7 @@
 #endif
 #define unpackstring(a,b,c,d,e)	Perl_unpackstring(aTHX_ a,b,c,d,e)
 #define unsharepvn(a,b,c)	Perl_unsharepvn(aTHX_ a,b,c)
+#define unsharepvn2(a,b,c)	Perl_unsharepvn2(aTHX_ a,b,c)
 #define upg_version(a,b)	Perl_upg_version(aTHX_ a,b)
 #define utf8_distance(a,b)	Perl_utf8_distance(aTHX_ a,b)
 #define utf8_hop		Perl_utf8_hop
