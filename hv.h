@@ -8,9 +8,9 @@
  *
  */
 
-/*#ifdef PERL_CORE*/
+#ifdef PERL_CORE
 #  define PERL_HASH_API 2
-/*#endif*/
+#endif
 
 #ifndef PERL_HASH_API
 #  define PERL_HASH_API 1

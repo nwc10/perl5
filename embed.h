@@ -249,17 +249,12 @@
 #define hv_bucket_ratio(a)	Perl_hv_bucket_ratio(aTHX_ a)
 #define hv_clear(a)		Perl_hv_clear(aTHX_ a)
 #define hv_clear_placeholders(a)	Perl_hv_clear_placeholders(aTHX_ a)
-#define hv_common(a,b,c,d,e,f,g,h)	Perl_hv_common(aTHX_ a,b,c,d,e,f,g,h)
-#define hv_common_key_len(a,b,c,d,e,f)	Perl_hv_common_key_len(aTHX_ a,b,c,d,e,f)
 #define hv_copy_hints_hv(a)	Perl_hv_copy_hints_hv(aTHX_ a)
 #define hv_delayfree_ent(a,b)	Perl_hv_delayfree_ent(aTHX_ a,b)
 #define hv_foreach(a,b,c,d)	Perl_hv_foreach(aTHX_ a,b,c,d)
 #define hv_free_ent(a,b)	Perl_hv_free_ent(aTHX_ a,b)
-#define hv_iterinit(a)		Perl_hv_iterinit(aTHX_ a)
-#define hv_iterkey(a,b)		Perl_hv_iterkey(aTHX_ a,b)
 #define hv_iterkeysv(a)		Perl_hv_iterkeysv(aTHX_ a)
 #define hv_iternext_flags(a,b)	Perl_hv_iternext_flags(aTHX_ a,b)
-#define hv_iternextsv(a,b,c)	Perl_hv_iternextsv(aTHX_ a,b,c)
 #define hv_iterval(a,b)		Perl_hv_iterval(aTHX_ a,b)
 #define hv_ksplit(a,b)		Perl_hv_ksplit(aTHX_ a,b)
 #define hv_name_set(a,b,c,d)	Perl_hv_name_set(aTHX_ a,b,c,d)
@@ -397,14 +392,12 @@
 #define newSViv(a)		Perl_newSViv(aTHX_ a)
 #define newSVnv(a)		Perl_newSVnv(aTHX_ a)
 #define newSVpv(a,b)		Perl_newSVpv(aTHX_ a,b)
-#define newSVpv_share(a,b)	Perl_newSVpv_share(aTHX_ a,b)
 #define newSVpv_share2(a,b)	Perl_newSVpv_share2(aTHX_ a,b)
 #ifndef MULTIPLICITY
 #define newSVpvf		Perl_newSVpvf
 #endif
 #define newSVpvn(a,b)		Perl_newSVpvn(aTHX_ a,b)
 #define newSVpvn_flags(a,b,c)	Perl_newSVpvn_flags(aTHX_ a,b,c)
-#define newSVpvn_share(a,b,c)	Perl_newSVpvn_share(aTHX_ a,b,c)
 #define newSVpvn_share2(a,b,c)	Perl_newSVpvn_share2(aTHX_ a,b,c)
 #define newSVrv(a,b)		Perl_newSVrv(aTHX_ a,b)
 #define newSVsv_flags(a,b)	Perl_newSVsv_flags(aTHX_ a,b)
@@ -573,7 +566,6 @@
 #define seed()			Perl_seed(aTHX)
 #define set_context		Perl_set_context
 #define setdefout(a)		Perl_setdefout(aTHX_ a)
-#define share_hek(a,b,c)	Perl_share_hek(aTHX_ a,b,c)
 #define share_hek2(a,b,c)	Perl_share_hek2(aTHX_ a,b,c)
 #define single_1bit_pos32	Perl_single_1bit_pos32
 #define sortsv(a,b,c)		Perl_sortsv(aTHX_ a,b,c)
@@ -750,7 +742,6 @@
 #define unpack_str(a,b,c,d,e,f,g,h)	Perl_unpack_str(aTHX_ a,b,c,d,e,f,g,h)
 #endif
 #define unpackstring(a,b,c,d,e)	Perl_unpackstring(aTHX_ a,b,c,d,e)
-#define unsharepvn(a,b,c)	Perl_unsharepvn(aTHX_ a,b,c)
 #define unsharepvn2(a,b,c)	Perl_unsharepvn2(aTHX_ a,b,c)
 #define upg_version(a,b)	Perl_upg_version(aTHX_ a,b)
 #define utf8_distance(a,b)	Perl_utf8_distance(aTHX_ a,b)
@@ -806,6 +797,17 @@
 #define whichsig_sv(a)		Perl_whichsig_sv(aTHX_ a)
 #define wrap_keyword_plugin(a,b)	Perl_wrap_keyword_plugin(aTHX_ a,b)
 #define wrap_op_checker(a,b,c)	Perl_wrap_op_checker(aTHX_ a,b,c)
+#if !(PERL_HASH_API == 2)
+#define hv_common(a,b,c,d,e,f,g,h)	Perl_hv_common(aTHX_ a,b,c,d,e,f,g,h)
+#define hv_common_key_len(a,b,c,d,e,f)	Perl_hv_common_key_len(aTHX_ a,b,c,d,e,f)
+#define hv_iterinit(a)		Perl_hv_iterinit(aTHX_ a)
+#define hv_iterkey(a,b)		Perl_hv_iterkey(aTHX_ a,b)
+#define hv_iternextsv(a,b,c)	Perl_hv_iternextsv(aTHX_ a,b,c)
+#define newSVpv_share(a,b)	Perl_newSVpv_share(aTHX_ a,b)
+#define newSVpvn_share(a,b,c)	Perl_newSVpvn_share(aTHX_ a,b,c)
+#define share_hek(a,b,c)	Perl_share_hek(aTHX_ a,b,c)
+#define unsharepvn(a,b,c)	Perl_unsharepvn(aTHX_ a,b,c)
+#endif
 #if !(defined(PERL_USE_3ARG_SIGHANDLER))
 #define csighandler		Perl_csighandler
 #endif
@@ -849,6 +851,17 @@
 #define cx_pushwhen(a)		Perl_cx_pushwhen(aTHX_ a)
 #define cx_topblock(a)		Perl_cx_topblock(aTHX_ a)
 #define gimme_V()		Perl_gimme_V(aTHX)
+#endif
+#if PERL_HASH_API == 2
+#define hv_common(a,b,c,d,e,f,g,h)	Perl_hv_common(aTHX_ a,b,c,d,e,f,g,h)
+#define hv_common_key_len(a,b,c,d,e,f)	Perl_hv_common_key_len(aTHX_ a,b,c,d,e,f)
+#define hv_iterinit(a)		Perl_hv_iterinit(aTHX_ a)
+#define hv_iterkey(a,b)		Perl_hv_iterkey(aTHX_ a,b)
+#define hv_iternextsv(a,b,c)	Perl_hv_iternextsv(aTHX_ a,b,c)
+#define newSVpv_share(a,b)	Perl_newSVpv_share(aTHX_ a,b)
+#define newSVpvn_share(a,b,c)	Perl_newSVpvn_share(aTHX_ a,b,c)
+#define share_hek(a,b,c)	Perl_share_hek(aTHX_ a,b,c)
+#define unsharepvn(a,b,c)	Perl_unsharepvn(aTHX_ a,b,c)
 #endif
 #if defined(DEBUGGING)
 #define pad_setsv(a,b)		Perl_pad_setsv(aTHX_ a,b)

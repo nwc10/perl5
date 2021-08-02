@@ -1027,12 +1027,21 @@ AbMdRp	|bool	|hv_exists_ent	|NULLOK HV *hv|NN SV *keysv|BIKESHED hash
 AbMdp	|SV**	|hv_fetch	|NULLOK HV *hv|NN const char *key|SSize_t klen \
 				|I32 lval
 AbMdp	|HE*	|hv_fetch_ent	|NULLOK HV *hv|NN SV *keysv|I32 lval|BIKESHED hash
+#if PERL_HASH_API == 2
 Cip	|void*	|hv_common	|NULLOK HV *hv|NULLOK SV *keysv \
 				|NULLOK const char* key|STRLEN klen|int flags \
 				|int action|NULLOK SV *val|BIKESHED hash
 Cip	|void*	|hv_common_key_len|NULLOK HV *hv|NN const char *key \
 				|SSize_t klen|const int action|NULLOK SV *val \
 				|const BIKESHED hash
+#else
+Cip	|void*	|hv_common	|NULLOK HV *hv|NULLOK SV *keysv \
+				|NULLOK const char* key|STRLEN klen|int flags \
+				|int action|NULLOK SV *val|U32 hash
+Cip	|void*	|hv_common_key_len|NULLOK HV *hv|NN const char *key \
+				|I32 klen|const int action|NULLOK SV *val \
+				|const U32 hash
+#endif
 Cp	|void*	|hv2_common	|NULLOK HV *hv|NULLOK SV *keysv \
 				|NULLOK const char* key|STRLEN klen|int flags \
 				|int action|NULLOK SV *val|BIKESHED hash
@@ -1046,13 +1055,22 @@ isox	|U32	|hv_foreach_no_placeholders|NN const HV *hv|NN HV_FOREACH_CALLBACK cal
 isox	|U32	|hv_foreach_with_placeholders|NN const HV *hv|NN HV_FOREACH_CALLBACK callback|NULLOK void *state
 Ap	|void	|hv_free_ent	|NN HV *hv|NULLOK HE *entry
 AiTpd	|bool	|HvIS_EMPTY 	|NN const HV *hv
+#if PERL_HASH_API == 2
 Aipd	|SSize_t|hv_iterinit	|NN HV *hv
 AipdR	|char*	|hv_iterkey	|NN HE* entry|NN SSize_t* retlen
+#else
+Aipd	|I32|hv_iterinit	|NN HV *hv
+AipdR	|char*	|hv_iterkey	|NN HE* entry|NN I32* retlen
+#endif
 Apd	|SSize_t|hv2_iterinit	|NN HV *hv
 ApdR	|char*	|hv2_iterkey	|NN HE* entry|NN SSize_t* retlen
 ApdR	|SV*	|hv_iterkeysv	|NN HE* entry
 ApdRbM	|HE*	|hv_iternext	|NN HV *hv
+#if PERL_HASH_API == 2
 AipdR	|SV*	|hv_iternextsv	|NN HV *hv|NN char **key|NN SSize_t *retlen
+#else
+AipdR	|SV*	|hv_iternextsv	|NN HV *hv|NN char **key|NN I32 *retlen
+#endif
 ApdR	|SV*	|hv2_iternextsv	|NN HV *hv|NN char **key|NN SSize_t *retlen
 ApxdR	|HE*	|hv_iternext_flags|NN HV *hv|I32 flags
 ApdR	|SV*	|hv_iterval	|NN HV *hv|NN HE *entry
@@ -1523,8 +1541,13 @@ ApdR	|SV*	|newSVpv	|NULLOK const char *const s|const STRLEN len
 ApdR	|SV*	|newSVpvn	|NULLOK const char *const buffer|const STRLEN len
 ApdR	|SV*	|newSVpvn_flags	|NULLOK const char *const s|const STRLEN len|const U32 flags
 ApdR	|SV*	|newSVhek	|NULLOK HEK *const hek
+#if PERL_HASH_API == 2
 AipdR	|SV*	|newSVpvn_share|NULLOK const char* s|SSize_t len|BIKESHED hash
 AipdR	|SV*	|newSVpv_share	|NULLOK const char* s|BIKESHED hash
+#else
+AipdR	|SV*	|newSVpvn_share|NULLOK const char* s|I32 len|U32 hash
+AipdR	|SV*	|newSVpv_share	|NULLOK const char* s|U32 hash
+#endif
 ApdR	|SV*	|newSVpvn_share2|NULLOK const char* s|SSize_t len|BIKESHED hash
 ApdR	|SV*	|newSVpv_share2	|NULLOK const char* s|BIKESHED hash
 AfpdR	|SV*	|newSVpvf	|NN const char *const pat|...
@@ -1771,7 +1794,11 @@ Axpd	|OP*	|op_scope	|NULLOK OP* o
 : Only used by perl.c/miniperl.c, but defined in caretx.c
 pe	|void	|set_caret_X
 Apd	|void	|setdefout	|NN GV* gv
+#if PERL_HASH_API == 2
 Aip	|HEK*	|share_hek	|NN const char* str|SSize_t len|BIKESHED hash
+#else
+Aip	|HEK*	|share_hek	|NN const char* str|I32 len|U32 hash
+#endif
 Ap	|HEK*	|share_hek2	|NN const char* str|SSize_t len|BIKESHED hash
 #ifdef PERL_USE_3ARG_SIGHANDLER
 : Used in perl.c
@@ -2564,7 +2591,11 @@ AbpdD	|SSize_t|unpack_str	|NN const char *pat|NN const char *patend|NN const cha
 				|I32 ocnt|U32 flags
 Apd	|SSize_t|unpackstring	|NN const char *pat|NN const char *patend|NN const char *s \
 				|NN const char *strend|U32 flags
+#if PERL_HASH_API == 2
 Aip	|void	|unsharepvn	|NULLOK const char* sv|SSize_t len|BIKESHED hash
+#else
+Aip	|void	|unsharepvn	|NULLOK const char* sv|I32 len|U32 hash
+#endif
 Ap	|void	|unsharepvn2	|NULLOK const char* sv|SSize_t len|BIKESHED hash
 : Used in gv.c, hv.c
 p	|void	|unshare_hek	|NULLOK HEK* hek
