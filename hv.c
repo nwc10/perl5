@@ -1606,9 +1606,6 @@ S_hv_free_entries(pTHX_ HV *hv)
                 }
                 iter->xhv_iterator = Perl_ABH_end(HvABH(hv));
                 iter->xhv_eiter = NULL;	/* HvEITER(hv) = NULL */
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-                iter->xhv_last_rand = iter->xhv_rand;
-#endif
             }
         }
 
@@ -1863,31 +1860,18 @@ PERL_STATIC_INLINE U32 S_ptr_hash(PTRV u) {
 static struct xpvhv_aux*
 S_hv_auxinit(pTHX_ HV *hv) {
     struct xpvhv_aux *iter;
-    char *array = NULL;
 
     PERL_ARGS_ASSERT_HV_AUXINIT;
 
     if (!SvOOK(hv)) {
         SvOOK_on(hv);
         iter = HvAUX(hv);
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-        if (PL_HASH_RAND_BITS_ENABLED) {
-            /* mix in some new state to PL_hash_rand_bits to "randomize" the traversal order*/
-            if (PL_HASH_RAND_BITS_ENABLED == 1)
-                PL_hash_rand_bits += ptr_hash((PTRV)array);
-            PL_hash_rand_bits = ROTL_UV(PL_hash_rand_bits,1);
-        }
-        iter->xhv_rand = (U32)PL_hash_rand_bits;
-#endif
     } else {
         iter = HvAUX(hv);
     }
 
     iter->xhv_eiter = NULL;
     iter->xhv_iterator = Perl_ABH_end(HvABH(hv));
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-    iter->xhv_last_rand = iter->xhv_rand;
-#endif
     iter->xhv_name_u.xhvnameu_name = 0;
     iter->xhv_name_count = 0;
     iter->xhv_backreferences = 0;
@@ -1926,9 +1910,6 @@ Perl_hv_iterinit(pTHX_ HV *hv)
         iter = HvAUX(hv); /* may have been reallocated */
         iter->xhv_iterator = Perl_ABH_end(HvABH(hv));
         iter->xhv_eiter = NULL; /* HvEITER(hv) = NULL */
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-        iter->xhv_last_rand = iter->xhv_rand;
-#endif
     } else {
         hv_auxinit(hv);
     }
@@ -1978,20 +1959,11 @@ Perl_hv_riter_set(pTHX_ HV *hv, I32 riter) {
 
 void
 Perl_hv_rand_set(pTHX_ HV *hv, U32 new_xhv_rand) {
-    struct xpvhv_aux *iter;
-
     PERL_ARGS_ASSERT_HV_RAND_SET;
 
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-    if (SvOOK(hv)) {
-        iter = HvAUX(hv);
-    } else {
-        iter = hv_auxinit(hv);
-    }
-    iter->xhv_rand = new_xhv_rand;
-#else
+    PERL_UNUSED_ARG(hv);
+    PERL_UNUSED_ARG(new_xhv_rand);
     Perl_croak(aTHX_ "This Perl has not been built with support for randomized hash key traversal but something called Perl_hv_rand_set().");
-#endif
 }
 
 void
