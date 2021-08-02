@@ -1448,15 +1448,6 @@ PERL_CALLCONV void	Perl_hv_clear(pTHX_ HV *hv);
 PERL_CALLCONV void	Perl_hv_clear_placeholders(pTHX_ HV *hv);
 #define PERL_ARGS_ASSERT_HV_CLEAR_PLACEHOLDERS	\
 	assert(hv)
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE void*	Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char* key, STRLEN klen, int flags, int action, SV *val, BIKESHED hash);
-#define PERL_ARGS_ASSERT_HV_COMMON
-#endif
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE void*	Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, SSize_t klen, const int action, SV *val, const BIKESHED hash);
-#define PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN	\
-	assert(key)
-#endif
 PERL_CALLCONV HV *	Perl_hv_copy_hints_hv(pTHX_ HV *const ohv)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_HV_COPY_HINTS_HV
@@ -1536,18 +1527,6 @@ PERL_STATIC_INLINE U32	S_hv_foreach_with_placeholders(pTHX_ const HV *hv, HV_FOR
 PERL_CALLCONV void	Perl_hv_free_ent(pTHX_ HV *hv, HE *entry);
 #define PERL_ARGS_ASSERT_HV_FREE_ENT	\
 	assert(hv)
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE SSize_t	Perl_hv_iterinit(pTHX_ HV *hv);
-#define PERL_ARGS_ASSERT_HV_ITERINIT	\
-	assert(hv)
-#endif
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE char*	Perl_hv_iterkey(pTHX_ HE* entry, SSize_t* retlen)
-			__attribute__warn_unused_result__;
-#define PERL_ARGS_ASSERT_HV_ITERKEY	\
-	assert(entry); assert(retlen)
-#endif
-
 PERL_CALLCONV SV*	Perl_hv_iterkeysv(pTHX_ HE* entry)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_HV_ITERKEYSV	\
@@ -1564,13 +1543,6 @@ PERL_CALLCONV HE*	Perl_hv_iternext_flags(pTHX_ HV *hv, I32 flags)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_HV_ITERNEXT_FLAGS	\
 	assert(hv)
-
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE SV*	Perl_hv_iternextsv(pTHX_ HV *hv, char **key, SSize_t *retlen)
-			__attribute__warn_unused_result__;
-#define PERL_ARGS_ASSERT_HV_ITERNEXTSV	\
-	assert(hv); assert(key); assert(retlen)
-#endif
 
 PERL_CALLCONV SV*	Perl_hv_iterval(pTHX_ HV *hv, HE *entry)
 			__attribute__warn_unused_result__;
@@ -2553,12 +2525,6 @@ PERL_CALLCONV SV*	Perl_newSVpv(pTHX_ const char *const s, const STRLEN len)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVPV
 
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE SV*	Perl_newSVpv_share(pTHX_ const char* s, BIKESHED hash)
-			__attribute__warn_unused_result__;
-#define PERL_ARGS_ASSERT_NEWSVPV_SHARE
-#endif
-
 PERL_CALLCONV SV*	Perl_newSVpv_share2(pTHX_ const char* s, BIKESHED hash)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVPV_SHARE2
@@ -2576,12 +2542,6 @@ PERL_CALLCONV SV*	Perl_newSVpvn(pTHX_ const char *const buffer, const STRLEN len
 PERL_CALLCONV SV*	Perl_newSVpvn_flags(pTHX_ const char *const s, const STRLEN len, const U32 flags)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_NEWSVPVN_FLAGS
-
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE SV*	Perl_newSVpvn_share(pTHX_ const char* s, SSize_t len, BIKESHED hash)
-			__attribute__warn_unused_result__;
-#define PERL_ARGS_ASSERT_NEWSVPVN_SHARE
-#endif
 
 PERL_CALLCONV SV*	Perl_newSVpvn_share2(pTHX_ const char* s, SSize_t len, BIKESHED hash)
 			__attribute__warn_unused_result__;
@@ -3332,11 +3292,6 @@ PERL_CALLCONV void	Perl_setfd_inhexec(int fd);
 #define PERL_ARGS_ASSERT_SETFD_INHEXEC
 PERL_CALLCONV void	Perl_setfd_inhexec_for_sysfd(pTHX_ int fd);
 #define PERL_ARGS_ASSERT_SETFD_INHEXEC_FOR_SYSFD
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE HEK*	Perl_share_hek(pTHX_ const char* str, SSize_t len, BIKESHED hash);
-#define PERL_ARGS_ASSERT_SHARE_HEK	\
-	assert(str)
-#endif
 PERL_CALLCONV HEK*	Perl_share_hek2(pTHX_ const char* str, SSize_t len, BIKESHED hash);
 #define PERL_ARGS_ASSERT_SHARE_HEK2	\
 	assert(str)
@@ -4076,10 +4031,6 @@ PERL_CALLCONV SSize_t	Perl_unpackstring(pTHX_ const char *pat, const char *paten
 	assert(pat); assert(patend); assert(s); assert(strend)
 PERL_CALLCONV void	Perl_unshare_hek(pTHX_ HEK* hek);
 #define PERL_ARGS_ASSERT_UNSHARE_HEK
-#ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE void	Perl_unsharepvn(pTHX_ const char* sv, SSize_t len, BIKESHED hash);
-#define PERL_ARGS_ASSERT_UNSHAREPVN
-#endif
 PERL_CALLCONV void	Perl_unsharepvn2(pTHX_ const char* sv, SSize_t len, BIKESHED hash);
 #define PERL_ARGS_ASSERT_UNSHAREPVN2
 PERL_CALLCONV SV*	Perl_upg_version(pTHX_ SV *ver, bool qv);
@@ -4354,6 +4305,57 @@ PERL_CALLCONV SV*	Perl_get_re_gclass_nonbitmap_data(pTHX_ const regexp *prog, co
 #define PERL_ARGS_ASSERT_GET_RE_GCLASS_NONBITMAP_DATA	\
 	assert(node)
 #  endif
+#endif
+#if !(PERL_HASH_API == 2)
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE void*	Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char* key, STRLEN klen, int flags, int action, SV *val, U32 hash);
+#define PERL_ARGS_ASSERT_HV_COMMON
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE void*	Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, I32 klen, const int action, SV *val, const U32 hash);
+#define PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN	\
+	assert(key)
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE I32	Perl_hv_iterinit(pTHX_ HV *hv);
+#define PERL_ARGS_ASSERT_HV_ITERINIT	\
+	assert(hv)
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE char*	Perl_hv_iterkey(pTHX_ HE* entry, I32* retlen)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_HV_ITERKEY	\
+	assert(entry); assert(retlen)
+#endif
+
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE SV*	Perl_hv_iternextsv(pTHX_ HV *hv, char **key, I32 *retlen)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_HV_ITERNEXTSV	\
+	assert(hv); assert(key); assert(retlen)
+#endif
+
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE SV*	Perl_newSVpv_share(pTHX_ const char* s, U32 hash)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_NEWSVPV_SHARE
+#endif
+
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE SV*	Perl_newSVpvn_share(pTHX_ const char* s, I32 len, U32 hash)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_NEWSVPVN_SHARE
+#endif
+
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE HEK*	Perl_share_hek(pTHX_ const char* str, I32 len, U32 hash);
+#define PERL_ARGS_ASSERT_SHARE_HEK	\
+	assert(str)
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE void	Perl_unsharepvn(pTHX_ const char* sv, I32 len, U32 hash);
+#define PERL_ARGS_ASSERT_UNSHAREPVN
+#endif
 #endif
 #if !(defined(DEBUGGING))
 #  if !defined(NV_PRESERVES_UV)
@@ -4683,6 +4685,57 @@ STATIC void	S_warn_on_first_deprecated_use(pTHX_ const char * const name, const 
 #define PERL_ARGS_ASSERT_WARN_ON_FIRST_DEPRECATED_USE	\
 	assert(name); assert(alternative); assert(file)
 #  endif
+#endif
+#if PERL_HASH_API == 2
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE void*	Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char* key, STRLEN klen, int flags, int action, SV *val, BIKESHED hash);
+#define PERL_ARGS_ASSERT_HV_COMMON
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE void*	Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, SSize_t klen, const int action, SV *val, const BIKESHED hash);
+#define PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN	\
+	assert(key)
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE SSize_t	Perl_hv_iterinit(pTHX_ HV *hv);
+#define PERL_ARGS_ASSERT_HV_ITERINIT	\
+	assert(hv)
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE char*	Perl_hv_iterkey(pTHX_ HE* entry, SSize_t* retlen)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_HV_ITERKEY	\
+	assert(entry); assert(retlen)
+#endif
+
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE SV*	Perl_hv_iternextsv(pTHX_ HV *hv, char **key, SSize_t *retlen)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_HV_ITERNEXTSV	\
+	assert(hv); assert(key); assert(retlen)
+#endif
+
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE SV*	Perl_newSVpv_share(pTHX_ const char* s, BIKESHED hash)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_NEWSVPV_SHARE
+#endif
+
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE SV*	Perl_newSVpvn_share(pTHX_ const char* s, SSize_t len, BIKESHED hash)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_NEWSVPVN_SHARE
+#endif
+
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE HEK*	Perl_share_hek(pTHX_ const char* str, SSize_t len, BIKESHED hash);
+#define PERL_ARGS_ASSERT_SHARE_HEK	\
+	assert(str)
+#endif
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE void	Perl_unsharepvn(pTHX_ const char* sv, SSize_t len, BIKESHED hash);
+#define PERL_ARGS_ASSERT_UNSHAREPVN
+#endif
 #endif
 #if defined (HAS_SOCKETPAIR) ||     (defined (HAS_SOCKET) && defined(SOCK_DGRAM) && 	defined(AF_INET) && defined(PF_INET))
 PERL_CALLCONV int	Perl_PerlSock_socketpair_cloexec(pTHX_ int domain, int type, int protocol, int *pairfd)

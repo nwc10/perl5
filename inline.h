@@ -92,7 +92,81 @@ Perl_unsharepvn(pTHX_ const char *str, SSize_t len, BIKESHED hash) {
 }
 
 #else
-#  error API 1 wrappers NYI
+
+PERL_STATIC_INLINE void *
+Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
+               int flags, int action, SV *val, U32 hash) {
+    PERL_UNUSED_ARG(hash);
+    return Perl_hv2_common(aTHX_ hv, keysv, key, klen, flags, action, val, 0);
+}
+
+PERL_STATIC_INLINE void *
+Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, I32 klen,
+                       const int action, SV *val, const U32 hash) {
+    PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN;
+    PERL_UNUSED_ARG(hash);
+    return Perl_hv2_common_key_len(aTHX_ hv, key, klen, action, val, 0);
+}
+
+PERL_STATIC_INLINE I32
+Perl_hv_iterinit(pTHX_ HV *hv) {
+    PERL_ARGS_ASSERT_HV_ITERINIT;
+    return Perl_hv2_iterinit(aTHX_ hv);
+}
+
+PERL_STATIC_INLINE char *
+Perl_hv_iterkey(pTHX_ HE *entry, I32 *retlen) {
+    PERL_ARGS_ASSERT_HV_ITERKEY;
+    SSize_t truelen;
+    char *retval = Perl_hv2_iterkey(aTHX_ entry, &truelen);
+    *retlen = truelen;
+    if (retval) {
+        /* LUNCH FIXME - this should be a polite panic */
+        assert(*retlen == truelen);
+    }
+    /* else len is garbage */
+    return retval;
+}
+
+PERL_STATIC_INLINE SV *
+Perl_hv_iternextsv(pTHX_ HV *hv, char **key, I32 *retlen) {
+    PERL_ARGS_ASSERT_HV_ITERNEXTSV;
+    SSize_t truelen;
+    SV *retval = Perl_hv2_iternextsv(aTHX_ hv, key, &truelen);
+    *retlen = truelen;
+    if (retval) {
+        /* LUNCH FIXME - this should be a polite panic */
+        assert(*retlen == truelen);
+    }
+    /* else len is garbage */
+    return retval;
+}
+
+PERL_STATIC_INLINE SV *
+Perl_newSVpvn_share(pTHX_ const char *src, I32 len, U32 hash) {
+    PERL_UNUSED_ARG(hash);
+    return Perl_newSVpvn_share2(aTHX_ src, len, 0);
+}
+
+PERL_STATIC_INLINE SV *
+Perl_newSVpv_share(pTHX_ const char *src, U32 hash) {
+    PERL_UNUSED_ARG(hash);
+    return Perl_newSVpv_share2(aTHX_ src, 0);
+}
+
+PERL_STATIC_INLINE HEK *
+Perl_share_hek(pTHX_ const char *str, I32 len, U32 hash) {
+    PERL_ARGS_ASSERT_SHARE_HEK;
+    PERL_HASH(hash, str, len < 0 ? -len : len);
+    return Perl_share_hek2(aTHX_ str, len, hash);
+}
+
+PERL_STATIC_INLINE void
+Perl_unsharepvn(pTHX_ const char *str, I32 len, U32 hash) {
+    PERL_HASH(hash, str, len < 0 ? -len : len);
+    Perl_unsharepvn2(aTHX_ str, len, hash);
+}
+
 #endif
 
 /* ------------------------------- av.h ------------------------------- */
