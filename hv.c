@@ -364,13 +364,13 @@ information on how to use this function on tied hashes.
 
 /* Common code for hv_delete()/hv_exists()/hv_fetch()/hv_store()  */
 void *
-Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, SSize_t klen,
-                       const int action, SV *val, const BIKESHED hash)
+Perl_hv2_common_key_len(pTHX_ HV *hv, const char *key, SSize_t klen,
+                        const int action, SV *val, const BIKESHED hash)
 {
     STRLEN len;
     int flags;
 
-    PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN;
+    PERL_ARGS_ASSERT_HV2_COMMON_KEY_LEN;
 
     if (klen < 0) {
         len = -klen;
@@ -383,8 +383,8 @@ Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, SSize_t klen,
 }
 
 void *
-Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
-               int flags, int action, SV *val, BIKESHED hash)
+Perl_hv2_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
+                int flags, int action, SV *val, BIKESHED hash)
 {
     HE *entry;
     SV *sv;
@@ -1896,9 +1896,9 @@ value, you can get it through the macro C<HvFILL(hv)>.
 */
 
 SSize_t
-Perl_hv_iterinit(pTHX_ HV *hv)
+Perl_hv2_iterinit(pTHX_ HV *hv)
 {
-    PERL_ARGS_ASSERT_HV_ITERINIT;
+    PERL_ARGS_ASSERT_HV2_ITERINIT;
 
     if (SvOOK(hv)) {
         struct xpvhv_aux * iter = HvAUX(hv);
@@ -2457,9 +2457,9 @@ C<L</hv_iterinit>>.
 */
 
 char *
-Perl_hv_iterkey(pTHX_ HE *entry, SSize_t *retlen)
+Perl_hv2_iterkey(pTHX_ HE *entry, SSize_t *retlen)
 {
-    PERL_ARGS_ASSERT_HV_ITERKEY;
+    PERL_ARGS_ASSERT_HV2_ITERKEY;
 
     if (HeKLEN(entry) == HEf_SVKEY) {
         STRLEN len;
@@ -2529,11 +2529,11 @@ operation.
 */
 
 SV *
-Perl_hv_iternextsv(pTHX_ HV *hv, char **key, SSize_t *retlen)
+Perl_hv2_iternextsv(pTHX_ HV *hv, char **key, SSize_t *retlen)
 {
     HE * const he = hv_iternext_flags(hv, 0);
 
-    PERL_ARGS_ASSERT_HV_ITERNEXTSV;
+    PERL_ARGS_ASSERT_HV2_ITERNEXTSV;
 
     if (!he)
         return NULL;
@@ -2556,7 +2556,7 @@ Adds magic to a hash.  See C<L</sv_magic>>.
  * len and hash must both be valid for str.
  */
 void
-Perl_unsharepvn(pTHX_ const char *str, SSize_t len, BIKESHED hash)
+Perl_unsharepvn2(pTHX_ const char *str, SSize_t len, BIKESHED hash)
 {
     unshare_hek_or_pvn (NULL, str, len, hash);
 }
@@ -2620,13 +2620,13 @@ S_unshare_hek_or_pvn(pTHX_ HEK *hek, const char *str, SSize_t len, BIKESHED hash
  * len and hash must both be valid for str.
  */
 HEK *
-Perl_share_hek(pTHX_ const char *str, SSize_t len, BIKESHED hash)
+Perl_share_hek2(pTHX_ const char *str, SSize_t len, BIKESHED hash)
 {
     bool is_utf8 = FALSE;
     int flags = 0;
     const char * const save = str;
 
-    PERL_ARGS_ASSERT_SHARE_HEK;
+    PERL_ARGS_ASSERT_SHARE_HEK2;
 
     if (len < 0) {
       STRLEN tmplen = -len;

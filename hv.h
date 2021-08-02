@@ -8,6 +8,19 @@
  *
  */
 
+/*#ifdef PERL_CORE*/
+#  define PERL_HASH_API 2
+/*#endif*/
+
+#ifndef PERL_HASH_API
+#  define PERL_HASH_API 1
+#endif
+
+#if PERL_HASH_API > 2
+#  error Request for unsupported future hash API
+#endif
+
+
 /* These control hash traversal randomization and the environment variable PERL_PERTURB_KEYS.
  * Currently disabling this functionality will break a few tests, but should otherwise work fine.
  * See perlrun for more details. */

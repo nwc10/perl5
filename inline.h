@@ -37,6 +37,64 @@ SOFTWARE.
  * Each section names the header file that the functions "belong" to.
  */
 
+#if PERL_HASH_API == 2
+
+PERL_STATIC_INLINE void *
+Perl_hv_common(pTHX_ HV *hv, SV *keysv, const char *key, STRLEN klen,
+               int flags, int action, SV *val, BIKESHED hash) {
+    return Perl_hv2_common(aTHX_ hv, keysv, key, klen, flags, action, val, hash);
+}
+
+PERL_STATIC_INLINE void *
+Perl_hv_common_key_len(pTHX_ HV *hv, const char *key, SSize_t klen,
+                       const int action, SV *val, const BIKESHED hash) {
+    PERL_ARGS_ASSERT_HV_COMMON_KEY_LEN;
+    return Perl_hv2_common_key_len(aTHX_ hv, key, klen, action, val, hash);
+}
+
+PERL_STATIC_INLINE SSize_t
+Perl_hv_iterinit(pTHX_ HV *hv) {
+    PERL_ARGS_ASSERT_HV_ITERINIT;
+    return Perl_hv2_iterinit(aTHX_ hv);
+}
+
+PERL_STATIC_INLINE char *
+Perl_hv_iterkey(pTHX_ HE *entry, SSize_t *retlen) {
+    PERL_ARGS_ASSERT_HV_ITERKEY;
+    return Perl_hv2_iterkey(aTHX_ entry, retlen);
+}
+
+PERL_STATIC_INLINE SV *
+Perl_hv_iternextsv(pTHX_ HV *hv, char **key, SSize_t *retlen) {
+    PERL_ARGS_ASSERT_HV_ITERNEXTSV;
+    return Perl_hv2_iternextsv(aTHX_ hv, key, retlen);
+}
+
+PERL_STATIC_INLINE SV *
+Perl_newSVpvn_share(pTHX_ const char *src, SSize_t len, BIKESHED hash) {
+    return Perl_newSVpvn_share2(aTHX_ src, len, hash);
+}
+
+PERL_STATIC_INLINE SV *
+Perl_newSVpv_share(pTHX_ const char *src, BIKESHED hash) {
+    return Perl_newSVpv_share2(aTHX_ src, hash);
+}
+
+PERL_STATIC_INLINE HEK *
+Perl_share_hek(pTHX_ const char *str, SSize_t len, BIKESHED hash) {
+    PERL_ARGS_ASSERT_SHARE_HEK;
+    return Perl_share_hek2(aTHX_ str, len, hash);
+}
+
+PERL_STATIC_INLINE void
+Perl_unsharepvn(pTHX_ const char *str, SSize_t len, BIKESHED hash) {
+    Perl_unsharepvn2(aTHX_ str, len, hash);
+}
+
+#else
+#  error API 1 wrappers NYI
+#endif
+
 /* ------------------------------- av.h ------------------------------- */
 
 /*
