@@ -988,17 +988,15 @@ Perl_hv_pushkv(pTHX_ HV *hv, U32 flags)
 
         PUTBACK;
 
-        U32 rand = S_hv_get_rand(aTHX_ hv);
-
         switch (flags) {
         case 1:
-            S_hv_foreach_no_placeholders(aTHX_ hv, rand, pushkv_direct_callback1, &flags);
+            S_hv_foreach_no_placeholders(aTHX_ hv, pushkv_direct_callback1, &flags);
             break;
         case 2:
-            S_hv_foreach_no_placeholders(aTHX_ hv, rand, pushkv_direct_callback2, &flags);
+            S_hv_foreach_no_placeholders(aTHX_ hv, pushkv_direct_callback2, &flags);
             break;
         case 3:
-            S_hv_foreach_no_placeholders(aTHX_ hv, rand, pushkv_direct_callback3, &flags);
+            S_hv_foreach_no_placeholders(aTHX_ hv, pushkv_direct_callback3, &flags);
             break;
         }
     }
@@ -2323,20 +2321,9 @@ Perl_hv_foreach_magical(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, v
 #endif
     }
 
-    U32 rand;
-    if (flags & HV_ITERNEXT_EXPOSE_HASH_ORDER) {
-        /* This is not the order that each() will report.
-         * (So will break code if you expose it to Perl space. As well as being
-         * insecure). */
-        rand = 0;
-    }
-    else {
-        rand = S_hv_get_rand(aTHX_ hv);
-    }
-
     return (flags & HV_ITERNEXT_WANTPLACEHOLDERS)
-        ? S_hv_foreach_with_placeholders(aTHX_ hv, rand, callback, state)
-        : S_hv_foreach_no_placeholders(aTHX_ hv, rand, callback, state);
+        ? S_hv_foreach_with_placeholders(aTHX_ hv, callback, state)
+        : S_hv_foreach_no_placeholders(aTHX_ hv, callback, state);
 }
 
 /*
@@ -3400,7 +3387,7 @@ Perl_hv_assert(pTHX_ HV *hv)
     PERL_ARGS_ASSERT_HV_ASSERT;
 
     /* We want to traverse HvARRAY() even if the hash is tied: */
-    S_hv_foreach_with_placeholders(aTHX_ hv, 0, hv_assert_callback, &state);
+    S_hv_foreach_with_placeholders(aTHX_ hv, hv_assert_callback, &state);
 
     if (!SvTIED_mg((const SV *)hv, PERL_MAGIC_tied)) {
         static const char bad_count[] = "Count %" UVuf " %s(s), but hash reports %" UVuf "\n";

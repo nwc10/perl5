@@ -1502,12 +1502,12 @@ PERL_CALLCONV U32	Perl_hv_foreach_magical(pTHX_ HV *hv, U32 flags, HV_FOREACH_CA
 #define PERL_ARGS_ASSERT_HV_FOREACH_MAGICAL	\
 	assert(hv); assert(callback)
 #ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE U32	S_hv_foreach_no_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state);
+PERL_STATIC_INLINE U32	S_hv_foreach_no_placeholders(pTHX_ const HV *hv, HV_FOREACH_CALLBACK callback, void *state);
 #define PERL_ARGS_ASSERT_HV_FOREACH_NO_PLACEHOLDERS	\
 	assert(hv); assert(callback)
 #endif
 #ifndef PERL_NO_INLINE_FUNCTIONS
-PERL_STATIC_INLINE U32	S_hv_foreach_with_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state);
+PERL_STATIC_INLINE U32	S_hv_foreach_with_placeholders(pTHX_ const HV *hv, HV_FOREACH_CALLBACK callback, void *state);
 #define PERL_ARGS_ASSERT_HV_FOREACH_WITH_PLACEHOLDERS	\
 	assert(hv); assert(callback)
 #endif

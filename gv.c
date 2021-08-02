@@ -2698,7 +2698,7 @@ Perl_gv_check(pTHX_ HV *stash)
     struct xpvhv_aux *iter = HvAUX(stash);
     iter->xhv_aux_flags |= HvAUXf_SCAN_STASH;
 
-    S_hv_foreach_with_placeholders(aTHX_ stash, 0, gv_check_callback, stash);
+    S_hv_foreach_with_placeholders(aTHX_ stash, gv_check_callback, stash);
 
     iter->xhv_aux_flags &= ~HvAUXf_SCAN_STASH;
 }

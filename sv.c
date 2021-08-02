@@ -9976,7 +9976,6 @@ Perl_sv_resetpvn(pTHX_ const char *s, STRLEN len, HV * const stash)
             todo[i] = 1;
         }
         S_hv_foreach_with_placeholders(aTHX_ stash,
-                                       0,
                                        sv_reset_callback,
                                        todo);
     }
@@ -16281,7 +16280,6 @@ S_find_hash_subscript(pTHX_ const HV *const hv, const SV *const val)
 
     const SV *in_out = val;
     U32 found = S_hv_foreach_with_placeholders(aTHX_ hv,
-                                               0,
                                                find_hash_subscript_callback,
                                                &in_out);
     return found ? (SV *)in_out : NULL;

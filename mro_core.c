@@ -1307,7 +1307,6 @@ S_mro_gather_and_rename(pTHX_ HV * const stashes, HV * const seen_stashes,
 
         S_hv_foreach_with_placeholders(aTHX_
                                        oldstash,
-                                       0,
                                        S_gather_and_rename_callback1,
                                        &state);
     }
@@ -1319,7 +1318,6 @@ S_mro_gather_and_rename(pTHX_ HV * const stashes, HV * const seen_stashes,
 
         S_hv_foreach_with_placeholders(aTHX_
                                        stash,
-                                       0,
                                        S_gather_and_rename_callback2,
                                        &state);
     }

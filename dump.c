@@ -713,7 +713,6 @@ Perl_dump_packsubs_perl(pTHX_ const HV *stash, bool justperl)
      * So we use the address of justperl as our non-NULL poiner. */
     S_hv_foreach_with_placeholders(aTHX_
                                    stash,
-                                   0,
                                    dump_packsubs_callback,
                                    justperl ? &justperl : NULL);
 }
