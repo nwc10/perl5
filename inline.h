@@ -234,14 +234,12 @@ XXX Call the callback
 =cut
 */
 
-/* Assume that these three *will* change soon. Specifically, the _rand_
-   parameter may well be removed, and S_hv_get_rand will be deleted. */
+/* These three might change again. */
 
 PERL_STATIC_INLINE U32
-S_hv_foreach_with_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state)
+S_hv_foreach_with_placeholders(pTHX_ const HV *hv, HV_FOREACH_CALLBACK callback, void *state)
 {
     PERL_ARGS_ASSERT_HV_FOREACH_WITH_PLACEHOLDERS;
-    PERL_UNUSED_ARG(rand);
 
     if (!HvTOTALKEYS(hv))
         return 0;
@@ -260,10 +258,9 @@ S_hv_foreach_with_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK
 }
 
 PERL_STATIC_INLINE U32
-S_hv_foreach_no_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK callback, void *state)
+S_hv_foreach_no_placeholders(pTHX_ const HV *hv, HV_FOREACH_CALLBACK callback, void *state)
 {
     PERL_ARGS_ASSERT_HV_FOREACH_NO_PLACEHOLDERS;
-    PERL_UNUSED_ARG(rand);
 
     if (!HvTOTALKEYS(hv))
         return 0;
@@ -283,14 +280,6 @@ S_hv_foreach_no_placeholders(pTHX_ const HV *hv, U32 rand, HV_FOREACH_CALLBACK c
     return 0;
 }
 
-/* LUNCH - nuke this. */
-PERL_STATIC_INLINE U32
-S_hv_get_rand(pTHX_ HV *hv)
-{
-    PERL_UNUSED_ARG(hv);
-    return 0;
-}
-
 PERL_STATIC_INLINE U32
 Perl_hv_foreach(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, void *state)
 {
@@ -307,8 +296,8 @@ Perl_hv_foreach(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, void *sta
      * code: */
 
     return (flags & HV_ITERNEXT_WANTPLACEHOLDERS)
-        ? S_hv_foreach_with_placeholders(aTHX_ hv, 0, callback, state)
-        : S_hv_foreach_no_placeholders(aTHX_ hv, 0, callback, state);
+        ? S_hv_foreach_with_placeholders(aTHX_ hv, callback, state)
+        : S_hv_foreach_no_placeholders(aTHX_ hv, callback, state);
 }
 
 PERL_STATIC_INLINE void *
