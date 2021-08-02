@@ -109,7 +109,7 @@ hash_traversal_mask(rhv, ...)
         SV* rhv
     PPCODE:
 {
-#ifdef PERL_HASH_RANDOMIZE_KEYS
+#ifdef LUNCH
     if (SvROK(rhv) && SvTYPE(SvRV(rhv))==SVt_PVHV && !SvMAGICAL(SvRV(rhv))) {
         HV *hv = (HV *)SvRV(rhv);
         if (items>1) {

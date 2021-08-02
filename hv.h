@@ -104,13 +104,8 @@ struct xpvhv_aux {
  * tive, then xhv_name_u.xhvnameu_names[1] is the first effective name.
  */
     I32		xhv_name_count;
-    struct mro_meta *xhv_mro_meta;
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-    U32         xhv_rand;       /* random value for hash traversal */
-    U32         xhv_last_rand;  /* last random value for hash traversal,
-                                   used to detect each() after insert for warnings */
-#endif
     U32         xhv_aux_flags;      /* assorted extra flags */
+    struct mro_meta *xhv_mro_meta;
 };
 
 #define HvAUXf_SCAN_STASH   0x1   /* stash is being scanned by gv_check */
@@ -258,8 +253,6 @@ See L</hv_fill>.
 /* This is a hack, but will it be good enough? */
 #define HvRITER_get(hv)	(SvOOK(hv) ? (SSize_t)HvAUX(hv)->xhv_iterator - 1 : -1)
 #define HvEITER_get(hv)	(SvOOK(hv) ? HvAUX(hv)->xhv_eiter : NULL)
-#define HvRAND_get(hv)	(SvOOK(hv) ? HvAUX(hv)->xhv_rand : 0)
-#define HvLASTRAND_get(hv)	(SvOOK(hv) ? HvAUX(hv)->xhv_last_rand : 0)
 
 #define HvNAME(hv)	HvNAME_get(hv)
 #define HvNAMELEN(hv)   HvNAMELEN_get(hv)

@@ -2102,7 +2102,9 @@ Perl_do_sv_dump(pTHX_ I32 level, PerlIO *file, SV *sv, I32 nest, I32 maxnest, bo
                                    (IV)HvRITER_get(sv));
             Perl_dump_indent(aTHX_ level, file, "  EITER = 0x%" UVxf "\n",
                                    PTR2UV(HvEITER_get(sv)));
-#ifdef PERL_HASH_RANDOMIZE_KEYS
+#ifdef LUNCH
+            /* We should show the salt here, and the state counter (once
+             * implemented.) */
             Perl_dump_indent(aTHX_ level, file, "  RAND = 0x%" UVxf,
                                    (UV)HvRAND_get(sv));
             if (HvRAND_get(sv) != HvLASTRAND_get(sv) && HvRITER_get(sv) != -1 ) {

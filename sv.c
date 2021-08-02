@@ -14457,10 +14457,6 @@ S_sv_dup_common(pTHX_ const SV *const ssv, CLONE_PARAMS *const param)
                         daux->xhv_name_count = saux->xhv_name_count;
 
                         daux->xhv_aux_flags = saux->xhv_aux_flags;
-#ifdef PERL_HASH_RANDOMIZE_KEYS
-                        daux->xhv_rand = saux->xhv_rand;
-                        daux->xhv_last_rand = saux->xhv_last_rand;
-#endif
                         daux->xhv_iterator = 0; // LUNCH FIXME IMPOSSIBLE?
                         daux->xhv_eiter = saux->xhv_eiter
                             ? he_dup(saux->xhv_eiter,
