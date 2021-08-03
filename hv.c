@@ -1021,45 +1021,6 @@ pushkv_direct_callback3(pTHX_ HEK *key, SV *val, void *state)
     return 0;
 }
 
-/* Might not actually be magic. But we can't be sure, so can't shortcut. */
-static U32
-pushkv_magic_callback1(pTHX_ HEK *key, SV *val, void *state)
-{
-    dSP;
-    PERL_UNUSED_VAR(state);
-    PERL_UNUSED_VAR(val);
-
-    EXTEND(SP, 1);
-    PUSHs(sv_2mortal(newSVhek(key)));
-    PUTBACK;
-    return 0;
-}
-static U32
-pushkv_magic_callback2(pTHX_ HEK *key, SV *val, void *state)
-{
-    dSP;
-    PERL_UNUSED_VAR(state);
-    PERL_UNUSED_VAR(key);
-
-    EXTEND(SP, 1);
-    PUSHs(val);
-    PUTBACK;
-    return 0;
-}
-static U32
-pushkv_magic_callback3(pTHX_ HEK *key, SV *val, void *state)
-{
-    dSP;
-    PERL_UNUSED_VAR(state);
-
-    EXTEND(SP, 2);
-    PUSHs(sv_2mortal(newSVhek(key)));
-    PUSHs(val);
-    PUTBACK;
-    return 0;
-}
-
-
 void
 Perl_hv_pushkv(pTHX_ HV *hv, U32 flags)
 {
@@ -1075,20 +1036,20 @@ Perl_hv_pushkv(pTHX_ HV *hv, U32 flags)
     (void)hv_iterinit(hv);
 
     if (UNLIKELY(tied)) {
-        /* We could call hv_foreach here directly (like a proper user of the
-         * public API) but we know that SvRMAGICAL(hv) is true, so we can go
-         * direct to what it calls. */
-        switch (flags) {
-        case 1:
-            Perl_hv_foreach_magical(aTHX_ hv, 0, pushkv_magic_callback1, NULL);
-            break;
-        case 2:
-            Perl_hv_foreach_magical(aTHX_ hv, 0, pushkv_magic_callback2, NULL);
-            break;
-        case 3:
-            Perl_hv_foreach_magical(aTHX_ hv, 0, pushkv_magic_callback3, NULL);
-            break;
+        /* Using the iterator API because hv_foreach will call hv_iterval()
+         * unconditionally, which will trigger copy magic, which is externally
+         * observable, and should not happen on keys %tied_hash. */
+        dSP;
+        SSize_t ext = (flags == 3) ? 2 : 1;
+        HE *entry;
+        while ((entry = hv_iternext(hv))) {
+            EXTEND(SP, ext);
+            if (flags & 1)
+                PUSHs(hv_iterkeysv(entry));
+            if (flags & 2)
+                PUSHs(hv_iterval(hv, entry));
         }
+        PUTBACK;
     }
     else {
         dSP;
