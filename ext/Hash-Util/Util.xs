@@ -308,6 +308,10 @@ num_buckets(rhv)
     PROTOTYPE: \%
     PPCODE:
 {
+    static int oh_so_not_threadsafe;
+    if (++oh_so_not_threadsafe > 100) {
+        Perl_croak(aTHX_ "Hash::Util::num_buckets is out to LUNCH");
+    }
 #if LUNCH
     if (SvROK(rhv)) {
         rhv= SvRV(rhv);
@@ -325,6 +329,10 @@ used_buckets(rhv)
     PROTOTYPE: \%
     PPCODE:
 {
+    static int oh_so_not_threadsafe;
+    if (++oh_so_not_threadsafe > 100) {
+        Perl_croak(aTHX_ "Hash::Util::used_buckets is out to LUNCH");
+    }
 #if LUNCH
     if (SvROK(rhv)) {
         rhv= SvRV(rhv);
