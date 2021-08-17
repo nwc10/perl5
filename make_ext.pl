@@ -159,7 +159,7 @@ if (IS_WIN32) {
 	$here =~ s{/}{\\}g;
 	$perl = "$here\\$perl";
     }
-    (my $topdir = $perl) =~ s/\\[^\\]+$//;
+    my $topdir = $perl =~ s/\\[^\\]+$//r;
     # miniperl needs to find perlglob and pl2bat
     $ENV{PATH} = "$topdir;$topdir\\win32\\bin;$ENV{PATH}";
     my $pl2bat = "$topdir\\win32\\bin\\pl2bat";
@@ -172,7 +172,7 @@ if (IS_WIN32) {
     print "In $build" if $verbose;
     foreach my $dir (@dirs) {
 	chdir($dir) or die "Cannot cd to $dir: $!\n";
-	(my $ext = Cwd::getcwd()) =~ s{/}{\\}g;
+	my $ext = Cwd::getcwd() =~ s{/}{\\}gr;
 	FindExt::scan_ext($ext);
 	FindExt::set_static_extensions(split ' ', $Config{static_ext});
 	chdir $build
@@ -241,11 +241,9 @@ foreach my $spec (@extspec)  {
     $mname =~ s!/!::!g;
     my $ext_pathname;
 
-    # Try new style ext/Data-Dumper/ first
-    my $copy = $spec;
-    $copy =~ tr!/!-!;
+    my $copy = $spec =~ tr!/!-!r;
 
-    # List/Util.xs lives in Scalar-List-Utils, Cwd.xs lives in PathTools
+    # List-Util.xs lives in Scalar-List-Utils, Cwd.xs lives in PathTools
     $copy = 'Scalar-List-Utils' if $copy eq 'List-Util';
     $copy = 'PathTools'         if $copy eq 'Cwd';
 
@@ -257,13 +255,8 @@ foreach my $spec (@extspec)  {
     }
 
     if (!defined $ext_pathname) {
-	if (-d "ext/$spec") {
-	    # Old style ext/Data/Dumper/
-	    $ext_pathname = "ext/$spec";
-	} else {
-	    warn "Can't find extension $spec in any of @ext_dirs";
-	    next;
-	}
+        warn "Can't find extension $spec in any of @ext_dirs";
+        next;
     }
 
     print "\tMaking $mname ($target)\n" if $verbose;
@@ -280,8 +273,7 @@ sub build_extension {
 	return;
     }
 
-    my $up = $ext_dir;
-    $up =~ s![^/]+!..!g;
+    my $up = $ext_dir =~ s![^/]+!..!gr;
 
     $perl ||= "$up/miniperl";
     my $return_dir = $up;
@@ -384,7 +376,7 @@ sub build_extension {
 	unless ($fromname) {
 	    die "For $mname tried @locations in $ext_dir but can't find source";
 	}
-	($value = $fromname) =~ s/\.pm\z/.pod/;
+            $value = $fromname =~ s/\.pm\z/.pod/r;
 	$value = $fromname unless -e $value;
 
             if ($mname eq 'Pod::Checker') {
