@@ -192,21 +192,7 @@ test_freeent(freeent_function *f) {
     U32 results[4];
     int i;
 
-#ifdef PURIFY
     victim = (HE*)safemalloc(sizeof(HE));
-#else
-    /* Storing then deleting something should ensure that a hash entry is
-       available.  */
-    (void) hv_stores(test_hash, "", &PL_sv_yes);
-    (void) hv_deletes(test_hash, "", 0);
-
-    /* We need to "inline" new_he here as it's static, and the functions we
-       test expect to be able to call del_HE on the HE  */
-    if (!PL_body_roots[HE_SVSLOT])
-        croak("PL_he_root is 0");
-    victim = (HE*) PL_body_roots[HE_SVSLOT];
-    PL_body_roots[HE_SVSLOT] = HeNEXT(victim);
-#endif
 
     victim->hent_hek = Perl_share_hek(aTHX_ "", 0, 0);
 

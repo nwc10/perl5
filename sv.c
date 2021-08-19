@@ -863,12 +863,7 @@ vs the implementation in 5.8.8, making it table-driven.  All fields
 are used for this, except for arena_size.
 
 For the sv-types that have no bodies, arenas are not used, so those
-PL_body_roots[sv_type] are unused, and can be overloaded.  In
-something of a special case, SVt_NULL is borrowed for HE arenas;
-PL_body_roots[HE_SVSLOT=SVt_NULL] is filled by S_more_he, but the
-bodies_by_type[SVt_NULL] slot is not used, as the table is not
-available in hv.c.
-
+PL_body_roots[sv_type] are unused, and can be overloaded.
 */
 
 struct body_details {
@@ -940,7 +935,7 @@ ALIGNED_TYPE(XPVIO);
         + sizeof (((type*)SvANY((const SV *)0))->last_member)
 
 static const struct body_details bodies_by_type[] = {
-    /* HEs use this offset for their arena.  */
+    /* HEs used to use this offset for their arena.  */
     { 0, 0, 0, SVt_NULL, FALSE, NONV, NOARENA, 0 },
 
     /* IVs are in the head, so the allocation size is 0.  */
