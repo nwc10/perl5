@@ -2938,7 +2938,6 @@ Sx	|SV*	|hv_delete_common|NULLOK HV *hv|NULLOK SV *keysv \
 		|BIKESHED hash
 Sx	|void	|clear_placeholders	|NN HV *hv|U32 items
 #endif
-pR	|HE*	|new_he
 
 #if defined(PERL_IN_MG_C)
 S	|void	|save_magic_flags|I32 mgs_ix|NN SV *sv|U32 flags

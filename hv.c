@@ -34,37 +34,8 @@ holds the key and hash value.
 #define PERL_HASH_INTERNAL_ACCESS
 #include "perl.h"
 
-#ifdef PURIFY
-
 #define new_HE() (HE*)safemalloc(sizeof(HE))
 #define del_HE(p) safefree((char*)p)
-
-#else
-
-HE*
-Perl_new_he(pTHX)
-{
-    HE* he;
-    void ** const root = &PL_body_roots[HE_SVSLOT];
-
-    if (!*root)
-        Perl_more_bodies(aTHX_ HE_SVSLOT, sizeof(HE), PERL_ARENA_SIZE);
-    he = (HE*) *root;
-    assert(he);
-    *root = *(void **)he;
-    return he;
-}
-
-#define new_HE() new_he()
-#define del_HE(p) \
-    STMT_START { \
-        *((void **)(p)) = (void *)(PL_body_roots[HE_SVSLOT]);	\
-        PL_body_roots[HE_SVSLOT] = p; \
-    } STMT_END
-
-
-
-#endif
 
 STATIC HEK *
 S_save_hek_flags(const char *str, STRLEN len, BIKESHED hash, U32 flags)
