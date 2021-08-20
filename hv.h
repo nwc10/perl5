@@ -129,6 +129,11 @@ struct xpvhv_aux {
 struct xpvhv {
     HV*		xmg_stash;	/* class package */
     union _xmgu	xmg_u;
+};
+
+struct xpvhv_with_aux {
+    HV	       *xmg_stash;      /* class package */
+    union _xmgu	xmg_u;
     struct xpvhv_aux xhv_aux;
 };
 
@@ -256,7 +261,7 @@ See L</hv_fill>.
 #define HvMAX(hv)	0
 /* This quite intentionally does no flag checking first. That's your
    responsibility.  */
-#define HvAUX(hv)	(&(((XPVHV*)  SvANY(hv))->xhv_aux))
+#define HvAUX(hv)	(&(((struct xpvhv_with_aux*)  SvANY(hv))->xhv_aux))
 #ifndef PERL_CORE
 #define HvRITER(hv)	(*Perl_hv_riter_p(aTHX_ MUTABLE_HV(hv)))
 #define HvEITER(hv)	(*Perl_hv_eiter_p(aTHX_ MUTABLE_HV(hv)))

@@ -1435,6 +1435,9 @@ PERL_CALLCONV SV*	Perl_hv2_iternextsv(pTHX_ HV *hv, char **key, SSize_t *retlen)
 #define PERL_ARGS_ASSERT_HV2_ITERNEXTSV	\
 	assert(hv); assert(key); assert(retlen)
 
+PERL_CALLCONV struct xpvhv_aux*	Perl_hv_auxalloc(pTHX_ HV *hv);
+#define PERL_ARGS_ASSERT_HV_AUXALLOC	\
+	assert(hv)
 PERL_CALLCONV AV**	Perl_hv_backreferences_p(pTHX_ HV *hv);
 #define PERL_ARGS_ASSERT_HV_BACKREFERENCES_P	\
 	assert(hv)

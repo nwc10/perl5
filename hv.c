@@ -1834,12 +1834,7 @@ S_hv_auxinit(pTHX_ HV *hv) {
 
     PERL_ARGS_ASSERT_HV_AUXINIT;
 
-    if (!SvOOK(hv)) {
-        SvOOK_on(hv);
-        iter = HvAUX(hv);
-    } else {
-        iter = HvAUX(hv);
-    }
+    iter = SvOOK(hv) ? HvAUX(hv) : Perl_hv_auxalloc(aTHX_ hv);
 
     iter->xhv_eiter = NULL;
     iter->xhv_iterator = Perl_ABH_end(HvABH(hv));
