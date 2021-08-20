@@ -1156,27 +1156,24 @@ Perl_more_bodies (pTHX_ const svtype sv_type, const size_t body_size,
     }
 }
 
-/* grab a new thing from the free list, allocating more if necessary.
-   The inline version is used for speed in hot routines, and the
-   function using it serves the rest (unless PURIFY).
-*/
-#define new_body_inline(xpv, sv_type) \
+/* grab a new thing from the free list, allocating more if necessary. */
+#define new_body_inline(xpv, root_index, type_meta)        \
     STMT_START { \
-        void ** const r3wt = &PL_body_roots[sv_type]; \
+        void ** const r3wt = &PL_body_roots[root_index]; \
         xpv = (PTR_TBL_ENT_t*) (*((void **)(r3wt))      \
-          ? *((void **)(r3wt)) : Perl_more_bodies(aTHX_ sv_type, \
-                                             bodies_by_type[sv_type].body_size,\
-                                             bodies_by_type[sv_type].arena_size)); \
+          ? *((void **)(r3wt)) : Perl_more_bodies(aTHX_ root_index, \
+                                             type_meta.body_size,\
+                                             type_meta.arena_size)); \
         *(r3wt) = *(void**)(xpv); \
     } STMT_END
 
 #ifndef PURIFY
 
-STATIC void *
+PERL_STATIC_INLINE void *
 S_new_body(pTHX_ const svtype sv_type)
 {
     void *xpv;
-    new_body_inline(xpv, sv_type);
+    new_body_inline(xpv, sv_type, bodies_by_type[sv_type]);
     return xpv;
 }
 
@@ -1344,7 +1341,7 @@ Perl_sv_upgrade(pTHX_ SV *const sv, svtype new_type)
         assert(new_type_details->arena);
         assert(new_type_details->arena_size);
         /* This points to the start of the allocated area.  */
-        new_body_inline(new_body, new_type);
+        new_body = S_new_body(aTHX_ new_type);
         Zero(new_body, new_type_details->body_size, char);
         new_body = ((char *)new_body) - new_type_details->offset;
 #else
@@ -1410,12 +1407,15 @@ Perl_sv_upgrade(pTHX_ SV *const sv, svtype new_type)
         assert(new_type_details->body_size);
         /* We always allocated the full length item with PURIFY. To do this
            we fake things so that arena is false for all 16 types..  */
+#ifndef PURIFY
         if(new_type_details->arena) {
             /* This points to the start of the allocated area.  */
-            new_body_inline(new_body, new_type);
+            new_body = S_new_body(aTHX_ new_type);
             Zero(new_body, new_type_details->body_size, char);
             new_body = ((char *)new_body) - new_type_details->offset;
-        } else {
+        } else
+#endif
+        {
             new_body = new_NOARENAZ(new_type_details);
         }
         SvANY(sv) = new_body;
@@ -14295,11 +14295,14 @@ S_sv_dup_common(pTHX_ const SV *const ssv, CLONE_PARAMS *const param)
             case SVt_INVLIST:
             case SVt_PV:
                 assert(sv_type_details->body_size);
+#ifndef PURIFY
                 if (sv_type_details->arena) {
-                    new_body_inline(new_body, sv_type);
+                    new_body = S_new_body(aTHX_ sv_type);
                     new_body
                         = (void*)((char*)new_body - sv_type_details->offset);
-                } else {
+                } else
+#endif
+                {
                     new_body = new_NOARENA(sv_type_details);
                 }
             }
