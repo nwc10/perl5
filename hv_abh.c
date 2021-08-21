@@ -315,6 +315,9 @@ S_hash_insert_internal(pTHX_ Perl_ABH_Table *hashtable,
 }
 
 static struct Perl_ABH_Table *
+S_grow_hash(pTHX_ Perl_ABH_Table *hashtable, U8 official_size_log2);
+
+static struct Perl_ABH_Table *
 S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
     if (UNLIKELY(hashtable->cur_items == 0 && hashtable->max_items == 0)) {
         Perl_ABH_Table *hashtable_new
@@ -378,14 +381,19 @@ S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
         return NULL;
     }
 
-    size_t entries_in_use =  Perl_ABH_kompromat(hashtable);
-    char *entry_raw_orig = Perl_ABH_entries(hashtable);
-    U8 *metadata_orig = Perl_ABH_metadata(hashtable);
-    const U8 entry_size = hashtable->entry_size;
-    Perl_ABH_Table *hashtable_orig = hashtable;
+    return S_grow_hash(aTHX_ hashtable, hashtable->official_size_log2 + 1);
+}
 
-    hashtable = S_hash_allocate_common(aTHX_ entry_size,
-                                       hashtable_orig->official_size_log2 + 1);
+static struct Perl_ABH_Table *
+S_grow_hash(pTHX_ Perl_ABH_Table *hashtable_orig, U8 official_size_log2)
+{
+    size_t entries_in_use =  Perl_ABH_kompromat(hashtable_orig);
+    char *entry_raw_orig = Perl_ABH_entries(hashtable_orig);
+    U8 *metadata_orig = Perl_ABH_metadata(hashtable_orig);
+    const U8 entry_size = hashtable_orig->entry_size;
+
+    Perl_ABH_Table *hashtable
+        = S_hash_allocate_common(aTHX_ entry_size, official_size_log2);
     hashtable->key_mask = hashtable_orig->key_mask;
 
     char *entry_raw = entry_raw_orig;
