@@ -458,6 +458,30 @@ S_grow_hash(pTHX_ Perl_ABH_Table *hashtable_orig, U8 official_size_log2)
     return hashtable;
 }
 
+void
+Perl_ABH_grow(pTHX_ Perl_ABH_Table **hashtable_p, size_t wanted) {
+    if (!wanted) {
+        Perl_croak(aTHX_ "panic: Perl_ABH_grow called with wanted == 0");
+    }
+    Perl_ABH_Table *hashtable = *hashtable_p;
+    U32 rounded_up = S_log2_size_for_entries(aTHX_ wanted);
+
+    if (UNLIKELY(hashtable->cur_items == 0 && hashtable->max_items == 0)) {
+        Perl_ABH_Table *hashtable_new
+            = S_hash_allocate_common(aTHX_ hashtable->entry_size, rounded_up);
+        free(hashtable);
+        *hashtable_p = hashtable_new;
+        return;
+    }
+
+    if (rounded_up <= hashtable->official_size_log2) {
+        return;
+    }
+
+    *hashtable_p = S_grow_hash(aTHX_ hashtable, rounded_up);
+    return;
+}
+
 void *
 Perl_ABH_lvalue_fetch(pTHX_ Perl_ABH_Table **hashtable_p,
                       const char *key, STRLEN klen, BIKESHED hash, U32 flags)
