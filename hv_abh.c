@@ -115,10 +115,8 @@ PERL_STATIC_INLINE size_t round_size_up(size_t wanted) {
  */
 
 PERL_STATIC_INLINE Perl_ABH_Table *
-S_hash_allocate_common(pTHX_
-                       U8 entry_size,
-                       U8 key_right_shift,
-                       U8 official_size_log2) {
+S_hash_allocate_common(pTHX_ U8 entry_size, U8 official_size_log2) {
+    U8 key_right_shift = 8 * sizeof(U64) - official_size_log2;
     size_t official_size = 1 << (size_t)official_size_log2;
     size_t max_items = official_size * ABH_LOAD_FACTOR;
     U8 max_probe_distance_limit;
@@ -181,7 +179,6 @@ Perl_ABH_build(pTHX_ Perl_ABH_Table **hashtable_p,
         }
 
         *hashtable_p = S_hash_allocate_common(aTHX_ entry_size,
-                                              (8 * sizeof(U64) - initial_size_base2),
                                               initial_size_base2);
     }
     (*hashtable_p)->key_mask = ~HVhek_WASUTF8;
@@ -314,7 +311,6 @@ S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
     if (UNLIKELY(hashtable->cur_items == 0 && hashtable->max_items == 0)) {
         Perl_ABH_Table *hashtable_new
             = S_hash_allocate_common(aTHX_ hashtable->entry_size,
-                                     (8 * sizeof(U64) - ABH_MIN_SIZE_BASE_2),
                                      ABH_MIN_SIZE_BASE_2);
         hashtable_new->key_mask = hashtable->key_mask;
         free(hashtable);
@@ -380,7 +376,6 @@ S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
     Perl_ABH_Table *hashtable_orig = hashtable;
 
     hashtable = S_hash_allocate_common(aTHX_ entry_size,
-                                       hashtable_orig->key_right_shift - 1,
                                        hashtable_orig->official_size_log2 + 1);
     hashtable->key_mask = hashtable_orig->key_mask;
 
