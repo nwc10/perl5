@@ -116,7 +116,6 @@ PERL_STATIC_INLINE size_t round_size_up(size_t wanted) {
 
 PERL_STATIC_INLINE Perl_ABH_Table *
 S_hash_allocate_common(pTHX_ U8 entry_size, U8 official_size_log2) {
-    U8 key_right_shift = 8 * sizeof(U64) - official_size_log2;
     size_t official_size = 1 << (size_t)official_size_log2;
     size_t max_items = official_size * ABH_LOAD_FACTOR;
     U8 max_probe_distance_limit;
@@ -144,7 +143,8 @@ S_hash_allocate_common(pTHX_ U8 entry_size, U8 official_size_log2) {
     U8 initial_probe_distance = (1 << (8 - ABH_INITIAL_BITS_IN_METADATA)) - 1;
     hashtable->max_probe_distance = max_probe_distance_limit > initial_probe_distance ? initial_probe_distance : max_probe_distance_limit;
     hashtable->max_probe_distance_limit = max_probe_distance_limit;
-    hashtable->key_right_shift = key_right_shift;
+    U8 bucket_right_shift = 8 * sizeof(U64) - official_size_log2;
+    hashtable->key_right_shift = bucket_right_shift - hashtable->metadata_hash_bits;
     hashtable->entry_size = entry_size;
 
     U8 *metadata = (U8 *)(hashtable + 1);
@@ -363,6 +363,7 @@ S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
         } while (--loop_count);
         assert(hashtable->metadata_hash_bits);
         --hashtable->metadata_hash_bits;
+        ++hashtable->key_right_shift;
         hashtable->max_probe_distance = new_probe_distance;
         /* Reset this to its proper value. */
         hashtable->max_items = max_items;
@@ -772,6 +773,8 @@ Perl_ABH_fsck(pTHX_ Perl_ABH_Table **hashtable_p, U32 mode) {
     U8 *metadata = Perl_ABH_metadata(hashtable);
     size_t bucket = 0;
     I64 prev_offset = 0;
+    U8 bucket_right_shift
+        = hashtable->key_right_shift + hashtable->metadata_hash_bits;
     while (bucket < allocated_items) {
         if (!*metadata) {
             /* empty slot. */
@@ -797,7 +800,7 @@ Perl_ABH_fsck(pTHX_ Perl_ABH_Table **hashtable_p, U32 mode) {
             else {
                 BIKESHED mixed = S_ABH_salt_and_mix(hashtable, HEK_HASH(*entry));
 
-                size_t ideal_bucket = mixed >> hashtable->key_right_shift;
+                size_t ideal_bucket = mixed >> bucket_right_shift;
                 I64 offset = 1 + bucket - ideal_bucket;
                 I64 actual_bucket = *metadata >> metadata_hash_bits;
                 char wrong_bucket = offset == actual_bucket ? ' ' : '?';

@@ -181,8 +181,7 @@ S_ABH_create_loop_state(struct Perl_ABH_Table *hashtable, BIKESHED hash_val)
     retval.metadata_hash_mask = retval.metadata_increment - 1;
     retval.probe_distance_shift = hashtable->metadata_hash_bits;
     retval.max_probe_distance = hashtable->max_probe_distance;
-    size_t used_hash_bits
-        = mixed >> (hashtable->key_right_shift - hashtable->metadata_hash_bits);
+    size_t used_hash_bits = mixed >> hashtable->key_right_shift;
     retval.probe_distance = retval.metadata_increment | (used_hash_bits & retval.metadata_hash_mask);
     size_t bucket = used_hash_bits >> hashtable->metadata_hash_bits;
     if (!hashtable->metadata_hash_bits) {
