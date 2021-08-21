@@ -95,6 +95,8 @@ S_ABH_count(const Perl_ABH_Table *hashtable) {
     return hashtable ? hashtable->cur_items : 0;
 }
 
+void Perl_ABH_grow(pTHX_ Perl_ABH_Table **hashtable_p, size_t wanted);
+
 
 /* for now, I'm hard coding this.
    The assumption is that with a starting size of 8 (pointer sized) elements,

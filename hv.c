@@ -1272,21 +1272,18 @@ Perl_hv_ksplit(pTHX_ HV *hv, IV newmax)
 {
     PERL_ARGS_ASSERT_HV_KSPLIT;
 
-    if (HvABH(hv)) {
-#if LUNCH
-        /* Muttley, do something! */
-        NYI
-#endif
-        return;
-    }
-
     SSize_t wantsize = newmax < 0 ? 0 : newmax;
     if (wantsize < newmax) {
         /* 64 bit IVs on 32 bit system, and asking for more than RAM... */
         wantsize = 0;
     }
 
-    Perl_ABH_build(aTHX_ &HvABH(hv), sizeof(HE), wantsize);
+    if (!HvABH(hv)) {
+        Perl_ABH_build(aTHX_ &HvABH(hv), sizeof(HE), wantsize);
+    }
+    else if (wantsize > 0) {
+        Perl_ABH_grow(aTHX_ &HvABH(hv), wantsize);
+    }
 }
 
 static U32
