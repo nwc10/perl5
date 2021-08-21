@@ -153,6 +153,21 @@ S_hash_allocate_common(pTHX_ U8 entry_size, U8 official_size_log2) {
     return hashtable;
 }
 
+static size_t
+S_log2_size_for_entries(pTHX_ size_t entries) {
+    /* Minimum size we need to allocate, given the load factor. */
+    size_t min_needed = entries * (1.0 / ABH_LOAD_FACTOR);
+    if (min_needed < entries) {
+        /* It wrapped. */
+        Perl_croak(aTHX_ "panic: requested hash table size %" PRIu64 " is too large", entries);
+    }
+    size_t initial_size_log2 = S_round_up_log_base2(min_needed);
+    if (initial_size_log2 < ABH_MIN_SIZE_BASE_2) {
+        /* "Too small" - use our original defaults. */
+        initial_size_log2 = ABH_MIN_SIZE_BASE_2;
+    }
+    return initial_size_log2;
+}
 
 void
 Perl_ABH_build(pTHX_ Perl_ABH_Table **hashtable_p,
@@ -170,16 +185,9 @@ Perl_ABH_build(pTHX_ Perl_ABH_Table **hashtable_p,
            control structure. */
         (*hashtable_p)->entry_size = entry_size;
     } else {
-        /* Minimum size we need to allocate, given the load factor. */
-        size_t min_needed = entries * (1.0 / ABH_LOAD_FACTOR);
-        size_t initial_size_base2 = S_round_up_log_base2(min_needed);
-        if (initial_size_base2 < ABH_MIN_SIZE_BASE_2) {
-            /* "Too small" - use our original defaults. */
-            initial_size_base2 = ABH_MIN_SIZE_BASE_2;
-        }
 
         *hashtable_p = S_hash_allocate_common(aTHX_ entry_size,
-                                              initial_size_base2);
+                                              S_log2_size_for_entries(aTHX_ entries));
     }
     (*hashtable_p)->key_mask = ~HVhek_WASUTF8;
 }
