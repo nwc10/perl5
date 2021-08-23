@@ -469,6 +469,7 @@ Perl_ABH_grow(pTHX_ Perl_ABH_Table **hashtable_p, size_t wanted) {
     if (UNLIKELY(hashtable->cur_items == 0 && hashtable->max_items == 0)) {
         Perl_ABH_Table *hashtable_new
             = S_hash_allocate_common(aTHX_ hashtable->entry_size, rounded_up);
+        hashtable_new->key_mask = hashtable->key_mask;
         free(hashtable);
         *hashtable_p = hashtable_new;
         return;
