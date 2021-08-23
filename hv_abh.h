@@ -238,29 +238,32 @@ PERL_STATIC_INLINE U32 Perl_ABH_foreach(pTHX_ Perl_ABH_Table *hashtable,
 PERL_STATIC_INLINE Perl_ABH_Iterator
 Perl_ABH_end(const Perl_ABH_Table *hashtable) {
     PERL_UNUSED_ARG(hashtable);
-    return 0;
+    struct Perl_ABH_Iterator iterator;
+    iterator.pos = 0;
+    return iterator;
 }
 
 PERL_STATIC_INLINE Perl_ABH_Iterator
 Perl_ABH_next(const Perl_ABH_Table *hashtable, Perl_ABH_Iterator iterator) {
-    if (iterator == 0) {
+    if (iterator.pos == 0) {
         /* You naughty thing. You're calling next on an iterator that's already
          * exhausted. */
-        assert(iterator);
-        return 0;
+        assert(iterator.pos);
+        return iterator;
     }
-    while (--iterator > 0) {
-        if (Perl_ABH_metadata_const(hashtable)[iterator - 1]) {
+    while (--iterator.pos > 0) {
+        if (Perl_ABH_metadata_const(hashtable)[iterator.pos - 1]) {
             return iterator;
         }
     }
-    return 0;
+    return iterator;
 }
 
 PERL_STATIC_INLINE Perl_ABH_Iterator
 Perl_ABH_first(const Perl_ABH_Table *hashtable) {
-    Perl_ABH_Iterator iterator = Perl_ABH_kompromat(hashtable);
-    if (Perl_ABH_metadata_const(hashtable)[iterator - 1]) {
+    Perl_ABH_Iterator iterator;
+    iterator.pos= Perl_ABH_kompromat(hashtable);
+    if (Perl_ABH_metadata_const(hashtable)[iterator.pos - 1]) {
         return iterator;
     }
     return Perl_ABH_next(hashtable, iterator);
@@ -270,12 +273,12 @@ PERL_STATIC_INLINE void *
 Perl_ABH_current(Perl_ABH_Table *hashtable, Perl_ABH_Iterator iterator) {
     /* Clearly for the production version this should be a bit more forgiving,
      * and return NULL (probably also warning. */
-    assert(Perl_ABH_metadata(hashtable)[iterator - 1]);
-    return Perl_ABH_entries(hashtable) - hashtable->entry_size * (iterator - 1);
+    assert(Perl_ABH_metadata(hashtable)[iterator.pos - 1]);
+    return Perl_ABH_entries(hashtable) - hashtable->entry_size * (iterator.pos - 1);
 }
 
 PERL_STATIC_INLINE bool
 Perl_ABH_at_end(const Perl_ABH_Table *hashtable, Perl_ABH_Iterator iterator) {
     PERL_UNUSED_ARG(hashtable);
-    return iterator == 0;
+    return iterator.pos == 0;
 }

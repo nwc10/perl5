@@ -14516,7 +14516,13 @@ S_sv_dup_common(pTHX_ const SV *const ssv, CLONE_PARAMS *const param)
                         daux->xhv_name_count = saux->xhv_name_count;
 
                         daux->xhv_aux_flags = saux->xhv_aux_flags;
-                        daux->xhv_iterator = 0; // LUNCH FIXME IMPOSSIBLE?
+#if LUNCH
+                        // FIX abh_dup to do a flat memory copy. Needed for
+                        // pseudo fork. Then:
+                        daux->xhv_iterator = saux->xhv_iterator;
+#else
+                        daux->xhv_iterator.pos = 0;
+#endif
                         daux->xhv_eiter = saux->xhv_eiter
                             ? he_dup(saux->xhv_eiter,
                                         cBOOL(HvSHAREKEYS(ssv)), param) : 0;

@@ -99,6 +99,10 @@ struct mro_meta {
    Don't access this directly.
 */
 
+struct Perl_ABH_Iterator {
+    size_t pos;
+};
+
 union _xhvnameu {
     HEK *xhvnameu_name;		/* When xhv_name_count is 0 */
     HEK **xhvnameu_names;	/* When xhv_name_count is non-0 */
@@ -269,7 +273,7 @@ See L</hv_fill>.
 #define HvRITER_set(hv,r)	Perl_hv_riter_set(aTHX_ MUTABLE_HV(hv), r)
 #define HvEITER_set(hv,e)	Perl_hv_eiter_set(aTHX_ MUTABLE_HV(hv), e)
 /* This is a hack, but will it be good enough? */
-#define HvRITER_get(hv)	(SvOOK(hv) ? (SSize_t)HvAUX(hv)->xhv_iterator - 1 : -1)
+#define HvRITER_get(hv)	(SvOOK(hv) ? (SSize_t)HvAUX(hv)->xhv_iterator.pos - 1 : -1)
 #define HvEITER_get(hv)	(SvOOK(hv) ? HvAUX(hv)->xhv_eiter : NULL)
 
 #define HvNAME(hv)	HvNAME_get(hv)

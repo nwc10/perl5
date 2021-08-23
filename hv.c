@@ -1917,7 +1917,7 @@ Perl_hv_riter_set(pTHX_ HV *hv, I32 riter) {
 
         iter = hv_auxinit(hv);
     }
-    iter->xhv_iterator = riter + 1;
+    iter->xhv_iterator.pos = riter + 1;
 }
 
 void
