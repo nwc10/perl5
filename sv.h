@@ -183,7 +183,7 @@ typedef enum {
 typedef struct he HE;
 typedef struct hek HEK;
 typedef struct Perl_ABH_Table Perl_ABH_Table;
-typedef size_t Perl_ABH_Iterator;
+typedef struct Perl_ABH_Iterator Perl_ABH_Iterator;
 
 
 /* Using C's structural equivalence to help emulate C++ inheritance here... */
