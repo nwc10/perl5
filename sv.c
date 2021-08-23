@@ -14522,6 +14522,7 @@ S_sv_dup_common(pTHX_ const SV *const ssv, CLONE_PARAMS *const param)
                         daux->xhv_iterator = saux->xhv_iterator;
 #else
                         daux->xhv_iterator.pos = 0;
+                        daux->xhv_iterator.serial = 0;
 #endif
                         daux->xhv_eiter = saux->xhv_eiter
                             ? he_dup(saux->xhv_eiter,

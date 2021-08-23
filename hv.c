@@ -2378,6 +2378,15 @@ Perl_hv_iternext_flags(pTHX_ HV *hv, I32 flags)
         /* Round we go again... */
         iter->xhv_iterator = Perl_ABH_first(table);
     } else {
+        /* This probably belongs in Perl_ABH_next */
+        if (!(iter->xhv_iterator.serial == table->serial
+              || (iter->xhv_iterator.serial
+                  == table->serial - table->last_action_was_delete))) {
+            Perl_ck_warner_d(aTHX_ packWARN(WARN_INTERNAL),
+                             "Use of each() on hash after insertion without resetting hash iterator results in undefined behavior"
+                             pTHX__FORMAT
+                             pTHX__VALUE);
+        }
         iter->xhv_iterator = Perl_ABH_next(table, iter->xhv_iterator);
     }
 

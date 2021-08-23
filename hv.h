@@ -101,6 +101,7 @@ struct mro_meta {
 
 struct Perl_ABH_Iterator {
     size_t pos;
+    U32 serial;
 };
 
 union _xhvnameu {

@@ -179,17 +179,20 @@ Perl_ABH_build(pTHX_ Perl_ABH_Table **hashtable_p,
         Perl_croak(aTHX_ "panic: hash table entry_size %zu is invalid", entry_size);
     }
 
+    Perl_ABH_Table *hashtable;
     if (!entries) {
-        *hashtable_p = (Perl_ABH_Table *) calloc(sizeof (Perl_ABH_Table), 1);
+        hashtable = (Perl_ABH_Table *) calloc(sizeof (Perl_ABH_Table), 1);
         /* cur_items and max_items both 0 signals that we only allocated a
            control structure. */
-        (*hashtable_p)->entry_size = entry_size;
+        hashtable->entry_size = entry_size;
     } else {
-
-        *hashtable_p = S_hash_allocate_common(aTHX_ entry_size,
-                                              S_log2_size_for_entries(aTHX_ entries));
+        hashtable = S_hash_allocate_common(aTHX_ entry_size,
+                                           S_log2_size_for_entries(aTHX_ entries));
     }
-    (*hashtable_p)->key_mask = ~HVhek_WASUTF8;
+    hashtable->key_mask = ~HVhek_WASUTF8;
+    hashtable->serial = 0;
+    hashtable->last_action_was_delete = 0;
+    *hashtable_p = hashtable;
 }
 
 PERL_STATIC_INLINE HEK **
@@ -286,6 +289,8 @@ S_hash_insert_internal(pTHX_ Perl_ABH_Table *hashtable,
             }
 
             ++hashtable->cur_items;
+            ++hashtable->serial;
+            hashtable->last_action_was_delete = 0;
 
             *ls.metadata = ls.probe_distance;
             HEK **entry = (HEK **) ls.entry_raw;
@@ -324,6 +329,8 @@ S_maybe_grow_hash(pTHX_ Perl_ABH_Table *hashtable) {
             = S_hash_allocate_common(aTHX_ hashtable->entry_size,
                                      ABH_MIN_SIZE_BASE_2);
         hashtable_new->key_mask = hashtable->key_mask;
+        hashtable_new->serial = 0;
+        hashtable_new->last_action_was_delete = 0;
         free(hashtable);
         return hashtable_new;
     }
@@ -395,6 +402,9 @@ S_grow_hash(pTHX_ Perl_ABH_Table *hashtable_orig, U8 official_size_log2)
     Perl_ABH_Table *hashtable
         = S_hash_allocate_common(aTHX_ entry_size, official_size_log2);
     hashtable->key_mask = hashtable_orig->key_mask;
+    /* Growing the hash invalidates iterators - this is unavoidable. */
+    hashtable->serial = hashtable_orig->serial;
+    hashtable->last_action_was_delete = 0;
 
     char *entry_raw = entry_raw_orig;
     U8 *metadata = metadata_orig;
@@ -470,6 +480,9 @@ Perl_ABH_grow(pTHX_ Perl_ABH_Table **hashtable_p, size_t wanted) {
         Perl_ABH_Table *hashtable_new
             = S_hash_allocate_common(aTHX_ hashtable->entry_size, rounded_up);
         hashtable_new->key_mask = hashtable->key_mask;
+        /* This is (still) an empty hash: */
+        hashtable_new->serial = 0;
+        hashtable_new->last_action_was_delete = 0;
         free(hashtable);
         *hashtable_p = hashtable_new;
         return;
@@ -479,6 +492,7 @@ Perl_ABH_grow(pTHX_ Perl_ABH_Table **hashtable_p, size_t wanted) {
         return;
     }
 
+    /* Growing the hash invalidates iterators - this is unavoidable. */
     *hashtable_p = S_grow_hash(aTHX_ hashtable, rounded_up);
     return;
 }
@@ -556,6 +570,9 @@ Perl_ABH_delete(pTHX_ Perl_ABH_Table **hashtable_p,
                 && (HEK_KEY(hek) == key || memEQ(HEK_KEY(hek), key, klen))
                 && (HEK_FLAGS(hek) & ls.key_mask) == kflags) {
                 /* Target acquired. */
+
+                ++hashtable->serial;
+                hashtable->last_action_was_delete = 1;
 
                 void *retval;
 
