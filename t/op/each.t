@@ -279,7 +279,6 @@ for my $k (qw(each keys values)) {
         $h{"$k$k"}= $v;
     }
     {
-        local $::TODO = 'LUNCH';
         ok($warned,"each() after insert produces warnings");
     }
     no warnings 'internal';

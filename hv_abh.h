@@ -68,6 +68,9 @@ struct Perl_ABH_Table {
        to cache it as we have the space. */
     U8 max_probe_distance_limit;
     U8 metadata_hash_bits;
+    U8 last_action_was_delete;
+    U32 serial;
+    U32 in_the_real_thing_this_will_be_flags; /* consistent 8 byte alignment. */
 };
 
 void Perl_ABH_build(pTHX_ Perl_ABH_Table **hashtable_p,
@@ -240,6 +243,7 @@ Perl_ABH_end(const Perl_ABH_Table *hashtable) {
     PERL_UNUSED_ARG(hashtable);
     struct Perl_ABH_Iterator iterator;
     iterator.pos = 0;
+    iterator.serial = 0;
     return iterator;
 }
 
@@ -263,6 +267,7 @@ PERL_STATIC_INLINE Perl_ABH_Iterator
 Perl_ABH_first(const Perl_ABH_Table *hashtable) {
     Perl_ABH_Iterator iterator;
     iterator.pos= Perl_ABH_kompromat(hashtable);
+    iterator.serial = hashtable->serial;
     if (Perl_ABH_metadata_const(hashtable)[iterator.pos - 1]) {
         return iterator;
     }
