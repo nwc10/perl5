@@ -67,14 +67,16 @@ is ($#keys, 31, "added a key");
 
 SKIP: {
     skip "no Hash::Util on miniperl", 4, if is_miniperl;
-    skip "LUNCH!", 4;
     require Hash::Util;
     sub Hash::Util::num_buckets (\%);
 
     my $size = Hash::Util::num_buckets(%h);
     keys %h = $size * 5;
     my $newsize = Hash::Util::num_buckets(%h);
-    is ($newsize, $size * 8, "resize");
+    {
+        local $::TODO = "LUNCH exact sizes";
+        is ($newsize, $size * 8, "resize");
+    }
     keys %h = 1;
     $size = Hash::Util::num_buckets(%h);
     is ($size, $newsize, "same size");
@@ -84,7 +86,10 @@ SKIP: {
     undef %h;
     %h = (1,1);
     $size = Hash::Util::num_buckets(%h);
-    is ($size, 8, "size 8");
+    {
+        local $::TODO = "LUNCH exact sizes";
+        is ($size, 8, "size 8");
+    }
 }
 
 # test scalar each
@@ -113,7 +118,6 @@ is ($total, 100, "test values keys resets iterator");
 
 SKIP: {
     skip "no Hash::Util on miniperl", 3, if is_miniperl;
-    skip "LUNCH!", 3;
     require Hash::Util;
     sub Hash::Util::num_buckets (\%);
 

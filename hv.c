@@ -1744,15 +1744,20 @@ Perl_hv_undef_flags(pTHX_ HV *hv, U32 flags)
 /*
 =for apidoc hv_fill
 
-Returns the number of hash buckets that happen to be in use.
+Historically this function I<returns the number of hash buckets that happen to be in use>.
 
 This function is wrapped by the macro C<HvFILL>.
 
-As of perl 5.25 this function is used only for debugging
-purposes, and the number of used hash buckets is not
-in any way cached, thus this function can be costly
-to execute as it must iterate over all the buckets in the
-hash.
+The concept of buckets made sense with the old linked-list hash
+implementation. It doesn't really make sense for Robin Hood hashing - rather
+than buckets with lists of 0 or more entries, there B<are> only buckets,
+which are either used or free.
+
+The closest mapping is that each used bucket has a list of length 1, each
+empty bucket a list of length 0 - there's a 1 to 1 mapping from hash entries
+to used buckets. So as a best effort, we return this.
+
+Probably this function should be deprecated.
 
 =cut
 */
@@ -1760,36 +1765,9 @@ hash.
 STRLEN
 Perl_hv_fill(pTHX_ HV *const hv)
 {
-    STRLEN count = 0;
-#if LUNCH
-    HE **ents = HvARRAY(hv);
-
     PERL_UNUSED_CONTEXT;
     PERL_ARGS_ASSERT_HV_FILL;
-
-    /* No keys implies no buckets used.
-       One key can only possibly mean one bucket used.  */
-    if (HvTOTALKEYS(hv) < 2)
-        return HvTOTALKEYS(hv);
-
-    if (ents) {
-        /* I wonder why we count down here...
-         * Is it some micro-optimisation?
-         * I would have thought counting up was better.
-         * - Yves
-         */
-        HE *const *const last = ents + HvMAX(hv);
-        count = last + 1 - ents;
-
-        do {
-            if (!*ents)
-                --count;
-        } while (++ents <= last);
-    }
-#else
-    PERL_UNUSED_ARG(hv);
-#endif
-    return count;
+    return S_ABH_count(HvABH(hv));
 }
 
 /* hash a pointer to a U32 - Used in the hash traversal randomization
