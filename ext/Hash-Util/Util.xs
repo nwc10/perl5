@@ -308,18 +308,24 @@ num_buckets(rhv)
     PROTOTYPE: \%
     PPCODE:
 {
-    static int oh_so_not_threadsafe;
-    if (++oh_so_not_threadsafe > 100) {
-        Perl_croak(aTHX_ "Hash::Util::num_buckets is out to LUNCH");
-    }
-#if LUNCH
     if (SvROK(rhv)) {
         rhv= SvRV(rhv);
         if ( SvTYPE(rhv)==SVt_PVHV ) {
-            XSRETURN_UV(HvMAX((HV*)rhv)+1);
+            size_t count;
+            Perl_ABH_Table *table = HvABH(rhv);
+            if (!table) {
+                count = 0;
+            }
+            /* These two are both poking into implementation details: */
+            else if (table->cur_items == 0 && table->max_items == 0) {
+                count = 0;
+            }
+            else {
+                count = Perl_ABH_kompromat(table);
+            }
+            XSRETURN_UV(count);
         }
     }
-#endif
     XSRETURN_UNDEF;
 }
 
@@ -329,18 +335,14 @@ used_buckets(rhv)
     PROTOTYPE: \%
     PPCODE:
 {
-    static int oh_so_not_threadsafe;
-    if (++oh_so_not_threadsafe > 100) {
-        Perl_croak(aTHX_ "Hash::Util::used_buckets is out to LUNCH");
-    }
-#if LUNCH
+    /* See the comments for Perl_hv_fill in hv.c - the concept of buckets
+     * doesn't really make sense any more. */
     if (SvROK(rhv)) {
         rhv= SvRV(rhv);
         if ( SvTYPE(rhv)==SVt_PVHV ) {
-            XSRETURN_UV(HvFILL((HV*)rhv));
+            XSRETURN_UV(S_ABH_count(HvABH(rhv)));
         }
     }
-#endif
     XSRETURN_UNDEF;
 }
 
