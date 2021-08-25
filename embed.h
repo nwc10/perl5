@@ -29,6 +29,7 @@
 /* Hide global symbols */
 
 #define Gv_AMupdate(a,b)	Perl_Gv_AMupdate(aTHX_ a,b)
+#define HvIS_EMPTY		Perl_HvIS_EMPTY
 #define SvAMAGIC_off		Perl_SvAMAGIC_off
 #define SvAMAGIC_on		Perl_SvAMAGIC_on
 #define SvTRUE(a)		Perl_SvTRUE(aTHX_ a)

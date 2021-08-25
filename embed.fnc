@@ -1035,6 +1035,7 @@ Cp	|void*	|hv_common_key_len|NULLOK HV *hv|NN const char *key \
 				|const U32 hash
 Apod	|STRLEN	|hv_fill	|NN HV *const hv
 Ap	|void	|hv_free_ent	|NN HV *hv|NULLOK HE *entry
+AiTpd	|bool	|HvIS_EMPTY 	|NN const HV *hv
 Apd	|I32	|hv_iterinit	|NN HV *hv
 ApdR	|char*	|hv_iterkey	|NN HE* entry|NN I32* retlen
 ApdR	|SV*	|hv_iterkeysv	|NN HE* entry

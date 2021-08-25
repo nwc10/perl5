@@ -38,6 +38,11 @@ PERL_STATIC_INLINE GV *	Perl_CvGV(pTHX_ CV *sv);
 PERL_CALLCONV int	Perl_Gv_AMupdate(pTHX_ HV* stash, bool destructing);
 #define PERL_ARGS_ASSERT_GV_AMUPDATE	\
 	assert(stash)
+#ifndef PERL_NO_INLINE_FUNCTIONS
+PERL_STATIC_INLINE bool	Perl_HvIS_EMPTY(const HV *hv);
+#define PERL_ARGS_ASSERT_HVIS_EMPTY	\
+	assert(hv)
+#endif
 #ifndef NO_MATHOMS
 PERL_CALLCONV UV	NATIVE_TO_NEED(const UV enc, const UV ch)
 			__attribute__deprecated__

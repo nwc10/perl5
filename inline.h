@@ -198,6 +198,34 @@ S_strip_spaces(pTHX_ const char * orig, STRLEN * const len)
 }
 #endif
 
+/* ------------------------------- hv.h ------------------------------- */
+
+/*
+
+=for apidoc_section $HV
+=for apidoc AiTpd|bool|HvIS_EMPTY|const HV *hv
+
+Returns true if the HV is empty. Intended as an efficient test to decide whether
+to skip iterating the hash (and any setup needed beforehand).  B<May> return
+false even if the hash is actually empty, if this can't trivially be determined,
+such as for tied hashes and hashes which only contain placeholders.
+
+Use this in preference to a truth check on C<HvARRAY> to determine whether to
+skip iteration, as it will detect more "empty" hashes. But if refactoring,
+beware that for a tied hash C<HvARRAY> is C<NULL>, but C<HvIS_EMPTY> will return
+false.
+
+=cut
+
+*/
+
+PERL_STATIC_INLINE bool
+Perl_HvIS_EMPTY(const HV *hv) {
+    PERL_ARGS_ASSERT_HVIS_EMPTY;
+
+    return !SvRMAGICAL(hv) && !HvTOTALKEYS(hv);
+}
+
 /* ------------------------------- mg.h ------------------------------- */
 
 #if defined(PERL_CORE) || defined(PERL_EXT)
