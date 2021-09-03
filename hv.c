@@ -1617,6 +1617,9 @@ S_hv_free_entries(pTHX_ HV *hv)
          * before we fire them: */
         SvREFCNT_dec(val);
 
+        /* And, oh my, destructors might do anything, so we need to re-read
+           this: */
+        table = HvABH(hv);
         iterator = Perl_ABH_next(table, iterator);
     }
     HvABH(hv) = table;
