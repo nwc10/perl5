@@ -507,6 +507,9 @@ Perl_ABH_lvalue_fetch(pTHX_ Perl_ABH_Table **hashtable_p,
     }
 
     Perl_ABH_Table *hashtable = *hashtable_p;
+#ifdef PERL_ABH_STRESSTEST
+    bool force_a_copy = FALSE;
+#endif
 
     if (UNLIKELY(!hashtable)) {
         /* This *is* a special case, but it is a lot easier if we assume this as
@@ -532,6 +535,34 @@ Perl_ABH_lvalue_fetch(pTHX_ Perl_ABH_Table **hashtable_p,
                for the hash internals, so it will churn the write cache. */
             *hashtable_p = hashtable = new_hashtable;
         }
+#ifdef PERL_ABH_STRESSTEST
+        else {
+            void *entry = Perl_ABH_fetch(aTHX_ hashtable, key, klen, hash, flags);
+            if (entry) {
+                return entry;
+            }
+            force_a_copy = TRUE;
+        }
+    }
+    else {
+        force_a_copy = TRUE;
+    }
+
+    if (force_a_copy && hashtable->entry_size == sizeof(HE)) {
+        /* Force a copy each time. This will be painfully slow, but with
+           ASAN it should expose many subtle use-after free problems. */
+        size_t allocated_items = get_allocated_items(hashtable);
+        size_t entries_size = hashtable->entry_size * allocated_items;
+        size_t metadata_size = round_size_up(allocated_items + 1);
+        char *source = ((char *)hashtable) - entries_size;
+        size_t total_size
+            = entries_size + sizeof (struct Perl_ABH_Table) + metadata_size;
+        char *target = (char *) malloc(total_size);
+        /* Copy the control structure and the metadata: */
+        memcpy(target, source, total_size);
+        free(source);
+        *hashtable_p = hashtable = (Perl_ABH_Table *)(target + entries_size);
+#endif
     }
     return S_hash_insert_internal(aTHX_ hashtable, key, klen, hash, flags);
 }
