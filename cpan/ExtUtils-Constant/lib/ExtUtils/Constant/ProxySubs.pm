@@ -9,7 +9,7 @@ require ExtUtils::Constant::XS;
 use ExtUtils::Constant::Utils qw(C_stringify);
 use ExtUtils::Constant::XS qw(%XS_TypeSet);
 
-$VERSION = '0.09';
+$VERSION = '0.10';
 @ISA = 'ExtUtils::Constant::XS';
 
 %type_to_struct =
@@ -81,7 +81,7 @@ sub type_to_C_value {
      PVN => ['const char *', 'STRLEN'],
      );
 $type_temporary{$_} = [$_] foreach qw(IV UV NV);
-     
+
 while (my ($type, $value) = each %XS_TypeSet) {
     $type_num_args{$type}
 	= defined $value ? ref $value ? scalar @$value : 1 : 0;
@@ -136,9 +136,9 @@ sub boottime_iterator {
     if ($push) {
 	return sprintf <<"EOBOOT", &$generator(&$extractor($iterator));
         while ($iterator->name) {
-	    he = $subname($athx $hash, $iterator->name,
-				     $iterator->namelen, %s);
-	    av_push(push, newSVhek(HeKEY_hek(he)));
+	    HEK *key = $subname($athx $hash, $iterator->name,
+				      $iterator->namelen, %s);
+	    av_push(push, newSVhek(key));
             ++$iterator;
 	}
 EOBOOT
@@ -250,7 +250,7 @@ sub WriteConstants {
 EOC
     }
 
-    my $return_type = $push ? 'HE *' : 'void';
+    my $return_type = $push ? 'HEK *' : 'void';
 
     print $c_fh <<"EOADD";
 
@@ -262,6 +262,8 @@ EOADD
     if (namelen == namelen) {
 EO_NOPCS
     } else {
+        print $c_fh "    HEK *key;\n"
+            if $push;
 	print $c_fh <<"EO_PCS";
     HE *he = (HE*) hv_common_key_len(hash, name, namelen, HV_FETCH_LVALUE, NULL,
 				     0);
@@ -271,6 +273,10 @@ EO_NOPCS
         croak("Couldn't add key '%s' to %%$package_sprintf_safe\::",
 		   name);
     }
+EO_PCS
+        print $c_fh "    key = HeKEY_hek(he);\n"
+            if $push;
+	print $c_fh <<"EO_PCS";
     sv = HeVAL(he);
     if (SvOK(sv) || SvTYPE(sv) == SVt_PVGV) {
 	/* Someone has been here before us - have to make a real sub.  */
@@ -294,7 +300,7 @@ EO_PCS
     }
 EO_NOPCS
     }
-    print $c_fh "    return he;\n" if $push;
+    print $c_fh "    return key;\n" if $push;
     print $c_fh <<'EOADD';
 }
 
@@ -494,6 +500,9 @@ EXPLODE
 			  value_for_notfound->name);
 		}
 		sv = HeVAL(he);
+#ifndef SYMBIAN
+		hek = HeKEY_hek(he);
+#endif
 		if (!SvOK(sv) && SvTYPE(sv) != SVt_PVGV) {
 		    /* Nothing was here before, so mark a prototype of ""  */
 		    sv_setpvn(sv, "", 0);
@@ -515,7 +524,6 @@ EXPLODE
 		    CvXSUBANY(cv).any_ptr = NULL;
 		}
 #ifndef SYMBIAN
-		hek = HeKEY_hek(he);
 		if (!hv_common(${c_subname}_missing, NULL, HEK_KEY(hek),
  			       HEK_LEN(hek), HEK_FLAGS(hek), HV_FETCH_ISSTORE,
 			       &PL_sv_yes, HEK_HASH(hek)))
