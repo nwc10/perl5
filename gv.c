@@ -2640,54 +2640,54 @@ Perl_gv_efullname4(pTHX_ SV *sv, const GV *gv, const char *prefix, bool keepmain
  * that need the "only used once" warning raised
  */
 
+struct gv_check_state {
+    HV *stash;
+    AV **to_warn;
+};
+
+static void S_gv_check_one(pTHX_ HV *stash, AV **to_warn);
+
 static U32
-gv_check_callback(pTHX_ HEK *hek, SV *val, void *state)
+gv_check_callback(pTHX_ HEK *hek, SV *val, void *state_v)
 {
     GV *gv;
     HV *hv;
     STRLEN keylen = HEK_LEN(hek);
     const char * const key = HEK_KEY(hek);
-    HV *stash = (HV *)state;
+    struct gv_check_state *state = (struct gv_check_state *) state_v;
 
     if (keylen >= 2 && key[keylen-2] == ':'  && key[keylen-1] == ':' &&
         (gv = MUTABLE_GV(val)) && isGV(gv) && (hv = GvHV(gv))) {
-        if (hv != PL_defstash && hv != stash
+        if (hv != PL_defstash && hv != state->stash
             && !(SvOOK(hv)
                  && (HvAUX(hv)->xhv_aux_flags & HvAUXf_SCAN_STASH))
             )
-            gv_check(hv);              /* nested package */
+            S_gv_check_one(aTHX_ hv, state->to_warn); /* nested package */
     }
     else if (   keylen != 0
                 && *key != '_'
                 && isIDFIRST_lazy_if_safe(key,
                                           key + keylen,
                                           HEK_UTF8(hek)) ) {
-        const char *file;
         gv = MUTABLE_GV(val);
-        if (SvTYPE(gv) != SVt_PVGV || GvMULTI(gv))
-            return 0;
+        if (SvTYPE(gv) == SVt_PVGV && !GvMULTI(gv)) {
+            AV *to_warn = *state->to_warn;
 
-        file = GvFILE(gv);
-        CopLINE_set(PL_curcop, GvLINE(gv));
-#ifdef USE_ITHREADS
-        CopFILE(PL_curcop) = (char *)file;	/* set for warning */
-#else
-        CopFILEGV(PL_curcop)
-            = gv_fetchfile_flags(file, HEK_LEN(GvFILE_HEK(gv)), 0);
-#endif
-        Perl_warner(aTHX_ packWARN(WARN_ONCE),
-                    "Name \"%" HEKf "::%" HEKf
-                    "\" used only once: possible typo",
-                    HEKfARG(HvNAME_HEK(stash)),
-                    HEKfARG(GvNAME_HEK(gv)));
+            if (!to_warn) {
+                to_warn = *state->to_warn = (AV*)sv_2mortal((SV*)newAV());
+            }
+
+            av_push(to_warn, SvREFCNT_inc_NN((SV *)gv));
+            av_push(to_warn, SvREFCNT_inc_NN((SV *)state->stash));
+        }
     }
     return 0;
 }
 
-void
-Perl_gv_check(pTHX_ HV *stash)
+static void
+S_gv_check_one(pTHX_ HV *stash, AV **to_warn)
 {
-    PERL_ARGS_ASSERT_GV_CHECK;
+    struct gv_check_state state;
 
     if (!SvOOK(stash))
         return;
@@ -2698,9 +2698,51 @@ Perl_gv_check(pTHX_ HV *stash)
     struct xpvhv_aux *iter = HvAUX(stash);
     iter->xhv_aux_flags |= HvAUXf_SCAN_STASH;
 
-    S_hv_foreach_with_placeholders(aTHX_ stash, gv_check_callback, stash);
+    state.stash = stash;
+    state.to_warn = to_warn;
+
+    S_hv_foreach_with_placeholders(aTHX_ stash, gv_check_callback, &state);
 
     iter->xhv_aux_flags &= ~HvAUXf_SCAN_STASH;
+}
+
+void
+Perl_gv_check(pTHX_ HV *stash)
+{
+    AV *to_warn = NULL;
+
+    PERL_ARGS_ASSERT_GV_CHECK;
+
+    S_gv_check_one(aTHX_ stash, &to_warn);
+
+    if (to_warn) {
+        GV *last_gv = NULL;
+        SV **array = AvARRAY(to_warn);
+        SSize_t count = av_count(to_warn);
+        SSize_t i = 0;
+        for (; i + 1 < count; i += 2) {
+            GV *gv = (GV *) array[i];
+            HV *stash = (HV *) array[i + 1];
+
+            if (gv != last_gv) {
+                const char *file = GvFILE(gv);
+                CopLINE_set(PL_curcop, GvLINE(gv));
+#ifdef USE_ITHREADS
+                CopFILE(PL_curcop) = (char *)file;	/* set for warning */
+#else
+                CopFILEGV(PL_curcop)
+                    = gv_fetchfile_flags(file, HEK_LEN(GvFILE_HEK(gv)), 0);
+#endif
+                last_gv = gv;
+            }
+
+            Perl_warner(aTHX_ packWARN(WARN_ONCE),
+                        "Name \"%" HEKf "::%" HEKf
+                        "\" used only once: possible typo",
+                        HEKfARG(HvNAME_HEK(stash)),
+                        HEKfARG(GvNAME_HEK(gv)));
+        }
+    }
 }
 
 GV *
