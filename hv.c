@@ -1526,26 +1526,24 @@ S_clear_placeholders(pTHX_ HV *hv, const U32 placeholders)
 
     assert(to_find);
 
-    Perl_ABH_Table *table = HvABH(hv);
-    Perl_ABH_Iterator iterator = Perl_ABH_first(table);
+    Perl_ABH_Iterator iterator = Perl_ABH_first(HvABH(hv));
 
     do {
-        HE *entry = (HE *) Perl_ABH_current(table, iterator);
+        HE *entry = (HE *) Perl_ABH_current(HvABH(hv), iterator);
 
         if (HeVAL(entry) == &PL_sv_placeholder) {
-            Perl_ABH_delete(aTHX_ &table, HeKEY(entry), HeKLEN(entry),
+            Perl_ABH_delete(aTHX_ &HvABH(hv), HeKEY(entry), HeKLEN(entry),
                             HeHASH(entry), HeKFLAGS(entry) & HV_ABH_KEY_TYPE_MASK);
             if (--to_find == 0) {
                 /* Finished.  */
                 if (HvTOTALKEYS(hv) == 0)
                     HvHASKFLAGS_off(hv);
                 HvPLACEHOLDERS_set(hv, 0);
-                HvABH(hv) = table;
                 return;
             }
         }
-        iterator = Perl_ABH_next(table, iterator);
-    } while (!Perl_ABH_at_end(table, iterator));
+        iterator = Perl_ABH_next(HvABH(hv), iterator);
+    } while (!Perl_ABH_at_end(HvABH(hv), iterator));
     /* You can't get here, hence assertion should always fail.  */
     assert (to_find == 0);
     NOT_REACHED; /* NOTREACHED */
@@ -1607,7 +1605,9 @@ S_hv_free_entries(pTHX_ HV *hv)
             }
         }
         SV *val = entry->hent_val;
-        SV *got = (SV *)Perl_ABH_delete(aTHX_ &table,
+        /* For PERL_ABH_STRESSTEST, this can reallocate the hashtable, so pass
+         * in the canonical address, so that that can be updated. */
+        SV *got = (SV *)Perl_ABH_delete(aTHX_ &HvABH(hv),
                                         HeKEY(entry),
                                         HeKLEN(entry),
                                         HeHASH(entry),
@@ -1622,6 +1622,7 @@ S_hv_free_entries(pTHX_ HV *hv)
         table = HvABH(hv);
         iterator = Perl_ABH_next(table, iterator);
     }
+    /* Maybe we should just forgo the local variable? */
     HvABH(hv) = table;
 }
 
