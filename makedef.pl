@@ -388,6 +388,7 @@ unless ($define{'USE_ITHREADS'}) {
 		    Perl_clone_params_del
 		    Perl_clone_params_new
 		    Perl_parser_dup
+		    Perl_abh_dup
 		    Perl_dirp_dup
 		    Perl_cx_dup
 		    Perl_si_dup
@@ -683,6 +684,11 @@ try_symbols(@layer_syms, 'perlsio_binmode');
 unless ($define{'USE_QUADMATH'}) {
   ++$skip{Perl_quadmath_format_needed};
   ++$skip{Perl_quadmath_format_single};
+}
+
+unless ($define{'LUNCH'}) {
+  ++$skip{Perl_hv_eiter_p};
+  ++$skip{Perl_hv_riter_p};
 }
 
 unless ($Config{d_mbrlen}) {
