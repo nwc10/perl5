@@ -2232,7 +2232,7 @@ Perl_hv_foreach_magical(pTHX_ HV *hv, U32 flags, HV_FOREACH_CALLBACK callback, v
         }
 
 #if defined(DYNAMIC_ENV_FETCH) && defined(VMS)  /* set up %ENV for iteration */
-        if (!HvARRAY(hv) && mg_find((const SV *)hv, PERL_MAGIC_env)) {
+        if (!HvABH(hv) && mg_find((const SV *)hv, PERL_MAGIC_env)) {
             prime_env_iter();
         }
 #endif
@@ -2289,13 +2289,13 @@ Perl_hv_iternext_flags(pTHX_ HV *hv, I32 flags)
         hv_iterinit(hv);
     }
     iter = HvAUX(hv);
+    HE *entry = iter->xhv_eiter;
 
     if (SvMAGICAL(hv) && SvRMAGICAL(hv)) {
         MAGIC *mg;
         if ( ( mg = mg_find((const SV *)hv, PERL_MAGIC_tied) ) ) {
             SV * const key = sv_newmortal();
             /* Do you just want to use the HEK? */
-            HE *entry = iter->xhv_eiter;
             if (entry) {
                 sv_setsv(key, HeSVKEY_force(entry));
                 SvREFCNT_dec(HeSVKEY(entry));       /* get rid of previous key */
@@ -2380,7 +2380,7 @@ Perl_hv_iternext_flags(pTHX_ HV *hv, I32 flags)
         return NULL;
     }
 
-    HE *entry = (HE *) Perl_ABH_current(table, iter->xhv_iterator);
+    entry = (HE *) Perl_ABH_current(table, iter->xhv_iterator);
     assert(entry);
 
     if ((flags & HV_ITERNEXT_WANTPLACEHOLDERS))
