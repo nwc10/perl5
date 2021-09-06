@@ -159,7 +159,7 @@ S_log2_size_for_entries(pTHX_ size_t entries) {
     size_t min_needed = entries * (1.0 / ABH_LOAD_FACTOR);
     if (min_needed < entries) {
         /* It wrapped. */
-        Perl_croak(aTHX_ "panic: requested hash table size %" PRIu64 " is too large", entries);
+        Perl_croak(aTHX_ "panic: requested hash table size %" UVuf " is too large", (UV)entries);
     }
     size_t initial_size_log2 = S_round_up_log_base2(min_needed);
     if (initial_size_log2 < ABH_MIN_SIZE_BASE_2) {
@@ -917,9 +917,9 @@ Perl_ABH_fsck(pTHX_ Perl_ABH_Table **hashtable_p, U32 mode) {
 
                 if (display == 2 || (display == 1 && error_count)) {
                     PerlIO_printf(PerlIO_stderr(),
-                                  "%s%3zX%c%3" PRIx64 "%c%08" PRIx64 " %" HEKf "\n",
-                                  prefix_hashes, bucket, wrong_bucket, offset,
-                                  wrong_order, mixed, *entry);
+                                  "%s%3zX%c%3" UVxf "%c%08" UVxf " %" HEKf "\n",
+                                  prefix_hashes, bucket, wrong_bucket, (UV)offset,
+                                  wrong_order, (UV)mixed, *entry);
                     errors += error_count;
                 }
                 prev_offset = offset;
@@ -940,8 +940,8 @@ Perl_ABH_fsck(pTHX_ Perl_ABH_Table **hashtable_p, U32 mode) {
         ++errors;
         if (display) {
             PerlIO_printf(PerlIO_stderr(),
-                          "%s %" PRIx64 "u != %zu \n",
-                          prefix_hashes, seen, hashtable->cur_items);
+                          "%s %" UVxf "u != %zu \n",
+                          prefix_hashes, (UV)seen, hashtable->cur_items);
         }
     }
 
