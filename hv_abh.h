@@ -103,19 +103,25 @@ void Perl_ABH_grow(pTHX_ Perl_ABH_Table **hashtable_p, size_t wanted);
 
 /* for now, I'm hard coding this.
    The assumption is that with a starting size of 8 (pointer sized) elements,
-   load factor of 0.75 means max chain length of 6, so need five overrun slots,
-   hence also 14 real metadata slots, plus 1 sentinel, hence two 8-byte words.
-   I guess we could pump it up to 0.875, but I don't know what performance would
-   be like.
-   Possibly even we start it at 14/16, and on each doubling drop it by 1/16
-   until it's down to 8/16 (ie 50%)
+   load factor of 0.675 means max chain length of 5, so need four overrun slots,
+   hence also 13 real metadata slots, plus 1 sentinel, hence two 8-byte words.
+   0.675 seems to be better than 0.75 or 0.5 (tested with 1e7 keys) for a
+   constant load factor.
+
+   We *might* do better with a variable load factor (start higher, on the
+   assumption that many hashes are objects with relatively few keys, so save
+   memory for them), and drop down as hashes get larger.
+
+   We could even start with hashes of size 4 and push the load factor to 1,
+   relying on the overrun slots. It's unclear how many "really small" hashes
+   we have, other than version objects and internal MRO hashes.
 */
 
 /* See comments in hash_allocate_common (and elsewhere) before changing any of
    these, and test with assertions enabled. The current choices permit certain
    optimisation assumptions in parts of the code. */
 
-#define ABH_LOAD_FACTOR 0.75
+#define ABH_LOAD_FACTOR 0.675
 #define ABH_MIN_SIZE_BASE_2 3
 #define ABH_INITIAL_BITS_IN_METADATA 5
 
