@@ -1512,7 +1512,7 @@ Perl_hv_auxalloc(pTHX_ HV *hv) {
 #ifdef PURIFY
     new_body = new_NOARENAZ(&fake_hv_with_aux);
 #else
-    new_body_inline(new_body, SVt_NULL, fake_hv_with_aux);
+    new_body_inline(new_body, SVt_IV, fake_hv_with_aux);
 #endif
 
     void *old_body = SvANY(hv);
@@ -6941,7 +6941,7 @@ Perl_sv_clear(pTHX_ SV *const orig_sv)
 
         sv_type_details = bodies_by_type + type;
         if (type == SVt_PVHV && SvOOK(sv)) {
-            type = SVt_NULL;
+            type = SVt_IV;
             sv_type_details = &fake_hv_with_aux;
         }
         if (sv_type_details->arena) {
