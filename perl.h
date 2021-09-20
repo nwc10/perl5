@@ -1326,7 +1326,7 @@ Use L</UV> to declare variables of the maximum usable size on this platform.
 /* This use of offsetof() requires /Zc:offsetof- for VS2017 (and presumably
  * onwards) when building Socket.xs, but we can just use a different definition
  * for STRUCT_OFFSET instead. */
-#if defined(WIN32) && defined(_MSC_VER) && _MSC_VER >= 1910
+#if defined(WIN32) && defined(_MSC_VER) && _MSC_VER >= 1910 && !defined(PERL_CORE)
 #  define STRUCT_OFFSET(s,m)  (Size_t)(&(((s *)0)->m))
 #else
 #  include <stddef.h>
