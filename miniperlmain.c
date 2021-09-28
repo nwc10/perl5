@@ -156,4 +156,6 @@ xs_init(pTHX)
     PERL_UNUSED_CONTEXT;
 }
 
-/* ex: set ro: */
+/* Generated from:
+ * 42b1818c8fe677ab851dfaabbd08470ec1b050a2644f87d5d91392b7992596b4 ext/ExtUtils-Miniperl/lib/ExtUtils/Miniperl.pm
+ * ex: set ro: */
